@@ -6,7 +6,6 @@
 
 [![Blender](https://img.shields.io/badge/Blender-5.2%2B-EA7600?logo=blender&logoColor=white)](https://www.blender.org/)
 [![Formats](https://img.shields.io/badge/formats-4DS%20·%205DS%20·%20TCK%20·%206DS-1f6feb)](https://github.com/Richard01CZ/MafiaBlenderToolkit/wiki/Importing-and-Exporting)
-[![Version](https://img.shields.io/badge/addon-v1.0.0-3fb950)](https://github.com/Richard01CZ/MafiaBlenderToolkit/releases/latest)
 [![Docs](https://img.shields.io/badge/docs-wiki-8250df)](https://github.com/Richard01CZ/MafiaBlenderToolkit/wiki)
 [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-lightgrey)](LICENSE)
 
