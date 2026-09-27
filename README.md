@@ -1,4 +1,4 @@
-# Mafia Toolkit
+# Mafia Blender Toolkit
 
 A Blender add-on for Mafia's model formats: **`.4ds` models**, **`.5ds` animations**,
 **`.tck` movement tracks** and **`.6ds` shadows** — import, edit and export, with every
