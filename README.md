@@ -6,7 +6,7 @@ frame type and every flag the format has.
 
 Built for **Blender 5.2** or newer. Tested against every model the game ships.
 
-![The 4DS Object panel](guide-images/04-object-panel.png)
+![A mission scene in Blender: Clark's Motel, with the sectors the add-on draws over it](guide-images/05-viewport-colors.png)
 
 ## What it does
 
