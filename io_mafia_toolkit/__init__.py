@@ -109,7 +109,7 @@ bl_info = {
     "name": "Mafia Toolkit",
     "author": "Richard01_CZ",
     # Special thanks: Asa, Oravin, kirill_mapper, FlashX, sadness_smile,
-    # huckleberrypie, jc
+    # huckleberrypie, jc, h0ns4
     # Numbers alone: Blender joins the tuple with dots whatever it holds, so
     # a label put here would ride along in the add-on list. There is no
     # warning key either - Blender draws an alert icon beside the name for
