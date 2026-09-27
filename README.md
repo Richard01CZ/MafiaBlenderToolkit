@@ -98,3 +98,24 @@ Every change is run against the whole corpus the game ships:
 
 Plus a suite of regression checks covering sectors, portals, mirrors, billboards,
 instances, animations, event cues, movement tracks, shadows, materials and characters.
+
+## License
+
+The add-on's code and this documentation are **GPL-3.0-or-later** — see
+[LICENSE](LICENSE). A Blender add-on uses Blender's Python API, which is GPL, so a
+GPL-compatible license is what it has to carry.
+
+Four things that licence does *not* cover:
+
+- **The game.** This add-on contains no code, no engine and no data from Mafia. It reads
+  and writes file formats; it needs a legally obtained copy of the game to be of any use,
+  and the game's own EULA governs what you do with its files.
+- **The screenshots.** The pictures in `guide-images/` show the game's own models and
+  textures, which remain the property of Illusion Softworks / Take 2 Interactive. They
+  are here to illustrate the tool, and are not licensed under the GPL.
+- **What you make with it.** Your models are yours; distributing them is subject to the
+  game's terms, not to this licence.
+- **Game files in this repository.** There are none, and there should never be any: no
+  `.4ds`, `.5ds`, `.tck` or `.6ds` from the game belongs in a commit.
+
+Not affiliated with or endorsed by Illusion Softworks, Take 2 Interactive or 2K.

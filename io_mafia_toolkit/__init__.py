@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Mafia Toolkit: the game's model, animation, movement and shadow formats.
 
 Four formats, one package each, with what they share underneath::
