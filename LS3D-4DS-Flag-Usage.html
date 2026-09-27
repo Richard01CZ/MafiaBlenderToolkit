@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4DS Flag Usage</title>
+<meta name="description" content="Which of Mafia's models and objects use each 4DS switch, counted across every shipped file.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img, svg { max-width: 100%; }
+</style>
+<style>
+  :root {
+    --ground:   #FAFAF9;
+    --surface:  #FFFFFF;
+    --sunken:   #F3F1ED;
+    --ink:      #1A1917;
+    --muted:    #6E6862;
+    --rule:     #E4E0DA;
+    --accent:   #8E2B22;
+    --accent-soft: #F6EBE9;
+    --engine:   #2F5D62;
+    --engine-soft: #E7F0F0;
+    --shadow:   rgba(26, 25, 23, 0.07);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #141312;
+      --surface:  #1C1A18;
+      --sunken:   #232120;
+      --ink:      #EBE7E1;
+      --muted:    #9B948C;
+      --rule:     #2F2B27;
+      --accent:   #E68A76;
+      --accent-soft: #2C1E1B;
+      --engine:   #7FBEC3;
+      --engine-soft: #16292B;
+      --shadow:   rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #141312;
+    --surface:  #1C1A18;
+    --sunken:   #232120;
+    --ink:      #EBE7E1;
+    --muted:    #9B948C;
+    --rule:     #2F2B27;
+    --accent:   #E68A76;
+    --accent-soft: #2C1E1B;
+    --engine:   #7FBEC3;
+    --engine-soft: #16292B;
+    --shadow:   rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 120px;
+  }
+
+  /* ── navigation ─────────────────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    font-size: 13.5px;
+  }
+
+  .nav-brand {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+
+  .nav-build {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 26px;
+  }
+
+  .nav h4 {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--muted);
+    margin: 24px 0 8px;
+  }
+
+  .nav a {
+    display: block;
+    padding: 3px 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 11px;
+    margin-left: -13px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .nav a:hover { color: var(--accent); border-left-color: var(--accent); }
+  .nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── content ────────────────────────────────────────────── */
+  main { padding: 40px 0 0; min-width: 0; }
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 34px;
+    margin-bottom: 12px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    margin: 12px 0 16px;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 18.5px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  section { padding-top: 54px; scroll-margin-top: 20px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 27px;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-right: 12px;
+    letter-spacing: 0;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: -0.005em;
+    margin: 34px 0 8px;
+  }
+
+  h4 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 26px 0 8px;
+  }
+
+  p, li { max-width: 68ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--sunken);
+    padding: 1.5px 5px;
+    border-radius: 2px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--sunken);
+    border-left: 2px solid var(--rule);
+    padding: 15px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 520px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+    padding: 0 14px 7px 0;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+
+  .bit, .val { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  .name { font-weight: 500; white-space: nowrap; }
+  .dim { color: var(--muted); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .tag-live   { background: var(--accent-soft); color: var(--accent); }
+  .tag-engine { background: var(--engine-soft); color: var(--engine); }
+  .tag-dead   { background: var(--sunken); color: var(--muted); }
+
+  tr.engine-row td:not(.desc) { color: var(--muted); }
+
+  .callout {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 16px 20px;
+    margin: 0 0 20px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+
+  .callout.engine { border-left-color: var(--engine); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .callout.engine .label { color: var(--engine); }
+
+  .lead-in {
+    color: var(--muted);
+    font-size: 16.5px;
+    max-width: 64ch;
+    margin: 0 0 22px;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    margin-right: 7px;
+    vertical-align: -1px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 46px 0 0;
+  }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 80px; }
+    .nav {
+      position: static;
+      max-height: none;
+      padding: 30px 0 6px;
+      border-bottom: 1px solid var(--rule);
+      columns: 2;
+      column-gap: 28px;
+    }
+    .nav-brand, .nav-build { column-span: all; }
+    main { padding-top: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+    .usage table { font-size: 13.5px; }
+    .usage td.flag { white-space: nowrap; font-weight: 600; }
+    .usage td.n { font-variant-numeric: tabular-nums; white-space: nowrap;
+                  font-family: var(--mono); font-size: 12.5px; }
+    .usage td.where { font-family: var(--mono); font-size: 12px;
+                      color: var(--muted); }
+    .usage td.where div { margin: 1px 0; }
+    .none { color: var(--muted); font-style: italic; }
+    .bar { display: block; height: 3px; background: var(--accent);
+           border-radius: 2px; margin-top: 5px; opacity: .75; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <div class="nav-brand">Flag Usage</div>
+    <div class="nav-build">4DS reference</div>
+    <h4>Contents</h4>
+    <a href="#cull">Culling</a>
+<a href="#render">Rendering</a>
+<a href="#logic">Logic</a>
+<a href="#sector">Sector</a>
+<a href="#portal">Portal</a>
+<a href="#material">Material</a>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Blender add-on &middot; Mafia</div>
+      <h1>4DS Flag Usage</h1>
+      <p class="standfirst">Every switch the format carries, counted across the
+      3,261 models shipped with the game &mdash; 100,965
+      objects, 44,640 materials, 1,132 sectors and
+      2,739 portals &mdash; with the models that use each one.</p>
+    </header>
+
+    <section class="panel">
+    <div class="callout">
+    <span class="label">Reading this</span>
+    <p>The bar under each count shows how much of that category uses the
+    switch. &ldquo;Which models&rdquo; lists the files with the most
+    occurrences, then a few example object names. A switch marked <i>not
+    used</i> exists in the format but appears nowhere in the shipped game
+    &mdash; you can still set it, you just have no reference to copy.</p>
+    </div>
+    </section>
+
+<section id="cull" class="panel usage">
+<h2><span class="num">01</span>Culling</h2>
+<p class="lead-in">One byte on every object and joint. Only <b>Enable</b> and <b>Position Locked</b> are yours to set; the rest is bookkeeping the game rebuilds when a model loads, shown here so you can see what the shipped files contain. 6 of 8 listed switches appear in
+the shipped models.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Switch</th><th>Used on</th><th>Which models</th></tr></thead>
+<tbody>
+<tr><td class="flag">Enable</td><td class="n">100,421<br>3,258 file(s)<span class="bar" style="width:99%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;2053</div><div>missions/FREERIDE/scene.4ds &times;1731</div><div>missions/FREERIDE/scene_original.4ds &times;1731</div><div>missions/FREERIDENOC/scene.4ds &times;1731</div><div>&hellip; and 3254 more</div><div style="margin-top:6px">e.g. white, white, white, white</div><div>Visual/Object &times;72596, Dummy &times;19323, Joint &times;6249</div></td></tr>
+<tr><td class="flag">Position Locked</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Scale Applied (engine)</td><td class="n">8,840<br>424 file(s)<span class="bar" style="width:9%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;246</div><div>missions/MISE11-VILA/scene.4ds &times;226</div><div>missions/mise17-vezeni/scene.4ds &times;178</div><div>missions/MISE08-HOTEL/scene.4ds &times;142</div><div>&hellip; and 420 more</div><div style="margin-top:6px">e.g. sector SCTRpodl, SCTRpodl, sector &amp;&amp; cela16, &amp;&amp; cela16</div><div>Joint &times;6229, Visual/Object &times;1133, Sector &times;1132</div></td></tr>
+<tr><td class="flag">Rotation Valid (engine)</td><td class="n">99,827<br>3,259 file(s)<span class="bar" style="width:99%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;1959</div><div>missions/FREERIDE/scene.4ds &times;1730</div><div>missions/FREERIDE/scene_original.4ds &times;1730</div><div>missions/FREERIDENOC/scene.4ds &times;1730</div><div>&hellip; and 3255 more</div><div style="margin-top:6px">e.g. white, white, white, white</div><div>Visual/Object &times;72002, Dummy &times;19323, Joint &times;6249</div></td></tr>
+<tr><td class="flag">Matrix Built (engine)</td><td class="n">9,978<br>424 file(s)<span class="bar" style="width:10%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;340</div><div>missions/mise17-vezeni/scene.4ds &times;296</div><div>missions/MISE11-VILA/scene.4ds &times;226</div><div>missions/MISE08-HOTEL/scene.4ds &times;190</div><div>&hellip; and 420 more</div><div style="margin-top:6px">e.g. sector SCTRpodl, SCTRpodl, SCTR, sector &amp;&amp; cela16</div><div>Joint &times;6229, Visual/Object &times;2271, Sector &times;1132</div></td></tr>
+<tr><td class="flag">World Matrix Valid (engine)</td><td class="n">8,234<br>424 file(s)<span class="bar" style="width:8%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;217</div><div>missions/MISE08-HOTEL/scene.4ds &times;116</div><div>missions/MISE11-VILA/scene.4ds &times;113</div><div>missions/mise17-vezeni/scene.4ds &times;112</div><div>&hellip; and 420 more</div><div style="margin-top:6px">e.g. sector SCTRpodl, SCTRpodl, sector &amp;&amp; cela16, sector &amp;&amp; svetlik cela 15</div><div>Joint &times;6229, Sector &times;1132, Visual/Object &times;527</div></td></tr>
+<tr><td class="flag">Bounds Valid (engine)</td><td class="n">1,132<br>78 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;123</div><div>missions/MISE11-VILA/scene.4ds &times;113</div><div>missions/mise17-vezeni/scene.4ds &times;89</div><div>missions/MISE08-HOTEL/scene.4ds &times;71</div><div>&hellip; and 74 more</div><div style="margin-top:6px">e.g. sector SCTRpodl, sector &amp;&amp; cela16, sector &amp;&amp; svetlik cela 15, sector &amp;&amp; futro cela15</div><div>Sector &times;1132</div></td></tr>
+<tr><td class="flag">Unused (bit 2)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="render" class="panel usage">
+<h2><span class="num">02</span>Rendering</h2>
+<p class="lead-in">Lighting and detail-level switches. Almost the whole byte is unused by the game, and the shipped models bear that out. 2 of 8 listed switches appear in
+the shipped models.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Switch</th><th>Used on</th><th>Which models</th></tr></thead>
+<tbody>
+<tr><td class="flag">Flat Lighting</td><td class="n">39<br>30 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>models/strom2.4ds &times;4</div><div>models/strom3.4ds &times;4</div><div>models/s_velky1.4ds &times;4</div><div>models/9ker1.4ds &times;1</div><div>&hellip; and 26 more</div><div style="margin-top:6px">e.g. Object01, Rectangle02, Object01, Object02</div><div>Visual/Object &times;38, Visual/Morph &times;1</div></td></tr>
+<tr><td class="flag">No Mirror</td><td class="n">2<br>1 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/AUTOSALON/scene.4ds &times;2</div><div style="margin-top:6px">e.g. NGon02, NGon03</div><div>Visual/Object &times;2</div></td></tr>
+<tr><td class="flag">Managed LOD</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">World Space Geometry</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Colour Cache Dirty (engine)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Unused (bit 1)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Unused (bit 2)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Unused (bit 4)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="logic" class="panel usage">
+<h2><span class="num">03</span>Logic</h2>
+<p class="lead-in">Shadows, projected textures, fog and decals. The three switches on nearly every object &mdash; Shadows on Diffuse, Renderable Object and Projection on Diffuse &mdash; are effectively the default state for a visible mesh. 5 of 8 listed switches appear in
+the shipped models.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Switch</th><th>Used on</th><th>Which models</th></tr></thead>
+<tbody>
+<tr><td class="flag">Z-Bias</td><td class="n">178<br>133 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;30</div><div>missions/mise17-vezeni/scene.4ds &times;9</div><div>missions/00MENU/scene.4ds &times;5</div><div>models/FThot00.4ds &times;3</div><div>&hellip; and 129 more</div><div style="margin-top:6px">e.g. Plane01, Plane02, Plane03, Obr1</div><div>Visual/Object &times;176, Visual/Morph &times;2</div></td></tr>
+<tr><td class="flag">Shadows on Diffuse</td><td class="n">73,869<br>3,224 file(s)<span class="bar" style="width:73%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;1927</div><div>missions/FREERIDE/scene.4ds &times;1709</div><div>missions/FREERIDE/scene_original.4ds &times;1709</div><div>missions/FREERIDENOC/scene.4ds &times;1709</div><div>&hellip; and 3220 more</div><div style="margin-top:6px">e.g. white, white, white, white</div><div>Visual/Object &times;73043, Visual/Billboard &times;221, Visual/Single Morph &times;200</div></td></tr>
+<tr><td class="flag">Shadows on Alpha</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Renderable Object</td><td class="n">73,958<br>3,257 file(s)<span class="bar" style="width:73%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;1930</div><div>missions/FREERIDE/scene.4ds &times;1709</div><div>missions/FREERIDE/scene_original.4ds &times;1709</div><div>missions/FREERIDENOC/scene.4ds &times;1709</div><div>&hellip; and 3253 more</div><div style="margin-top:6px">e.g. white, white, white, white</div><div>Visual/Object &times;73140, Visual/Billboard &times;221, Visual/Single Morph &times;200</div></td></tr>
+<tr><td class="flag">Skip Two-Sided Collision</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Projection on Diffuse</td><td class="n">73,737<br>3,258 file(s)<span class="bar" style="width:73%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;1930</div><div>missions/FREERIDE/scene.4ds &times;1709</div><div>missions/FREERIDE/scene_original.4ds &times;1709</div><div>missions/FREERIDENOC/scene.4ds &times;1709</div><div>&hellip; and 3254 more</div><div style="margin-top:6px">e.g. white, white, white, white</div><div>Visual/Object &times;72910, Visual/Billboard &times;221, Visual/Single Morph &times;200</div></td></tr>
+<tr><td class="flag">Projection on Alpha</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">No Fog</td><td class="n">1,816<br>370 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE16-LETISTE/scene.4ds &times;36</div><div>models/ambulance00.4ds &times;8</div><div>models/ambulance10.4ds &times;8</div><div>models/polimTud00.4ds &times;8</div><div>&hellip; and 366 more</div><div style="margin-top:6px">e.g. glow01, glow02, glow03, glow04</div><div>Visual/Object &times;1721, Visual/Billboard &times;95</div></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="sector" class="panel usage">
+<h2><span class="num">04</span>Sector</h2>
+<p class="lead-in">Across 1,132 sectors in the game. 3 of 6 listed switches appear in
+the shipped models.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Switch</th><th>Used on</th><th>Which models</th></tr></thead>
+<tbody>
+<tr><td class="flag">Occluder</td><td class="n">3<br>2 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE11-VILA/scene.4ds &times;2</div><div>missions/MISE14-PARNIK/scene.4ds &times;1</div><div style="margin-top:6px">e.g. sector &amp;&amp; schodiste 2, sector &amp;&amp; hala, sector Box18</div></td></tr>
+<tr><td class="flag">Skip Nested Objects When Barely Visible</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Echo Settings Pending</td><td class="n">1,132<br>78 file(s)<span class="bar" style="width:100%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;123</div><div>missions/MISE11-VILA/scene.4ds &times;113</div><div>missions/mise17-vezeni/scene.4ds &times;89</div><div>missions/MISE08-HOTEL/scene.4ds &times;71</div><div>&hellip; and 74 more</div><div style="margin-top:6px">e.g. sector SCTRpodl, sector &amp;&amp; cela16, sector &amp;&amp; svetlik cela 15, sector &amp;&amp; futro cela15</div></td></tr>
+<tr><td class="flag">Visible (engine)</td><td class="n">1,132<br>78 file(s)<span class="bar" style="width:100%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;123</div><div>missions/MISE11-VILA/scene.4ds &times;113</div><div>missions/mise17-vezeni/scene.4ds &times;89</div><div>missions/MISE08-HOTEL/scene.4ds &times;71</div><div>&hellip; and 74 more</div><div style="margin-top:6px">e.g. sector SCTRpodl, sector &amp;&amp; cela16, sector &amp;&amp; svetlik cela 15, sector &amp;&amp; futro cela15</div></td></tr>
+<tr><td class="flag">Prepared (engine)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Group Mask (non-zero)</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="portal" class="panel usage">
+<h2><span class="num">05</span>Portal</h2>
+<p class="lead-in">Across 2,739 portals. 4 of 6 listed switches appear in
+the shipped models.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Switch</th><th>Used on</th><th>Which models</th></tr></thead>
+<tbody>
+<tr><td class="flag">Enable</td><td class="n">2,739<br>78 file(s)<span class="bar" style="width:100%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;339</div><div>missions/MISE11-VILA/scene.4ds &times;271</div><div>missions/mise17-vezeni/scene.4ds &times;251</div><div>missions/MISE08-HOTEL/scene.4ds &times;191</div><div>&hellip; and 74 more</div><div style="margin-top:6px">e.g. sector SCTRpodl portal, sector SCTRpodl portal, sector SCTRpodl portal, sector &amp;&amp; cela16 portal</div></td></tr>
+<tr><td class="flag">Far Cull</td><td class="n">13<br>1 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/mise17-vezeni/scene.4ds &times;13</div><div style="margin-top:6px">e.g. sector &amp;&amp; kancelar 04 portal, sector &amp;&amp; kancelar 04 portal, sector &amp;&amp; kancelar 04 portal, sector &amp;&amp; cela65 portal</div></td></tr>
+<tr><td class="flag">Divides Sector</td><td class="n">15<br>6 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE20-GALERY/scene.4ds &times;6</div><div>missions/MISE06-OSLAVA/scene.4ds &times;2</div><div>missions/MISE11-VILA/scene.4ds &times;2</div><div>missions/MISE13-ZRADCE/scene.4ds &times;2</div><div>&hellip; and 2 more</div><div style="margin-top:6px">e.g. sector g_podlaha portal, sector g_podlaha portal, sector &amp;&amp; room 14 portal, sector Object96 portal</div></td></tr>
+<tr><td class="flag">Undefined 1</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Undefined 7</td><td class="n">558<br>76 file(s)<span class="bar" style="width:20%"></span></td><td class="where"><div>missions/MISE08-HOTEL/scene.4ds &times;44</div><div>missions/MISE20-GALERY/scene.4ds &times;43</div><div>missions/mise19-banka/scene.4ds &times;41</div><div>missions/mise17-vezeni/scene.4ds &times;39</div><div>&hellip; and 72 more</div><div style="margin-top:6px">e.g. sector SCTRpodl portal, sector SCTRpodl portal, sector SCTRpodl portal, sector SCTRpodl portal</div></td></tr>
+<tr><td class="flag">In Portal</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="material" class="panel usage">
+<h2><span class="num">06</span>Material</h2>
+<p class="lead-in">Across 44,640 materials. 14 of 18 listed switches appear in
+the shipped models.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Switch</th><th>Used on</th><th>Which models</th></tr></thead>
+<tbody>
+<tr><td class="flag">Use Diffuse Texture</td><td class="n">44,108<br>3,163 file(s)<span class="bar" style="width:99%"></span></td><td class="where"><div>missions/FREERIDE/scene.4ds &times;689</div><div>missions/FREERIDE/scene_original.4ds &times;689</div><div>missions/FREERIDENOC/scene.4ds &times;689</div><div>missions/MISE10-MESTO/scene.4ds &times;664</div><div>&hellip; and 3159 more</div><div style="margin-top:6px">e.g. material #1, material #2, material #3, material #4</div></td></tr>
+<tr><td class="flag">Use Environment Texture</td><td class="n">1,614<br>502 file(s)<span class="bar" style="width:4%"></span></td><td class="where"><div>missions/00MENU/scene.4ds &times;19</div><div>models/fordApick00.4ds &times;10</div><div>models/fordApicktaxi00.4ds &times;10</div><div>models/hotrodp300.4ds &times;10</div><div>&hellip; and 498 more</div><div style="margin-top:6px">e.g. material #19, material #21, material #31, material #67</div></td></tr>
+<tr><td class="flag">Env MipMap</td><td class="n">36,910<br>2,526 file(s)<span class="bar" style="width:83%"></span></td><td class="where"><div>missions/FREERIDE/scene.4ds &times;672</div><div>missions/FREERIDE/scene_original.4ds &times;672</div><div>missions/FREERIDENOC/scene.4ds &times;672</div><div>missions/mise19-mesto/scene.4ds &times;648</div><div>&hellip; and 2522 more</div><div style="margin-top:6px">e.g. material #1, material #1, material #1, material #1</div></td></tr>
+<tr><td class="flag">Alpha Enable</td><td class="n">6,340<br>1,247 file(s)<span class="bar" style="width:14%"></span></td><td class="where"><div>missions/FREERIDE/scene.4ds &times;47</div><div>missions/FREERIDE/scene_original.4ds &times;47</div><div>missions/FREERIDENOC/scene.4ds &times;47</div><div>missions/MISE10-MESTO/scene.4ds &times;47</div><div>&hellip; and 1243 more</div><div style="margin-top:6px">e.g. material #1, material #2, material #9, material #15</div></td></tr>
+<tr><td class="flag">Use Alpha Texture</td><td class="n">1,557<br>650 file(s)<span class="bar" style="width:3%"></span></td><td class="where"><div>missions/mise19-banka/scene.4ds &times;11</div><div>missions/MISE14-PARNIK/scene.4ds &times;9</div><div>models/%skola.4ds &times;8</div><div>models/panz.4ds &times;8</div><div>&hellip; and 646 more</div><div style="margin-top:6px">e.g. material #2, material #27, material #67, material #83</div></td></tr>
+<tr><td class="flag">Colour Key</td><td class="n">4,650<br>1,041 file(s)<span class="bar" style="width:10%"></span></td><td class="where"><div>missions/FREERIDE/scene.4ds &times;45</div><div>missions/FREERIDE/scene_original.4ds &times;45</div><div>missions/FREERIDENOC/scene.4ds &times;45</div><div>missions/MISE10-MESTO/scene.4ds &times;44</div><div>&hellip; and 1037 more</div><div style="margin-top:6px">e.g. material #9, material #15, material #50, material #53</div></td></tr>
+<tr><td class="flag">Alpha Additive</td><td class="n">66<br>58 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>models/letadylko.4ds &times;3</div><div>missions/MISE12-GARAGE/scene.4ds &times;2</div><div>models/9KSSVIC1.4ds &times;2</div><div>models/9KSSVIC2.4ds &times;2</div><div>&hellip; and 54 more</div><div style="margin-top:6px">e.g. material #1, material #71, material #84, material #21</div></td></tr>
+<tr><td class="flag">Double Sided</td><td class="n">253<br>170 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/mise19-banka/scene.4ds &times;5</div><div>missions/MISE18-PRISTAV/scene.4ds &times;4</div><div>missions/MISE01/scene.4ds &times;3</div><div>missions/MISE13-MESTO/scene.4ds &times;3</div><div>&hellip; and 166 more</div><div style="margin-top:6px">e.g. material #56, material #57, material #45, material #440</div></td></tr>
+<tr><td class="flag">Vertex Colors</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Anim Diffuse</td><td class="n">34<br>27 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE14-PARNIK/scene.4ds &times;4</div><div>missions/MISE16-KRAJINA/scene.4ds &times;2</div><div>missions/mise17-vezeni/scene.4ds &times;2</div><div>models/fire_effect.4ds &times;2</div><div>&hellip; and 23 more</div><div style="margin-top:6px">e.g. material #89, material #89, material #89, material #186</div></td></tr>
+<tr><td class="flag">Anim Alpha</td><td class="n">9<br>9 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>models/2firesm.4ds &times;1</div><div>models/2lighting.4ds &times;1</div><div>models/2vybuch.4ds &times;1</div><div>models/2vybuch2.4ds &times;1</div><div>&hellip; and 5 more</div><div style="margin-top:6px">e.g. material #1, material #1, material #1, material #1</div></td></tr>
+<tr><td class="flag">Truecolor Texture</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Disable U Tiling</td><td class="n">571<br>366 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>models/cervanky1.4ds &times;5</div><div>models/den2.4ds &times;5</div><div>models/denjasno1.4ds &times;5</div><div>models/denjasno2.4ds &times;5</div><div>&hellip; and 362 more</div><div style="margin-top:6px">e.g. material #2, material #3, material #4, material #5</div></td></tr>
+<tr><td class="flag">Disable V Tiling</td><td class="n">273<br>72 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>missions/MISE05-MESTO/scene.4ds &times;6</div><div>missions/MISE06-MESTO/scene.4ds &times;6</div><div>missions/EXTREME/scene.4ds &times;5</div><div>missions/FREEITALY/scene.4ds &times;5</div><div>&hellip; and 68 more</div><div style="margin-top:6px">e.g. material #3, material #23, material #80, material #299</div></td></tr>
+<tr><td class="flag">Force Truecolor</td><td class="n">7<br>3 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>models/panz.4ds &times;5</div><div>models/kaluz-seq.4ds &times;1</div><div>models/kaluz-seq2.4ds &times;1</div><div style="margin-top:6px">e.g. material #1, material #1, material #2, material #4</div></td></tr>
+<tr><td class="flag">No Compression</td><td class="n">359<br>94 file(s)<span class="bar" style="width:2%"></span></td><td class="where"><div>models/denjasno1.4ds &times;12</div><div>models/denjasno2.4ds &times;12</div><div>models/denjasno3.4ds &times;12</div><div>models/Emeth.4ds &times;12</div><div>&hellip; and 90 more</div><div style="margin-top:6px">e.g. material #84, material #73, material #74, material #75</div></td></tr>
+<tr><td class="flag">No Presaved Texture</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+<tr><td class="flag">Texture Manager</td><td class="n none">not used</td><td class="where none">&mdash;</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+    <hr>
+    <footer>
+      <p>Counted from every <code>.4ds</code> file shipped with Mafia. Switch
+      names match the panels in this add-on.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

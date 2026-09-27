@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LS3D 4DS Field Manual</title>
+<meta name="description" content="Complete guide to the LS3D 4DS Blender add-on: every panel, setting and check, and what each one does in game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img, svg { max-width: 100%; }
+</style>
+<style>
+  :root {
+    --ground:   #FAFAF9;
+    --surface:  #FFFFFF;
+    --sunken:   #F3F1ED;
+    --ink:      #1A1917;
+    --muted:    #6E6862;
+    --rule:     #E4E0DA;
+    --accent:   #8E2B22;
+    --accent-soft: #F6EBE9;
+    --engine:   #2F5D62;
+    --engine-soft: #E7F0F0;
+    --shadow:   rgba(26, 25, 23, 0.07);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #141312;
+      --surface:  #1C1A18;
+      --sunken:   #232120;
+      --ink:      #EBE7E1;
+      --muted:    #9B948C;
+      --rule:     #2F2B27;
+      --accent:   #E68A76;
+      --accent-soft: #2C1E1B;
+      --engine:   #7FBEC3;
+      --engine-soft: #16292B;
+      --shadow:   rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #141312;
+    --surface:  #1C1A18;
+    --sunken:   #232120;
+    --ink:      #EBE7E1;
+    --muted:    #9B948C;
+    --rule:     #2F2B27;
+    --accent:   #E68A76;
+    --accent-soft: #2C1E1B;
+    --engine:   #7FBEC3;
+    --engine-soft: #16292B;
+    --shadow:   rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 120px;
+  }
+
+  /* ── navigation ─────────────────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    font-size: 13.5px;
+  }
+
+  .nav-brand {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+
+  .nav-build {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 26px;
+  }
+
+  .nav h4 {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--muted);
+    margin: 24px 0 8px;
+  }
+
+  .nav a {
+    display: block;
+    padding: 3px 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 11px;
+    margin-left: -13px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .nav a:hover { color: var(--accent); border-left-color: var(--accent); }
+  .nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── content ────────────────────────────────────────────── */
+  main { padding: 40px 0 0; min-width: 0; }
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 34px;
+    margin-bottom: 12px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    margin: 12px 0 16px;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 18.5px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  section { padding-top: 54px; scroll-margin-top: 20px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 27px;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-right: 12px;
+    letter-spacing: 0;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: -0.005em;
+    margin: 34px 0 8px;
+  }
+
+  h4 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 26px 0 8px;
+  }
+
+  p, li { max-width: 68ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--sunken);
+    padding: 1.5px 5px;
+    border-radius: 2px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--sunken);
+    border-left: 2px solid var(--rule);
+    padding: 15px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  pre.math { font-size: 13.5px; padding: 12px 18px; text-align: center; }
+
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 520px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+    padding: 0 14px 7px 0;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+
+  .bit, .val { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  .name { font-weight: 500; white-space: nowrap; }
+  .dim { color: var(--muted); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .tag-live   { background: var(--accent-soft); color: var(--accent); }
+  .tag-engine { background: var(--engine-soft); color: var(--engine); }
+  .tag-dead   { background: var(--sunken); color: var(--muted); }
+
+  tr.engine-row td:not(.desc) { color: var(--muted); }
+
+  .callout {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 16px 20px;
+    margin: 0 0 20px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+
+  .callout.engine { border-left-color: var(--engine); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .callout.engine .label { color: var(--engine); }
+
+  .lead-in {
+    color: var(--muted);
+    font-size: 16.5px;
+    max-width: 64ch;
+    margin: 0 0 22px;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    margin-right: 7px;
+    vertical-align: -1px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 46px 0 0;
+  }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 80px; }
+    .nav {
+      position: static;
+      max-height: none;
+      padding: 30px 0 6px;
+      border-bottom: 1px solid var(--rule);
+      columns: 2;
+      column-gap: 28px;
+    }
+    .nav-brand, .nav-build { column-span: all; }
+    main { padding-top: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+
+
+figure.shot { margin: 18px 0 22px; padding: 0; }
+figure.shot img { display: block; width: 100%; height: auto; border-radius: 6px;
+  border: 1px solid var(--rule); background: var(--sunken); }
+figure.shot figcaption { margin-top: 8px; font-size: 13.5px; color: var(--muted); }
+figure.shot figcaption b { color: var(--engine); font-size: 11.5px;
+  letter-spacing: 0.06em; text-transform: uppercase; margin-right: 6px; }
+figure.shot.empty figcaption { border: 1px dashed var(--rule); border-radius: 6px;
+  padding: 14px 16px; background: var(--sunken); margin-top: 0; }
+figure.shot.empty figcaption::after { content: " — picture not in place yet";
+  color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <div class="nav-brand">LS3D 4DS</div>
+    <div class="nav-build">1.0.0 &middot; Blender 5.2+</div>
+
+    <h4>Getting started</h4>
+    <a href="#install">Installation &amp; preferences</a>
+    <a href="#io">Importing &amp; exporting</a>
+
+    <h4>Core concepts</h4>
+    <a href="#frames">Frame types</a>
+    <a href="#objects">Objects &amp; LODs</a>
+    <a href="#instances">Instances</a>
+    <a href="#materials">Materials</a>
+
+    <h4>Object settings</h4>
+    <a href="#flags-how">How settings work</a>
+    <a href="#flags-cull">Culling</a>
+    <a href="#flags-render">Rendering</a>
+    <a href="#flags-logic">Logic</a>
+
+    <h4>Frame &amp; visual types</h4>
+    <a href="#sectors">Sectors &amp; portals</a>
+    <a href="#occluders">Occluders</a>
+    <a href="#dummies">Dummies &amp; targets</a>
+    <a href="#billboards">Billboards</a>
+    <a href="#mirrors">Mirrors</a>
+    <a href="#lensflares">Lens flares</a>
+
+    <h4>Skinning &amp; morphs</h4>
+    <a href="#skinning">Armatures &amp; skinning</a>
+    <a href="#morphs">Morphs</a>
+
+    <h4>Help</h4>
+    <a href="#checks">Checks &amp; messages</a>
+    <a href="#elsewhere">The other references</a>
+    <a href="#shots">The pictures</a>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Blender add-on &middot; Mafia / LS3D engine</div>
+      <h1>LS3D 4DS Field Manual</h1>
+      <p class="standfirst">Everything the importer and exporter can do, and what every flag actually does in game &mdash; checked against real behavior and measured across every model shipped with Mafia, rather than inherited from older tools.</p>
+    </header>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="install">
+      <h2><span class="num">01</span>Installation &amp; preferences</h2>
+      <p class="lead-in">Install the zip through Blender's add-on preferences. It asks for
+      Blender 5.2 or newer, registers under <code>Import-Export</code>, and adds an entry
+      for each of the four formats &mdash; models, animations, movement tracks and shadows
+      &mdash; under both <b>File &rsaquo; Import</b> and <b>File &rsaquo; Export</b>.</p>
+
+      <p>It can also install itself from a command prompt, which is worth knowing on a
+      machine that has nothing on it but Blender. The zip and the <code>mbt.bat</code>
+      beside it are a whole working copy, with nothing unpacked:</p>
+
+      <pre><code>mbt.bat --install --textures "D:\Hry\Mafia Editovani\maps" --open "D:\models\tommy.4ds"</code></pre>
+
+      <p>One command: it finds the zip next to it, installs it into the newest Blender it
+      finds, switches it on, keeps the texture folder and saves the preferences &mdash; so the
+      add-on is there the next time Blender opens &mdash; and then opens the model, all in one
+      Blender. <code>--install</code> takes a zip by name as well, and with no name it
+      installs whatever copy the command came out of. Leaving <code>--install</code> off runs
+      the add-on straight out of the zip without installing anything, which is a way to try a
+      build without changing a thing. Nothing else is needed: Blender brings its own Python,
+      and the command finds Blender. Set <code>MAFIA_BLENDER</code> to a
+      <code>blender.exe</code> to pick the Blender rather than taking the newest.</p>
+      <figure class="shot" id="fig-01">
+        <img src="guide-images/01-preferences.png" alt="The add-ons preferences, with the textures folder set."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 01</b> The add-on&rsquo;s preferences, with the textures folder set.</figcaption>
+      </figure>
+
+
+
+
+      <p>If the panels look unchanged after installing an update, check the version number
+      in the add-on list. The add-on reloads its own modules as it starts, so an update
+      takes effect without restarting Blender.</p>
+
+      <h3>Preferences</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="name">Texture Folder</td><td class="val dim">empty</td>
+              <td class="desc">The game's <code>maps</code> folder. The importer looks here for
+              textures and for the color key inside palette BMPs. Without it, models import
+              untextured and you get one warning saying so.</td>
+            </tr>
+            <tr>
+              <td class="name">Always Export the Whole Scene</td><td class="val">on</td>
+              <td class="desc">Ignores the selection when exporting. Exporting only what is
+              selected silently omits everything else, which is rarely what you want for a
+              game model.</td>
+            </tr>
+            <tr>
+              <td class="name">Show Raw Flag Values</td><td class="val">on</td>
+              <td class="desc">Shows the numeric field above each checkbox grid. The number and
+              the checkboxes are the same value seen two ways — type a number and the toggles
+              follow, click a toggle and the number follows.</td>
+            </tr>
+            <tr>
+              <td class="name">Show Engine-Reserved Flags</td><td class="val">off</td>
+              <td class="desc">Adds an <i>Engine Internals</i> group listing bits the engine
+              owns. A bit your file actually has switched on is always shown regardless of this
+              setting, so opening a model never hides what it contains.</td>
+            </tr>
+            <tr>
+              <td class="name">Auto-fix &gt;2 Bone Influences</td><td class="val">off</td>
+              <td class="desc">On export, reduces any vertex with more than two influences to
+              its two strongest and renormalizes. Off, such a vertex is an error.</td>
+            </tr>
+            <tr>
+              <td class="name">Auto-fix Non-Parent-Child Weights</td><td class="val">off</td>
+              <td class="desc">Resolves a vertex weighted to two unrelated bones by keeping the
+              stronger. Off, it is an error.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="io">
+      <h2><span class="num">02</span>Importing &amp; exporting</h2>
+      <figure class="shot" id="fig-02">
+        <img src="guide-images/02-import-dialog.png" alt="The import dialog and everything it offers."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 02</b> The import dialog and everything it offers.</figcaption>
+      </figure>
+
+      <figure class="shot" id="fig-03">
+        <img src="guide-images/03-export-dialog.png" alt="The export dialog, with Selected Objects Only in view."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 03</b> The export dialog, with Selected Objects Only in view.</figcaption>
+      </figure>
+
+
+
+
+
+
+      <p>Both operations fill Blender's progress bar and set the busy cursor, and both print a
+      staged log to the system console. The log opens as a summary dialog when anything needs
+      your attention.</p>
+
+      <pre><code>==============================================================
+[MBT/4DS] Importing TommyHIGH.4ds
+==============================================================
+[MBT/4DS] Version 29, 8 material(s), 29 frame(s)
+--- Materials ---
+--- Frames ---
+--- Post-processing ---
+  &gt; Building armature (18 joint(s))
+  &gt; Applying skinning (1 mesh(es))
+  &gt; Applying morphs (3 mesh(es))
+--- Viewport ---
+[MBT/4DS] Import OK: TommyHIGH.4ds</code></pre>
+
+      <div class="callout">
+        <span class="label">Nothing is written until the whole file is built</span>
+        <p>The exporter assembles the entire document in memory and validates it before a
+        single byte is written, then writes to a temporary file and moves it into place. A
+        failed export leaves any existing file exactly as it was, with no partial output and
+        no leftover temporary file.</p>
+      </div>
+
+      <h3>The MBT CLI</h3>
+      <p>The same import and export can be driven from a command line &mdash; for converting a
+      folder of files, for putting the add-on in a script, or for looking at one model
+      quickly. <code>mbt.bat</code>, which sits beside the add-on's own code and so goes
+      wherever the add-on goes, finds Blender itself and runs it there. Nothing but Blender
+      is needed. Paths may be full or relative to where you are standing; they are made
+      absolute before Blender is started.</p>
+
+      <pre><code>mbt --install
+mbt --textures "D:\Hry\Mafia Editovani\maps" --open "D:\models\Tommy.4ds" --check
+mbt --open tommy.4ds --export out.4ds --option selection_only=True
+mbt --open tommy.4ds --open walk.5ds --save tommy.blend
+mbt --open tommy.4ds --gui</code></pre>
+
+      <p><code>--open</code> reads the kind from the name, so a model, an animation, a
+      movement track and a shadow all go the same way; repeat it to load an animation onto
+      its model. <code>--export</code> writes the scene back out, <code>--save</code> keeps it
+      as a <code>.blend</code>, <code>--check</code> and <code>--check-animation</code> run the
+      export checks without writing anything, and <code>--gui</code> leaves Blender open with
+      the result. <code>--option name=value</code> passes a setting to the import or export
+      dialog under the name it carries there, and a name no dialog has is refused rather than
+      quietly ignored. The exit code is 0 when everything asked for was done, 1 when a step
+      was refused and 2 when the command made no sense, so a batch script can tell.
+      <code>mbt --help</code> lists the lot.</p>
+
+      <h3>Animated objects</h3>
+      <p>The <b>Animated Objects</b> count is written into the file header. The engine reads it to
+      decide whether to look for a matching <code>.5DS</code> animation file next to the model. It
+      lives in the <b>4DS Model</b> tab of the viewport sidebar, together with <b>Check 4DS Scene</b>,
+      the <b>Joint Size</b> slider and the switch that shows the joints' influence boxes: they belong
+      to the model as a whole, or to the scene, rather than to whichever object is selected. Joint Size
+      is how big the joint markers are drawn, multiplying the marker a joint's own 4DS scale sets;
+      nothing about it is written.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="frames">
+      <h2><span class="num">03</span>Frame types</h2>
+      <p class="lead-in">Every object in a 4DS file is a <i>frame</i>: a name, a transform, a
+      parent, and a payload whose shape depends on the frame's type. The add-on stores the type
+      on the Blender object and colors the viewport by it.</p>
+      <figure class="shot" id="fig-04">
+        <img src="guide-images/04-object-panel.png" alt="The 4DS Object panel on a visual object, Frame Type open."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 04</b> The 4DS Object panel on a visual object, Frame Type open.</figcaption>
+      </figure>
+
+      <figure class="shot" id="fig-05">
+        <img src="guide-images/05-viewport-colors.png" alt="A scene tinted by frame type, under Solid shading with Color: Object."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 05</b> A scene tinted by frame type, under Solid shading with Color: Object.</figcaption>
+      </figure>
+
+
+
+
+
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Type</th><th>Blender object</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Visual</td><td>Mesh or empty</td><td class="desc">Anything you can see. Carries a <i>visual type</i> that decides its payload.</td></tr>
+            <tr><td class="name">Sector</td><td>Mesh</td><td class="desc">A convex room volume. Portals are sector frames parented to a sector.</td></tr>
+            <tr><td class="name">Dummy</td><td>Cube empty</td><td class="desc">A named box — mount points, spawn markers, gameplay anchors.</td></tr>
+            <tr><td class="name">Target</td><td>Plain-axes empty</td><td class="desc">A point that links to other frames by name.</td></tr>
+            <tr><td class="name">Joint</td><td>Armature bone</td><td class="desc">A skeleton bone. Imported into a single armature.</td></tr>
+            <tr><td class="name">Light</td><td class="desc">Cone empty</td>
+              <td class="desc">A light the engine draws with. Carries its own falloff band and cone angles.</td></tr>
+            <tr><td class="name">Emitor</td><td class="desc">Mesh</td>
+              <td class="desc">A particle emitter. The mesh it carries is the <i>particle</i>, not the emitter &mdash; see below.</td></tr>
+            <tr><td class="name">Camera &middot; User &middot; Model &middot; Volume &middot; Scene &middot; Shadow &middot; Landscape</td>
+              <td class="desc">Plain-axes empty</td>
+              <td class="desc">Carry nothing but a name, a place and a parent. Kept out of the Add menu for that reason: there is nothing to author.</td></tr>
+            <tr><td class="name">Sound &middot; Area</td><td class="desc">&mdash;</td>
+              <td class="desc">Skipped on import and never written. The game builds both itself and reads nothing of one from a file.</td></tr>
+            <tr><td class="name">Occluder</td><td>Mesh</td><td class="desc">A convex volume that hides whatever is behind it.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Visual types</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Visual type</th><th>Payload</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Object</td><td class="desc">Plain geometry with LODs. The common case.</td></tr>
+            <tr><td class="name">Single Mesh</td><td class="desc">Geometry plus a skin block. One per file.</td></tr>
+            <tr><td class="name">Single Morph</td><td class="desc">Skin block plus morph targets.</td></tr>
+            <tr><td class="name">Billboard</td><td class="desc">Geometry that turns to face the camera.</td></tr>
+            <tr><td class="name">Morph</td><td class="desc">Geometry plus morph targets, no skinning.</td></tr>
+            <tr><td class="name">Lens Flare</td><td class="desc">A list of glow sprites. Imported as a small sphere empty.</td></tr>
+            <tr><td class="name">Mirror</td><td class="desc">A reflection plane with a view box.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+
+      <h3>Emitors</h3>
+      <p>An emitor frame holds one thing in the file: the mesh of a single
+      particle, stored in the same block a visual keeps its geometry in. Every
+      number that decides how the particles behave &mdash; how often one is
+      born, how long it lives, how fast and which way it goes, how it grows and
+      what color it fades to &mdash; lives in the engine, not in the model, and
+      is set by the code that places the emitter.</p>
+      <p>What the engine does with one, when it is switched on:</p>
+      <ul class="plain">
+        <li>It counts time and spawns a particle every <b>spawn period</b>, which
+        is 100 ms give or take 60 until something says otherwise.</li>
+        <li>Each particle is a copy of the emitor's own mesh, dropped at the
+        emitor's place with a little random scatter, and it lives about
+        <b>1.8 seconds</b> before it goes.</li>
+        <li>The emitor has to sit under a <b>sector</b>. It walks up its parents
+        looking for one, and with none above it nothing is ever spawned.</li>
+        <li>It keeps up to <b>260</b> particles alive at once. Given a count of
+        texture frames instead, it fires that many and switches itself off
+        &mdash; a burst rather than a fountain.</li>
+        <li>Each particle carries a start and end size, a start and end color, a
+        speed, a weight that pulls it down, and a spin; it is drawn plain or
+        added to what is behind it.</li>
+      </ul>
+      <div class="callout">
+        <span class="label">It has to be the scene's, not a model's</span>
+        <p>Only the scene ticks emitors, and it only ticks the ones handed to
+        it. A 4DS loaded as a <b>model</b> &mdash; a car, a prop, anything a
+        mission places as an object &mdash; gives its frames to that model,
+        which never puts an emitor on the tick list: it loads, it sits there,
+        and nothing is ever spawned. A 4DS loaded <b>into a sector</b>, which
+        is how a mission's own <code>scene.4ds</code> arrives, gives its frames
+        to the scene, and the scene puts every emitor among them on the tick
+        list at once. So an emitor belongs in the level, not in a model you
+        place in it.</p>
+      </div>
+      <p>The mission's <code>effects.bin</code> has nothing to do with any of
+      this. The smoke, sparks and fire you see in the game come from
+      <code>tables\effects.tbl</code> and that file, through a particle system
+      of the game's own &mdash; it never touches an emitor frame. An emitor
+      runs on the engine's defaults, and the only way to change them is code
+      that takes hold of the frame and sets them.</p>
+      <p>No model the game ships contains one, so this is untried ground. The
+      add-on reads and writes the frame and its particle mesh exactly, and adds
+      nothing of its own.</p>
+
+      <h3>Viewport colors</h3>
+      <p>Objects are tinted by role. The colors only appear under <b>Solid</b> shading with
+      <b>Color</b> set to <b>Object</b> — in Material or Rendered mode they are invisible, which
+      is why instance labels are drawn as overlay text instead.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="objects">
+      <h2><span class="num">04</span>Objects &amp; LODs</h2>
+      <figure class="shot" id="fig-06">
+        <img src="guide-images/06-lod-list.png" alt="An object and its two LOD meshes, named by the suffix rule."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 06</b> An object and its LODs: children named
+        <code>_lod1</code> and <code>_lod2</code> under the mesh they belong to.</figcaption>
+      </figure>
+
+
+
+
+      <p>Levels of detail are named by suffix: the base object, then <code>name_lod1</code>,
+      <code>name_lod2</code> and so on. Matching is anchored to the end of the name, so an
+      object legitimately called <code>car_lodge</code> is not mistaken for a LOD. A gap in the
+      numbering ends the chain and warns, rather than silently renumbering — renumbering would
+      change which distance each level switches at.</p>
+
+      <div class="callout">
+        <span class="label">Switch Distance is shown in meters — the file stores its square</span>
+        <p>The engine compares a squared camera distance against the stored value without ever
+        taking a square root, so the number in the file is distance&nbsp;&times;&nbsp;distance.
+        Sam's eyes hold <code>0.484</code>, which is 70&nbsp;cm; the zeppelin in the harbour
+        scene holds <code>789823</code>, which is 889&nbsp;m, not 790&nbsp;km. This build shows
+        you meters and squares it on the way out. The raw value is available behind
+        <b>Show Raw Flag Values</b>.</p>
+      </div>
+
+      <h3>Faces whose corners meet</h3>
+      <p>63 of the game's models hold 779 faces whose three corners are not three distinct
+      vertices - a face covering no area. Blender cannot hold one, so the import gives the
+      repeated corner a copy of the vertex at the same spot and the export writes the copy as
+      the vertex it repeats, so the face comes back as it was.</p>
+      <p>A copy is written that way only while the two really are one vertex twice: as well as
+      the same spot, normal and UV, they must carry the same weights and be put in the same
+      place by every morph target. A corner weighted to another joint, or lifted away by a
+      target, parts from its twin as soon as the model moves - a face flat at rest can open
+      when a joint turns - so it is written as a vertex of its own. One model in the game,
+      <code>4old071</code>, ends a mesh on a real vertex that matches its twin in all of that
+      and is merged anyway; it comes back one vertex shorter with an already-flat face written
+      as a repeated corner, and nothing it draws changes in any pose.</p>
+
+      <h3>User properties</h3>
+      <p>Free-form text stored on the frame, used by mission scripts. The format allows 255
+      bytes; longer text is clipped on export with a warning. Strings are encoded as
+      Windows-1250.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="instances">
+      <h2><span class="num">05</span>Instances</h2>
+
+      <p>A 4DS frame can say &ldquo;my geometry is the geometry of frame <i>N</i>&rdquo; instead
+      of carrying its own copy. That is an instance: a full frame with its own name, transform,
+      parent and flags, but no mesh data of its own. A street of identical lamp posts stores one
+      mesh and many cheap frames.</p>
+
+      <p>In Blender that maps onto linked duplicates — objects sharing one mesh datablock. The
+      exporter turns any group of objects sharing a mesh into one real frame plus instance
+      references to it.</p>
+
+      <h3>Telling them apart</h3>
+      <ul>
+        <li><b>Viewport tags.</b> Masters are labeled <code>master (N copies)</code>, copies
+        <code>copy of &lt;name&gt;</code>, drawn as overlay text so they are visible in every
+        shading mode. The <b>Instance Tags</b> scene setting chooses Off, Selected (the default —
+        labels the selection and its counterparts) or All.</li>
+        <li><b>The object panel</b> gains an <i>Instancing</i> block naming the counterpart in
+        both directions.</li>
+        <li><b>Object color</b> fades a copy toward gray while keeping its type's hue.</li>
+      </ul>
+
+      <div class="callout engine">
+        <span class="label">One limitation worth knowing</span>
+        <p>An instance in the file points at a single geometry block, so a frame that is
+        instanced cannot also have its own LOD chain in the way a normal object does. If you
+        need per-copy LODs, use separate meshes rather than linked duplicates.</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="materials">
+      <h2><span class="num">06</span>Materials</h2>
+      <p class="lead-in">A material is one 32-bit flag word plus colors, opacity and up to
+      three texture names. Three parts of that word are not flags at all — they are small
+      numbers packed into bit ranges, and this build shows them as the fields they are.</p>
+      <figure class="shot" id="fig-07">
+        <img src="guide-images/07-material-panel.png" alt="A materials 4DS settings, with Draws as naming what the switches add up to."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 07</b> A material&rsquo;s 4DS settings, with <i>Draws as</i> naming what the switches add up to.</figcaption>
+      </figure>
+
+
+
+
+      <h3>The three packed fields</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Field</th><th>Values</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Env Tiling</td>
+              <td class="desc">How many times the environment texture repeats across the surface. This is also why older tools showed an &ldquo;Unlit&rdquo; checkbox that never did anything &mdash; it was part of this number, not a switch.</td>
+            </tr>
+            <tr><td class="name">Env Blend Type</td>
+              <td class="desc">None &middot; Blend by Amount &middot; Blend by Alpha &middot;
+              Multiply &middot; Multiply Twice &middot; Add</td>
+            </tr>
+            <tr><td class="name">Env Mapping Mode</td>
+              <td class="desc">Reflect XZ &middot; Reflect XY &middot; Planar XY &middot;
+              Planar ZY &middot; Planar XZ &middot; Dummy Frame</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout engine">
+        <span class="label">Environment mapping — axis letters are Blender's</span>
+        <p>Each option's tooltip also names the game's own letters, which differ by a Y/Z swap.
+        <b>Reflect XY</b> (Z as the pole) is the upright sphere map, and the usual choice for chrome and glass. The three planar modes project from world position and stay put as the object moves.</p>
+        <p><b>Dummy Frame</b> is real but narrow: it works on <i>billboards only</i>. On any other visual type the setting is simply ignored.</p>
+      </div>
+
+      <h3>Material flags</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Name</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Texture Manager</td><td class="desc">Load through the engine's texture manager. Unused in the original game.</td></tr>
+            <tr><td class="name">Alpha Enable</td><td class="desc">Enable transparency. Without a separate alpha texture the engine looks for a diffuse texture whose name ends in <code>+</code>.</td></tr>
+            <tr><td class="name">Disable U Tiling</td><td class="desc">Clamp texture addressing horizontally.</td></tr>
+            <tr><td class="name">Disable V Tiling</td><td class="desc">Clamp texture addressing vertically.</td></tr>
+            <tr><td class="name">Use Diffuse Texture</td><td class="desc">Off omits the diffuse texture name from the file.</td></tr>
+            <tr><td class="name">Use Environment Texture</td><td class="desc">Enables reflection and shine.</td></tr>
+            <tr><td class="name">Force Truecolor</td><td class="desc">Always load at full color depth, ignoring the memory-saving setting.</td></tr>
+            <tr><td class="name">No Compression</td><td class="desc">Keep the texture uncompressed even when compression is enabled.</td></tr>
+            <tr><td class="name">No Presaved Texture</td><td class="desc">Read the original file instead of the pre-converted cache.</td></tr>
+            <tr><td class="name">Diffuse MipMap</td><td class="desc">Mipmaps for the <i>diffuse</i> texture; the
+            environment texture gets them either way. On a color-keyed material it also changes how the material is
+            drawn: the texture is loaded with a whole alpha channel rather than a single bit and blended, so keyed
+            edges soften with distance rather than being cut at every size.</td></tr>
+            <tr><td class="name">Truecolor Texture</td><td class="desc">Load at full color depth rather than through a palette.</td></tr>
+            <tr><td class="name">Anim Alpha</td><td class="desc">Animate the alpha texture. Frames numbered with a 001 suffix.</td></tr>
+            <tr><td class="name">Anim Diffuse</td><td class="desc">Animate the diffuse texture. Frames numbered with a 01 suffix. Decided before the material object exists — the loader builds a different class for it.</td></tr>
+            <tr><td class="name">Vertex Colors</td><td class="desc">Tint lighting with the material's ambient, diffuse and emission colors.</td></tr>
+            <tr><td class="name">Double Sided</td><td class="desc">Disable backface culling.</td></tr>
+            <tr><td class="name">Color Key</td><td class="desc">Treat the texture's key color as fully transparent.</td></tr>
+            <tr><td class="name">Use Alpha Texture</td><td class="desc">Uses a second texture for transparency. Color Key, Truecolor Texture and Additive each replace it, so those take priority.</td></tr>
+            <tr><td class="name">Alpha Additive</td><td class="desc">Alpha blending with alpha test. Black becomes fully transparent — fire, glass, light glows.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="flags-how" class="panel">
+<h2><span class="num">07</span>How settings work</h2>
+<p class="lead-in">Four panels of switches sit on every object: Culling, Rendering, Logic, and &mdash; on sectors and portals &mdash; their own. Here is what to expect from them.</p>
+
+<p>Most of what these fields can hold is not a setting at all. Alongside the switches you set, the format keeps bookkeeping the game maintains for itself, which it recalculates every time a model loads. Changing those does nothing.</p>
+
+<p>So the panels show you the switches that matter and keep the rest out of the way:</p>
+
+<div class="scroller">
+<table>
+<thead><tr><th>What you see</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><span class="name">Checkboxes</span></td><td class="desc">Real settings. Ticking one changes how the object looks or behaves in game.</td></tr>
+<tr><td><span class="name">Engine Internals</span></td><td class="desc">A collapsed group of switches the game manages itself. Hidden unless you turn on <b>Show Engine-Reserved Flags</b> &mdash; except that any your file already has switched on are always shown, so nothing about your model is hidden from you.</td></tr>
+<tr><td><span class="name">Raw Value</span></td><td class="desc">The number behind the checkboxes, editable directly. Type a number and the checkboxes follow; tick a checkbox and the number follows. Hide it with <b>Show Raw Flag Values</b>.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout">
+<span class="label">Nothing is ever lost</span>
+<p>The checkboxes and the raw value are one and the same setting seen two ways. Whatever a panel chooses to show, every switch in your file is saved and written back exactly as it was read &mdash; including ones this add-on has never heard of.</p>
+</div>
+</section>
+
+<section id="flags-cull" class="panel">
+<h2><span class="num">08</span>Culling</h2>
+<p class="lead-in">Present on every object, and on joints. Two settings.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><span class="name">Enable</span></td><td class="desc">Whether the object exists in game at all. Off removes it from drawing, collision, lighting and sound, and hides everything parented under it. Leave this on for anything you want to see.</td></tr>
+<tr><td><span class="name">Position Locked</span></td><td class="desc">Stops the game moving the object once the level is running. Nothing in Mafia uses this, so leave it off unless you have a reason.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="dim">The rest of this panel is bookkeeping the game rebuilds when the model loads. One of them is the switch older tools labeled &ldquo;Cast Shadow&rdquo;. That name was not invented &mdash; the original authoring tool really did write its cast-shadows setting here, and you can still see it cleared on interior walls, ceilings and door frames in a few mission scenes. But the game turns the switch on again as it loads the model, so it changes nothing today. Shadows are controlled from the <b>Logic</b> panel.</p>
+</section>
+
+<section id="flags-render" class="panel">
+<h2><span class="num">09</span>Rendering</h2>
+<p class="lead-in">How the object is lit and how its detail levels are chosen.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><span class="name">Flat Lighting</span></td><td class="desc">Lights the object with one even tone instead of shading it across the surface. Good for small props that should not catch highlights as you walk past. This is the switch older tools called &ldquo;No Shading&rdquo; &mdash; the object is still lit, just evenly.</td></tr>
+<tr><td><span class="name">No Mirror</span></td><td class="desc">Keeps the object out of mirror reflections. When the game works out what a mirror can see, anything with this switch is left out. Written as the user property <code>NO_MIRROR</code> in the original models.</td></tr>
+<tr><td><span class="name">Managed LOD</span></td><td class="desc">Picks the level of detail from which textures are loaded rather than from camera distance. Unused in the original game.</td></tr>
+</tbody>
+</table>
+</div>
+<p class="dim">The remaining switches here do nothing, or are managed by the game. One of them makes an object ignore its own position and rotation &mdash; older tools called it &ldquo;Hide Mesh&rdquo;, because that is what it looked like. It is in the Engine Internals group so you cannot set it by accident.</p>
+</section>
+
+<section id="flags-logic" class="panel">
+<h2><span class="num">10</span>Logic</h2>
+<p class="lead-in">Shadows, projected textures, fog and decals. Every switch here is real.</p>
+<div class="scroller">
+<table>
+<thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><span class="name">Z-Bias</span></td><td class="desc">Draws the object just in front of whatever is underneath it, so posters, road markings and stains do not flicker against the wall or floor they sit on. Turn this on for any decal.</td></tr>
+<tr><td><span class="name">Renderable Object</span></td><td class="desc">Marks the visual as one of the engine’s object family — every type except a mirror, lens flares included even though they carry no mesh. With it off the object is left out of every mirror’s reflection and skipped when detail levels are pre-built; ordinary drawing is not affected. The exporter sets it to match the object’s type, so it needs no attention.</td></tr>
+<tr><td><span class="name">Shadows on Diffuse</span></td><td class="desc">The object receives shadows on its solid surfaces. Off means it takes no shadow at all.</td></tr>
+<tr><td><span class="name">Shadows on Alpha</span></td><td class="desc">Also receives shadows on its see-through parts &mdash; anything using a color key, alpha blending or an alpha texture. Needs <i>Shadows on Diffuse</i> as well.</td></tr>
+<tr><td><span class="name">Projection on Diffuse</span></td><td class="desc">The object receives projected textures &mdash; headlights, bullet holes, projected shadows &mdash; on its solid surfaces.</td></tr>
+<tr><td><span class="name">Projection on Alpha</span></td><td class="desc">Also receives them on its see-through parts. Needs <i>Projection on Diffuse</i> as well.</td></tr>
+<tr><td><span class="name">No Fog</span></td><td class="desc">Keeps full color at any distance instead of fading into the sector’s fog. Useful for skyboxes and anything that should not haze out.</td></tr>
+<tr><td><span class="name">Skip Two-Sided Collision</span></td><td class="desc">Leaves the object out of collision queries tagged two-sided. The game never tags one, so on its own this changes nothing. It is <i>not</i> the setting that makes collision accept back faces &mdash; that is a separate option on the query itself</td></tr>
+</tbody>
+</table>
+</div>
+<div class="callout">
+<span class="label">Shadows and projections come in pairs</span>
+<p>The Diffuse switch turns the effect on; the Alpha switch extends it to the object’s see-through parts. Alpha on its own does nothing &mdash; tick Diffuse first. Original models use Diffuse alone, so that is the safe default.</p>
+</div>
+</section>
+
+<section id="sectors">
+      <h2><span class="num">11</span>Sectors &amp; portals</h2>
+      <figure class="shot" id="fig-08">
+        <img src="guide-images/08-sector-portal.png" alt="A sector with a portal in it, drawn as wire."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 08</b> A sector with a portal in it, drawn as wire.</figcaption>
+      </figure>
+
+
+
+
+      <p>A sector is a room volume; portals are the openings between them. The game walks
+      from the camera's sector through visible portals to decide what to draw.</p>
+
+      <div class="callout engine">
+        <span class="label">Sectors must be convex — the game gives no tolerance</span>
+        <p>The mesh is stored as a convex hull: each face becomes a plane, and the game answers &ldquo;is this point
+        inside?&rdquo; by requiring the point to be on the positive side of every one of them.
+        For a concave mesh that intersection is smaller than the room, so the dented-in part
+        reads as outside and the game picks the wrong sector for fog, reverb and visibility
+        while you stand there.</p>
+        <p>Normals must face <b>inward</b>. The add-on warns rather than blocking, because the game itself ships a few sectors that are very slightly off and copes with them fine.</p>
+      </div>
+
+      <h3>Portals</h3>
+      <ul>
+        <li>A portal is a sector-typed mesh named <code>&lt;sector&gt;_portalN</code>, parented
+        to its sector.</li>
+        <li>Between 3 and <b>8</b> corners. The upper limit is real: the outline is stored in a fixed slot of eight corners, so a ninth does not fit.</li>
+        <li>The plane is always recomputed from the current geometry on export, so moving or
+        reshaping a portal stays correct.</li>
+      </ul>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Portal setting</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Enable</td><td class="desc">The opening is open and can be seen through. Off seals it like a solid wall and the sector beyond stops being drawn. Enabling one side also enables the matching portal on the other.</td></tr>
+            <tr><td class="name">View Distance</td><td class="desc">How far the camera can get before the view through the opening is cut back. Past it the sector behind counts as <i>barely visible</i>. Zero means no limit. The panel shows meters; the file stores the square of that number, the same way LOD switch distances are stored.</td></tr>
+            <tr><td class="name">Far Cull</td><td class="desc">Past the View Distance, stop looking through the opening altogether — the sector behind is not drawn at all. Without it the game still looks through, it just treats what is behind as barely visible.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Two more portal boxes are shown only with <b>Show engine-managed flags</b> on. They are
+      the game's own scratch state and nothing you set survives a load. One of them is worth
+      recognising: a fifth of the original portals carry an unused bit that nothing ever reads.
+      The add-on keeps it exactly as it found it, so a re-exported scene stays byte-identical.</p>
+
+      <p>Sectors, portals and occluders are written as bare hulls &mdash; there are no face
+      groups in them for a material to attach to. Anything left in their material slots is
+      ignored on export and never enters the model's material table; the 4DS Material panel
+      says so and offers a button to clear the slots.</p>
+
+      <h3>Sector settings</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Sector setting</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Occluder</td><td class="desc">Use the sector's own shape to hide whatever is behind it, the way a dedicated occluder object would. Saves drawing a building interior you cannot see past.</td></tr>
+            <tr><td class="name">Skip Nested Objects When Barely Visible</td><td class="desc">Cuts the sector back while you are only glimpsing it — when the opening you are looking through covers less than about ten pixels each way on screen, or when you are past that portal's View Distance and it has no Far Cull. In that state only the objects sitting directly in the sector are drawn; anything parented under them is skipped. Meant for cluttered interiors seen through a far-off window.</td></tr>
+            <tr><td class="name">Echo Settings Pending</td><td class="desc">Says the sector's echo settings have not been applied yet. The game applies them when you walk in and switches this off again. Every sector in the original models ships with it on, so leave it that way.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Group Mask</h3>
+      <p>The sector's second value is not a set of switches — it decides which sectors a
+      headlight or a projected shadow can spill into. Two sectors must share a bit for anything
+      projected in one to reach the other. It is zero throughout the original game, which keeps
+      projections inside their own sector.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="occluders">
+      <h2><span class="num">12</span>Occluders</h2>
+
+      <p>An occluder is a closed convex volume that hides geometry behind it.</p>
+
+      <p>Each frame the engine tags every face as front- or back-facing against the camera, then
+      extrudes the silhouette edges into side planes. That construction only describes the real
+      shadow volume when the silhouette is a single closed loop — which is what convexity
+      guarantees. A concave occluder produces several loops, and the planes built from them
+      enclose more than the true shadow, so it <b>over-occludes</b>: geometry that should be
+      visible gets culled.</p>
+
+      <p>Normals should face <b>outward</b>. The plane count is capped at 32 per frame, so a
+      dense occluder silently loses planes.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="dummies">
+      <h2><span class="num">13</span>Dummies &amp; targets</h2>
+      <figure class="shot" id="fig-09">
+        <img src="guide-images/09-dummy-box.png" alt="A dummys box with its six drag handles."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 09</b> A dummy&rsquo;s box with its six drag handles.</figcaption>
+      </figure>
+
+
+
+
+      <p><b>Dummies</b> are cube empties with a name and a bounding box — mount points for
+      wheels and weapons, spawn markers, script anchors. The box is stored explicitly, so
+      resizing the empty changes what is written. The outline is drawn blue, red once the dummy
+      is picked, with six handles to drag its faces and a dot at its middle &mdash; the point the
+      panel&rsquo;s <b>Center</b> numbers move. A box that does not sit on its empty also has a
+      dashed line from that dot back to the empty, so in a crowded scene it is clear which box
+      belongs to which dummy; it follows the viewport&rsquo;s <b>Relationship Lines</b> overlay,
+      as Blender&rsquo;s own parent lines do.</p>
+
+      <p><b>Targets</b> are plain-axes empties that hold a list of links to other frames by name,
+      including links to individual bones. A link whose destination is not being exported is
+      dropped with a warning naming it, rather than silently producing a dangling reference.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="billboards">
+      <h2><span class="num">14</span>Billboards</h2>
+
+      <p>Geometry that turns to face the camera. Two settings:</p>
+      <ul>
+        <li><b>Rotation Mode</b> — face the camera on all axes, or rotate around one fixed axis.</li>
+        <li><b>Rotation Axis</b> — X, Z or Y, used by single-axis mode.</li>
+      </ul>
+
+      <p>Billboards are also the only visual type where the material's <b>Dummy Frame</b>
+      environment mapping does anything, since they are the only type that passes a reference
+      dummy to the engine.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="mirrors">
+      <h2><span class="num">15</span>Mirrors</h2>
+
+      <p>A mirror is a reflection plane plus a <b>view box</b> — a cube empty named
+      <code>&lt;mirror&gt;_viewbox</code>, parented directly to the mirror, with no children of
+      its own. The exporter checks all of that and names whichever rule is broken.</p>
+
+      <div class="callout">
+        <span class="label">The view box follows the empty's display size</span>
+        <p>The engine reads the stored matrix's basis vectors as the box's half-extents, and
+        Blender draws a cube empty at scale &times; display size, so the export folds the
+        display size in: resizing the empty either way moves the box. An imported view box
+        arrives with its display size at 1.0, so the numbers in the file are what you see.</p>
+      </div>
+
+      <div class="callout">
+        <span class="label">A mirror reflects along its own local +Y</span>
+        <p>The game never looks at a mirror's faces to work out which way it points. It takes the
+        object's local Y axis, reflects the world across the plane square to it, and uses the mesh
+        only to say where that reflection is painted. So the surface has to lie in the local XZ
+        plane facing <b>+Y</b>, and the view box belongs out in front along the same axis, its near
+        face on the mirror. Turn the object itself to aim the finished mirror; leave the mesh
+        square to Y. The Mirror panel says which way the surface currently points, and the export
+        reports a mirror that is turned away or one whose view box sits behind it.</p>
+      </div>
+
+      <p><b>Reflection Range</b> is a real draw distance: past it the mirror stops reflecting and
+      draws as flat color. The default is 100.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="lensflares">
+      <h2><span class="num">16</span>Lens flares</h2>
+
+      <p>A lens flare imports as a small sphere empty so it can be selected and moved without
+      geometry. It holds an ordered list of <b>elements</b>, each one a material drawn as a
+      sprite plus an <b>Axis Offset</b> saying where on the flare it sits. Add, remove and
+      reorder them in the Lens Flare panel.</p>
+
+      <div class="callout engine">
+        <span class="label">How many elements you add changes what the flare is</span>
+        <p><b>One element</b> makes a lamp. It is drawn at the object's own position, grows as
+        you get close, fades out with distance and disappears past its range. Axis Offset does
+        nothing here, so the panel grays it out.</p>
+        <p><b>Two or more</b> make a directional flare, the kind the sun has. The object's
+        position stops being a place and is read as a <i>direction</i>, and the elements are
+        spread along the line running from the middle of the screen out towards it.</p>
+      </div>
+
+      <h3>Axis Offset</h3>
+      <p>The value is not a screen coordinate. Each element is placed at a point in the world
+      and that point is projected like anything else:</p>
+      <pre class="math">P = camera + 2&nbsp;m &times; camera_forward + offset &times; light_direction</pre>
+      <p>The light direction is the flare object's own location vector, normalized &mdash; which
+      is why a multi-element flare ignores <i>how far out</i> you put the object and reads only
+      which way its X&nbsp;Y&nbsp;Z points from the world origin.</p>
+
+      <p>The reference point sits on the camera axis, so <b>offset&nbsp;0 projects to the middle
+      of the screen</b>. Raising the offset walks the point along the light direction, and its
+      projection approaches the vanishing point of that direction &mdash; the light's own screen
+      position &mdash; without ever arriving. Writing <code>&theta;</code> for the angle between
+      the camera axis and the light, the fraction of the way there is:</p>
+      <pre class="math">offset &times; cos&nbsp;&theta; / (2 + offset &times; cos&nbsp;&theta;)</pre>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Axis Offset</th><th>Where it lands (light roughly ahead)</th></tr></thead>
+          <tbody>
+            <tr><td class="name">0</td><td class="desc">Middle of the screen.</td></tr>
+            <tr><td class="name">2</td><td class="desc">Halfway between the middle and the light.</td></tr>
+            <tr><td class="name">6</td><td class="desc">Three quarters of the way.</td></tr>
+            <tr><td class="name">18</td><td class="desc">90% &mdash; visibly on the light.</td></tr>
+            <tr><td class="name">50</td><td class="desc">96%. Anything past this buys almost nothing.</td></tr>
+            <tr><td class="name">&minus;0.6</td><td class="desc">43% of the way out on the <i>opposite</i> side of the middle.</td></tr>
+            <tr><td class="name">&minus;1.1</td><td class="desc">Opposite side, slightly further out than the light itself.</td></tr>
+            <tr><td class="name">&minus;2 or lower</td><td class="desc">Behind the camera. The element is dropped.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Negative values are the useful half: the ghosts of a flare live between roughly
+      &minus;2 and 0, spread out so they trail across the screen as the camera turns. That is
+      exactly what the original sun flare in <code>Emeth.4ds</code> does &mdash; eight elements
+      between &minus;1.1 and 0.3, with its head element at 0.</p>
+
+      <p>Order matters. The <b>first element is the head</b>: the game draws it larger than the
+      rest and at full brightness, and dims the others the further the flare drifts off-axis.
+      Use the arrows beside the list to move an element.</p>
+
+      <p>Every element needs a material. One left empty is refused on export rather than
+      written, because the file stores a material number and an empty one reads off the front
+      of the model's material list. Flare materials do not need to be on any mesh &mdash; they
+      are collected from the list itself.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="skinning">
+      <h2><span class="num">17</span>Armatures &amp; skinning</h2>
+      <figure class="shot" id="fig-10">
+        <img src="guide-images/10-joint-boxes.png" alt="Influence boxes in green, with the handles on the joint being posed."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 10</b> Influence boxes in green, with the handles on the joint being posed.</figcaption>
+      </figure>
+
+      <figure class="shot" id="fig-11">
+        <img src="guide-images/11-model-tab.png" alt="The 4DS Model sidebar tab: the joint tools, and Influence Boxes with In Front."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 11</b> The 4DS Model sidebar tab: the joint tools, and Influence Boxes with In Front.</figcaption>
+      </figure>
+
+      <figure class="shot" id="fig-12">
+        <img src="guide-images/12-weights.png" alt="Weights made from the boxes, seen in Weight Paint on one joint."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 12</b> Weights made from the boxes, seen in Weight Paint on one joint.</figcaption>
+      </figure>
+
+      <figure class="shot" id="fig-13">
+        <img src="guide-images/13-animation-tab.png" alt="The 5DS Animation tab with an animation loaded."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 13</b> The 5DS Animation tab with an animation loaded.</figcaption>
+      </figure>
+
+
+
+
+
+
+
+
+
+
+      <p>A file supports <b>one</b> skinned mesh. The mesh's visual type is Single Mesh, or Single
+      Morph if it also carries morph targets. Binding by parenting or by an Armature modifier both
+      work.</p>
+
+      <h3>The mesh frame is where the armature stands</h3>
+      <p>The skinned mesh's frame holds the mesh's vertices, the joints at the top of the skeleton
+      hang from it, and the game's character animations move and turn the body by it. No bone stands
+      for it: the armature stands where it is, and keeps that place in its <b>Delta Transform</b>, shown
+      in the armature's 4DS panel as <b>Mesh Frame</b>. The armature's own location, rotation and scale
+      stay at nothing, for the body's movement - so a crouch or a roll turns the body about the frame,
+      as the game does. The mesh object's origin makes no difference: its vertices are brought into
+      the frame's terms wherever it sits.</p>
+      <p>A vertex shared between a top joint and the mesh frame keeps the mesh's share in the vertex
+      group the Armature modifier names as its <b>Vertex Group</b>, with Invert on, which holds it back
+      from the joint by that much. A vertex with no weight at all follows the mesh.</p>
+      <p>Joints not below the mesh are an armature of their own at the model's origin. Where the
+      mesh hangs from one of them - <code>Bone01</code> in <code>I04Delnik01+</code> - the character's
+      armature hangs on that joint.</p>
+
+      <h3>A character's mesh is called base</h3>
+      <p>For the game's own animations to work on a character, its skinned mesh has to be called
+      <b>base</b>. The animations move the body - a crouch, a side roll -
+      through the frame named <b>base</b>, and turn only the joints; 2,563 of them carry a track for
+      it, and the game finds that frame by its exact name. A mesh called anything else is not moved by them: the limbs
+      still bend, but the body stays where it stood, so a crouch never lowers it and a roll never
+      turns it over.</p>
+      <p>The name is not all. An animation sets the frame's place outright rather than adding to it,
+      so the frame has to rest where Tommy's does, at hip height - about 1.08 m up and 3.6 cm
+      forward, where the skeleton preset stands its armature. A frame resting at the feet is carried
+      to hip height by every animation, and the whole body with it. <b>Set Default Mesh Origin</b>, in
+      the <b>4DS Model</b> sidebar tab, stands a character's armature at the default mesh origin -
+      found from the character's own skeleton, where Tommy's stands from his - without moving a bone or
+      the mesh, with either selected. One already within 10 cm of that place is left where it is, as
+      every character the game ships is. A character not Tommy's size stands at its own hip height, and
+      the game's animations lift or lower it by the difference; the export warns about a frame more
+      than 10 cm from Tommy's.</p>
+      <p>The export warns about a Single Mesh or Single Morph called anything else. It does not refuse
+      one: of the game's 322 skinned meshes, 313 are called <b>base</b>, and the other nine are birds
+      called <b>Base</b>, dogs called <b>a</b> and three custom characters. The birds and dogs have
+      animations of their own, keyed to their own names.</p>
+
+      <h3>Weight rules</h3>
+      <p>The format allows at most two influences per vertex, and those two must be a direct
+      parent-child pair, with weights totalling 1.0. Each rule is an error naming the object and
+      the vertex, unless the matching auto-fix is enabled in preferences — then it is repaired
+      and summarized as a warning.</p>
+
+      <h3>Joint scale</h3>
+      <p>Joints carry a scale the engine folds into the bind matrices. It is editable in the
+      joint panel as a plain value with no visual effect in Blender, and pose-bone scale is
+      locked so the two cannot disagree.</p>
+
+      <h3>Joint limit</h3>
+      <p>The game gathers at most 64 joints below a skinned mesh, so the exporter refuses more.
+      The game's own models use 25 at most.</p>
+
+      <h3>Influence boxes</h3>
+      <p>Every joint stores sixteen numbers describing its area of influence: a box across the limb
+      that the skin weights were made from when the model was exported. In Blender it lives on the
+      joint, as sixteen numbers on its pose bone, and is drawn in green over the bone it belongs to;
+      nothing stands in the scene for it. Its local +Y is the axis the weight runs along. The game
+      plays the weights and never reads the box.</p>
+      <p>A joint with weights painted exports them as they are. A joint with none has them made from
+      its box, as the game's own exporter made them: a vertex inside the box is shared with the joint's
+      parent by where it sits along the box's Y, from none of it the joint's at the -Y face to all of it
+      at the +Y face, and the mesh ahead of the box, as far as it runs unbroken, is the joint's alone.
+      Joints that are no kin of each other - a left leg and a right, a leg and the spine - meet where
+      the mesh is nearer the one: inside overlapping boxes, the box whose middle the vertex is nearer,
+      and outside them, the region nearer along the surface, so a skirt splits between the legs.
+      In a piece of the mesh modeled apart - a shoe past the ankle, a collar round the neck - what a
+      region stops at behind its box goes up the joint's chain, to the nearest joint it does not lie
+      behind as well, and a piece no region gets into - hair, an ornament - follows, whole, the joint it
+      rests on most, so a character built from many pieces weights as one; nothing is taken from the
+      piece beside it. With nothing painted this gives back 96.4% of the weights of the game's own
+      characters. The joint
+      panel says where a joint's weights come from, and <b>Add Influence Box</b> gives one to a joint
+      without. A new joint gets the box the game's own tool gave a new joint, and its bone lands at the
+      3D cursor with the armature object left at the world origin.</p>
+      <p>In Pose Mode, the selected joint's box carries handles: six grey ones on its faces to resize
+      it, three colored arrows to slide it along its own axes, three rings to turn it. Leaving Pose
+      Mode lets go of them, though Blender keeps the bone selected. Each kind keeps its own ring on
+      screen &mdash; the faces 44 pixels out from the middle of the box, the arrows 80, the rings 116
+      &mdash; so a box a few centimeters across does not gather all twelve into one clump, while a box
+      big enough on screen keeps its handles on its own faces. A handle standing end-on to the camera,
+      and a ring seen edge-on, are taken away until the view moves. <b>Handles</b> in the
+      <b>4DS Model</b> tab narrows them to one kind: All, Resize, Move or Turn. Letting go of any
+      handle &mdash; here, on a dummy's box, or on a light &mdash; leaves one step for Ctrl+Z to take
+      back, and a drag let go where it started leaves none. The joint panel holds the
+      same box as a center, a size and a turn, for when an exact figure is what is wanted. The
+      <b>4DS Model</b> sidebar tab hides or shows every box at once, and <b>In Front</b> draws them over
+      everything, so a box buried in the mesh can be seen whole - viewport switches only, which change
+      nothing that is written. A box turned or sized unevenly stays that way: an uneven size
+      is part of a box's shape.</p>
+      <p>Each box carries a dot at its middle, and a box that does not sit on its joint has a dashed
+      line from that dot back to the joint it weights &mdash; the same line a dummy&rsquo;s box gets to
+      its empty, and it follows the same <b>Relationship Lines</b> overlay. On a character where a
+      dozen boxes overlap, that line is what says which joint each one belongs to.</p>
+      <p>Because the numbers are kept as the file holds them, a box nobody touches is written back to
+      the bit.</p>
+      <p><b>Fit Influence Box</b> builds a box the way the game's own sit: on the joint, its weight
+      axis aimed at the joint below it, reaching a fifth of the way there either side, and as wide as
+      the mesh around the joint - the part of it nearer this joint than any joint outside its chain, so
+      a leg's box stops at the other leg under a skirt. The last joint of a chain carries on the way its parent led to it and
+      is as wide as everything beyond it. A box added from the panel is fitted the same way.</p>
+
+      <h3>Painting what the boxes make</h3>
+      <p><b>Make Weights From Boxes</b>, in the <b>4DS Model</b> sidebar tab, paints onto the mesh what
+      the export would have made from the boxes: every joint with nothing painted gets its weights as
+      ordinary vertex groups, which can then be looked at and painted over. It makes exactly what the
+      export makes, so the file is unchanged by pressing it, and those joints count as painted from
+      then on. A vertex shared with the mesh frame keeps the mesh's share in the Armature modifier's
+      vertex group; where the modifier names none, the button makes one called after the mesh.</p>
+      <p><b>Clear All Weights</b>, beside it, takes every weight off the selected meshes so their joints
+      are weighted from the boxes again. The vertex groups stay, emptied, because their order numbers
+      the skin's joints; a morph region's vertex group is not a weight and is left as it is.</p>
+
+      <h3>What the export asks of the boxes</h3>
+      <ul>
+        <li>A joint with no box and no weights painted is refused: there is nothing to weight it
+        from.</li>
+        <li>A joint painted by hand needs no box. It is written the box a new joint is made with, and
+        the report names the joints that happened to.</li>
+        <li>A joint with no weights painted whose box has an axis of no length is refused - a box that
+        holds no vertex makes no weights.</li>
+        <li>A joint holds one box and there is nowhere to put a second: the box is the joint's own
+        sixteen numbers.</li>
+        <li>Weights made from the boxes obey the format as painted ones must: one whole weight per
+        vertex, from no more than a joint and its parent.</li>
+      </ul>
+
+      <h3>The armature's own channels stay at rest</h3>
+      <p>Where the armature stands is its mesh frame's place, kept in its Delta Transform. Its own
+      location, rotation and scale are for the body's movement, and at rest they move nothing; a move,
+      turn or scale left on them is written nowhere, so the export refuses it. Object &#9656; Clear
+      &#9656; Location, Rotation and Scale puts it back. An armature with no skinned mesh stands for no
+      frame, so its Delta Transform has to be at rest as well. An animation loaded onto an armature
+      is set aside while a model is written.</p>
+      <p>The <a href="LS3D-4DS-Joint-Viewer.html">joint viewer</a> opens any 4DS file in the
+      browser and draws its joints on the model: each joint's influence box, the picked joint's weights
+      on its vertices, the skin boxes the game uses for the mesh's bounds, and every value the selected
+      joint holds, with where it sits in the file.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="morphs">
+      <h2><span class="num">18</span>Morphs</h2>
+      <figure class="shot" id="fig-14">
+        <img src="guide-images/14-morph-groups.png" alt="A morph group and its targets."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 14</b> A morph group and its targets.</figcaption>
+      </figure>
+
+
+
+
+      <p>Morph data is organized into <b>groups</b>, each holding an ordered list of targets that
+      map onto shape keys. The first target in a group is its basis, and it must name a shape key
+      that exists on the mesh.</p>
+
+      <p>The <b>+</b> beside the target list makes a new shape key and adds it, built from the
+      mesh as it stands and named the way an import names them: the group&rsquo;s basis first
+      (<code>G1_Basis</code>), then its targets (<code>G1_Target1</code> and on). The button
+      under the pair, with the shape key icon, takes a key the mesh already carries instead,
+      picked from a list of the ones this group does not hold.</p>
+
+      <p>The <b>&minus;</b> removes a target <i>and</i> its shape key: a target is the morph, and
+      a key left behind is a shape nothing plays. A key another morph group still holds stays on
+      the mesh &mdash; deleting it would empty a group that is in use &mdash; and the report says
+      which. Removing the first target, the group&rsquo;s basis, warns that the next one is the
+      basis now and the rest are written against it.</p>
+
+      <ul>
+        <li>The basis occupies the first slot and cannot be moved out of it — the reorder arrows
+        refuse any move that would displace it.</li>
+        <li>Each target has a value slider for previewing.</li>
+        <li>Groups shorter than the longest are padded with their own basis on export, since
+        every region is written with the same target count.</li>
+        <li>A vertex that moves in more than one group is assigned to whichever moved it most.
+        The engine applies regions in order and the last write wins, so overlapping regions
+        would otherwise let a later region's basis overwrite an earlier pose.</li>
+        <li><b>Which vertices a group covers is not something to set.</b> A group that came out
+        of a file keeps the region the file listed for it, whether those vertices move or not;
+        a group made here covers the vertices its own targets move. The panel says which of the
+        two it is, and picking a group in the list brings its region up as the mesh&rsquo;s active
+        vertex group, so Blender&rsquo;s own vertex group tools reach it.</li>
+        <li>Per-target normals are stored alongside positions and preserved.</li>
+      </ul>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="checks">
+      <h2><span class="num">19</span>Checks &amp; messages</h2>
+      <p class="lead-in">Errors stop the export before anything is written. Warnings let it
+      through and tell you what changed.</p>
+      <figure class="shot" id="fig-15">
+        <img src="guide-images/15-check-report.png" alt="The scene check, with a refusal and its fix."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 15</b> The scene check, with a refusal and its fix.</figcaption>
+      </figure>
+
+
+
+
+      <h3>Errors — export stops</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Area</th><th>Condition</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Sector</td><td class="desc">Fewer than 4 faces &middot; not closed</td></tr>
+            <tr><td class="name">Occluder</td><td class="desc">Not closed &middot; not convex</td></tr>
+            <tr><td class="name">Portal</td><td class="desc">Fewer than 3 corners &middot; more than 8</td></tr>
+            <tr><td class="name">Mirror</td><td class="desc">No view box &middot; more than one &middot; not an empty &middot; not cube display &middot; not a direct child &middot; has children</td></tr>
+            <tr><td class="name">Armature</td><td class="desc">Moved, turned or scaled as an object &middot; more than one skinned mesh &middot; the mesh's share held in a joint's own vertex group &middot; hung on a joint but moved off it</td></tr>
+            <tr><td class="name">Skinned mesh</td><td class="desc">No geometry &middot; not bound to an armature &middot; no bone weights &middot; shape keys on a Single Mesh &middot; none on a Single Morph</td></tr>
+            <tr><td class="name">Weights</td><td class="desc">More than two influences &middot; unrelated bone pair &middot; total over 1.0 &middot; a two-bone vertex not totalling 1.0</td></tr>
+            <tr><td class="name">Morphs</td><td class="desc">Morph type with no groups &middot; a group whose basis shape key is missing</td></tr>
+            <tr><td class="name">Limits</td><td class="desc">Over 65,535 vertices, before or after UV and normal splitting</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Warnings — export continues</h3>
+      <ul>
+        <li>A sector or occluder that is convex but has its normals the wrong way round.</li>
+        <li>A sector that is not convex, with the room-containment consequence explained.</li>
+        <li>A material with a texture assigned but the matching flag off, so the name would not
+        be written.</li>
+        <li>A gap in a LOD chain, and LOD levels that exist but are not exported.</li>
+        <li>Target links dropped because the destination is not being exported.</li>
+        <li>User properties clipped to 255 bytes.</li>
+        <li>Auto-fix summaries when a weight repair ran.</li>
+        <li>A Single Mesh or Single Morph not called <b>base</b>, which the game's character
+        animations will not move.</li>
+        <li>A character whose mesh frame sits more than 10 cm from Tommy's, at hip height, which every
+        animation would carry the body off by.</li>
+      </ul>
+
+      <h3>On import</h3>
+      <p>Import warnings describe repairs made to damaged data: faces referring to vertices
+      outside the mesh, skin data covering a different vertex count than the mesh, textures that
+      could not be opened, and bones Blender renamed. A face whose corners meet is not damage and
+      is kept, the way <i>Faces whose corners meet</i> describes.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+
+
+    <section id="elsewhere" class="panel">
+      <h2><span class="num">20</span>The other references</h2>
+      <p class="lead-in">Several pages sit beside this one, each on a subject of
+      its own. They are written from the game's own behavior and checked against
+      every model it ships. The <b>User Guide</b> is the way in: this manual is
+      the reference it walks you through.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Page</th><th>What is in it</th></tr></thead>
+          <tbody>
+            <tr><td class="name"><a href="LS3D-4DS-User-Guide.html">User Guide</a></td>
+              <td class="desc">The path through all of it, in the order you meet it: installing, a tour, a first model, the checks, a prop with LODs, materials, a car, a character, animation and the rest.</td></tr>
+            <tr><td class="name"><a href="LS3D-4DS-Dummy-Names.html">Dummy names</a></td>
+              <td class="desc">Every frame name the game looks for &mdash; on vehicles, characters, weapons and in the city &mdash; what type each has to be, how a car is put together, and the names nothing reads.</td></tr>
+            <tr><td class="name"><a href="LS3D-4DS-User-Properties.html">User properties</a></td>
+              <td class="desc">Every piece of text a frame can carry, what reads it, what objects it belongs on, and every spelling found in the shipped files.</td></tr>
+            <tr><td class="name"><a href="LS3D-4DS-Flag-Usage.html">Flag usage</a></td>
+              <td class="desc">Which flag bits the game's own models actually use, and which are never set.</td></tr>
+            <tr><td class="name"><a href="LS3D-4DS-Joint-Viewer.html">Joint viewer</a></td>
+              <td class="desc">Opens a 4DS in the browser and shows its joints, weights and influence boxes.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+
+
+
+
+    <section id="shots" class="panel">
+      <h2><span class="num">21</span>The pictures, and how to take them</h2>
+      <p class="lead-in">Fifteen slots are set through the manual. Each shows
+      its caption until the file appears beside it, so the page reads either
+      way. Drop the files into a <code>guide-images</code> folder next to this
+      one, named exactly as below, and they show up.</p>
+      <div class="callout engine">
+        <span class="label">Shooting them</span>
+        <p>Blender&rsquo;s own <b>Window &rsaquo; Save Screenshot</b> catches
+        the whole window; <b>Save Screenshot (Editor)</b> catches one editor,
+        which is what most of these want. Use the default theme, keep the
+        sidebar wide enough that no label is cut, and shoot at the size you
+        read at &mdash; the page scales them down, not up.</p>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Figure</th><th>File</th><th>What to capture</th></tr></thead>
+          <tbody>
+            <tr><td class="name">01</td><td class="desc"><code>guide-images/01-preferences.png</code></td><td class="desc">Edit &rsaquo; Preferences &rsaquo; Add-ons, this add-on expanded. The textures folder filled in with a real path, and both switches visible.</td></tr>
+            <tr><td class="name">02</td><td class="desc"><code>guide-images/02-import-dialog.png</code></td><td class="desc">File &rsaquo; Import &rsaquo; 4DS Mafia Model, with the options panel on the right open. Pick a folder with the game&rsquo;s models so the file list is not empty.</td></tr>
+            <tr><td class="name">03</td><td class="desc"><code>guide-images/03-export-dialog.png</code></td><td class="desc">File &rsaquo; Export &rsaquo; 4DS Mafia Model, options panel open, a model loaded so the name field is filled.</td></tr>
+            <tr><td class="name">04</td><td class="desc"><code>guide-images/04-object-panel.png</code></td><td class="desc">Properties editor &rsaquo; Object tab &rsaquo; 4DS Object Properties, with a mesh selected. Typing 4DS in that editor's search box leaves only this add-on's panels on screen, which makes the cleanest picture.</td></tr>
+            <tr><td class="name">05</td><td class="desc"><code>guide-images/05-viewport-colors.png</code></td><td class="desc">Open a mission scene or a model with sectors, dummies and a mesh. Solid shading, Color set to Object. Frame the part where several colors meet.</td></tr>
+            <tr><td class="name">06</td><td class="desc"><code>guide-images/06-lod-list.png</code></td><td class="desc">Import a model that has LODs (most buildings do), select it, and show the LOD list in the 4DS Object panel with the distances in meters.</td></tr>
+            <tr><td class="name">07</td><td class="desc"><code>guide-images/07-material-panel.png</code></td><td class="desc">Select a color-keyed material (znpompeii is one) and show the material panel with the diffuse, alpha and environment boxes and the Draws as line.</td></tr>
+            <tr><td class="name">08</td><td class="desc"><code>guide-images/08-sector-portal.png</code></td><td class="desc">A mission scene, one sector and its portal selected, seen from inside the room so both outlines read.</td></tr>
+            <tr><td class="name">09</td><td class="desc"><code>guide-images/09-dummy-box.png</code></td><td class="desc">Select a dummy empty in the viewport so the handles appear; include the dot at the box&rsquo;s middle and the dashed line to its empty, with the box off-center.</td></tr>
+            <tr><td class="name">10</td><td class="desc"><code>guide-images/10-joint-boxes.png</code></td><td class="desc">A character in Pose Mode with one joint selected, Influence Boxes on. Get the arrows, the rings and the six face handles in frame, and a box sitting off its joint so its dashed line shows.</td></tr>
+            <tr><td class="name">11</td><td class="desc"><code>guide-images/11-model-tab.png</code></td><td class="desc">Sidebar &rsaquo; 4DS Model with a character in the scene, so the joint count, the two box switches and the three buttons all show.</td></tr>
+            <tr><td class="name">12</td><td class="desc"><code>guide-images/12-weights.png</code></td><td class="desc">After Make Weights From Boxes, enter Weight Paint on the character and pick a thigh or a shoulder, where the blend zone is easy to see.</td></tr>
+            <tr><td class="name">13</td><td class="desc"><code>guide-images/13-animation-tab.png</code></td><td class="desc">Load a character and one of the game&rsquo;s animations, then show the tab with the list, Make Active and Unload Animation.</td></tr>
+            <tr><td class="name">14</td><td class="desc"><code>guide-images/14-morph-groups.png</code></td><td class="desc">A character face model (Tommy&rsquo;s head) with the 4DS Morph tab open and a group selected.</td></tr>
+            <tr><td class="name">15</td><td class="desc"><code>guide-images/15-check-report.png</code></td><td class="desc">Break something on purpose (rename a character&rsquo;s mesh, or clear a joint&rsquo;s box), press Check Scene, and capture the report.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr>
+    <footer>
+      <p>Flag behavior checked against what the game actually does, and tested against every model shipped with Mafia.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mafia Toolkit User Guide</title>
+<meta name="description" content="Complete guide to the LS3D 4DS Blender add-on: every panel, setting and check, and what each one does in game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img, svg { max-width: 100%; }
+</style>
+<style>
+  :root {
+    --ground:   #FAFAF9;
+    --surface:  #FFFFFF;
+    --sunken:   #F3F1ED;
+    --ink:      #1A1917;
+    --muted:    #6E6862;
+    --rule:     #E4E0DA;
+    --accent:   #8E2B22;
+    --accent-soft: #F6EBE9;
+    --engine:   #2F5D62;
+    --engine-soft: #E7F0F0;
+    --shadow:   rgba(26, 25, 23, 0.07);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #141312;
+      --surface:  #1C1A18;
+      --sunken:   #232120;
+      --ink:      #EBE7E1;
+      --muted:    #9B948C;
+      --rule:     #2F2B27;
+      --accent:   #E68A76;
+      --accent-soft: #2C1E1B;
+      --engine:   #7FBEC3;
+      --engine-soft: #16292B;
+      --shadow:   rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #141312;
+    --surface:  #1C1A18;
+    --sunken:   #232120;
+    --ink:      #EBE7E1;
+    --muted:    #9B948C;
+    --rule:     #2F2B27;
+    --accent:   #E68A76;
+    --accent-soft: #2C1E1B;
+    --engine:   #7FBEC3;
+    --engine-soft: #16292B;
+    --shadow:   rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 120px;
+  }
+
+  /* ── navigation ─────────────────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    font-size: 13.5px;
+  }
+
+  .nav-brand {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+
+  .nav-build {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 26px;
+  }
+
+  .nav h4 {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--muted);
+    margin: 24px 0 8px;
+  }
+
+  .nav a {
+    display: block;
+    padding: 3px 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 11px;
+    margin-left: -13px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .nav a:hover { color: var(--accent); border-left-color: var(--accent); }
+  .nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── content ────────────────────────────────────────────── */
+  main { padding: 40px 0 0; min-width: 0; }
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 34px;
+    margin-bottom: 12px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    margin: 12px 0 16px;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 18.5px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  section { padding-top: 54px; scroll-margin-top: 20px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 27px;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-right: 12px;
+    letter-spacing: 0;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: -0.005em;
+    margin: 34px 0 8px;
+  }
+
+  h4 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 26px 0 8px;
+  }
+
+  p, li { max-width: 68ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--sunken);
+    padding: 1.5px 5px;
+    border-radius: 2px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--sunken);
+    border-left: 2px solid var(--rule);
+    padding: 15px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  pre.math { font-size: 13.5px; padding: 12px 18px; text-align: center; }
+
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 520px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+    padding: 0 14px 7px 0;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+
+  .bit, .val { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  .name { font-weight: 500; white-space: nowrap; }
+  .dim { color: var(--muted); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .tag-live   { background: var(--accent-soft); color: var(--accent); }
+  .tag-engine { background: var(--engine-soft); color: var(--engine); }
+  .tag-dead   { background: var(--sunken); color: var(--muted); }
+
+  tr.engine-row td:not(.desc) { color: var(--muted); }
+
+  .callout {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 16px 20px;
+    margin: 0 0 20px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+
+  .callout.engine { border-left-color: var(--engine); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .callout.engine .label { color: var(--engine); }
+
+  .lead-in {
+    color: var(--muted);
+    font-size: 16.5px;
+    max-width: 64ch;
+    margin: 0 0 22px;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    margin-right: 7px;
+    vertical-align: -1px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 46px 0 0;
+  }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 80px; }
+    .nav {
+      position: static;
+      max-height: none;
+      padding: 30px 0 6px;
+      border-bottom: 1px solid var(--rule);
+      columns: 2;
+      column-gap: 28px;
+    }
+    .nav-brand, .nav-build { column-span: all; }
+    main { padding-top: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+
+
+figure.shot { margin: 18px 0 22px; padding: 0; }
+figure.shot img { display: block; width: 100%; height: auto; border-radius: 6px;
+  border: 1px solid var(--rule); background: var(--sunken); }
+figure.shot figcaption { margin-top: 8px; font-size: 13.5px; color: var(--muted); }
+figure.shot figcaption b { color: var(--engine); font-size: 11.5px;
+  letter-spacing: 0.06em; text-transform: uppercase; margin-right: 6px; }
+figure.shot.empty figcaption { border: 1px dashed var(--rule); border-radius: 6px;
+  padding: 14px 16px; background: var(--sunken); margin-top: 0; }
+figure.shot.empty figcaption::after { content: " — picture not in place yet";
+  color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <div class="nav-brand">Mafia Toolkit</div>
+    <div class="nav-build">User Guide &middot; 1.0.0</div>
+
+    <h4>Start here</h4>
+    <a href="#install">1 &middot; Installing</a>
+    <a href="#tour">2 &middot; A tour</a>
+    <a href="#first">3 &middot; Opening a model</a>
+    <a href="#checking">4 &middot; Checking a scene</a>
+
+    <h4>Making things</h4>
+    <a href="#prop">5 &middot; A prop with LODs</a>
+    <a href="#materials">6 &middot; Materials</a>
+    <a href="#car">7 &middot; A car</a>
+    <a href="#character">8 &middot; A character</a>
+    <a href="#animation">9 &middot; Animation</a>
+    <a href="#rest">10 &middot; Shadows and the rest</a>
+
+    <h4>Then</h4>
+    <a href="#lookup">11 &middot; Where to look things up</a>
+  </nav>
+
+  <main>
+
+    <header>
+      <h1>Mafia Toolkit &mdash; User Guide</h1>
+      <p class="lead-in">Mafia&rsquo;s models, animations, movement tracks and shadows, in Blender.
+      This is the way in: it starts at installing and walks through a prop, a car and a
+      character, in the order you meet them. The <b>Field Manual</b> beside it is the reference
+      to look single things up in, and the <b>README</b> is the record of what changed and why.</p>
+      <p>Everything here is written against <b>1.0.0</b>, on Blender 5.2 or newer.</p>
+    </header>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="install">
+      <h2><span class="num">01</span>Installing</h2>
+
+      <p class="lead-in">Install the zip through <b>Edit &rsaquo; Preferences &rsaquo; Add-ons &rsaquo;
+      Install from Disk</b>, pick <code>mafia-toolkit-1.0.0.zip</code>, and switch it on. It asks for
+      Blender 5.2 or newer.</p>
+
+      <figure class="shot" id="fig-g01">
+        <img src="guide-images/01-preferences.png" alt="The add-on's preferences, with the textures folder set."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 1</b> The add-on&rsquo;s preferences. The Texture Folder is the one
+        setting you must fill in.</figcaption>
+      </figure>
+
+      <h3>The one setting to fill in</h3>
+      <p><b>Texture Folder</b> has to point at the game&rsquo;s <code>maps</code> directory &mdash; the
+      folder holding <code>TOMMY1.BMP</code> and its thousands of neighbours. A model names its
+      textures by file name and nothing else, so without this an import comes in grey and says
+      <i>&ldquo;No texture folder configured; textures will not be loaded&rdquo;</i>. Nothing else is
+      broken by it: the model, its materials and every flag are read either way.</p>
+
+      <div class="callout">
+        <span class="label">A Blender upgrade forgets it</span>
+        <p>A new Blender version starts a fresh configuration folder, so the add-on and this
+        setting do not carry across. Install again and point the Texture Folder at
+        <code>maps</code> again.</p>
+      </div>
+
+      <h3>The two switches under it</h3>
+      <ul>
+        <li><b>Show Raw Flag Values</b> puts the hexadecimal word beside each panel of switches.
+        Useful when comparing a model against one the game ships; noise otherwise.</li>
+        <li><b>Show Engine-Reserved Flags</b> reveals bits the engine keeps to itself. They are
+        written back exactly as they came in whether this is on or off &mdash; it only decides
+        whether you see them.</li>
+      </ul>
+
+      <h3>From a command prompt</h3>
+      <p>The add-on can install itself, which is worth knowing on a machine that has nothing but
+      Blender on it. The zip and the <code>mbt.bat</code> beside it are a whole working copy:</p>
+
+      <pre><code>mbt --install --textures "D:\Hry\Mafia Editovani\maps"</code></pre>
+
+      <p>That installs it into the newest Blender it finds, switches it on, keeps the texture
+      folder and saves the preferences. Nothing else is needed &mdash; Blender brings its own
+      Python. There is more on this in <a href="#lookup">section 11</a>.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="tour">
+      <h2><span class="num">02</span>A tour</h2>
+
+      <p class="lead-in">Five places hold everything the add-on does: two menu entries, one
+      properties panel, three sidebar tabs, and what the viewport draws by itself.</p>
+
+      <h3>File &rsaquo; Import and File &rsaquo; Export</h3>
+      <p>Four formats, each with an entry under both menus:</p>
+      <table>
+        <thead><tr><th>Format</th><th>What it holds</th></tr></thead>
+        <tbody>
+          <tr><td><code>.4ds</code></td><td>The model: every frame, its geometry, materials and hierarchy.</td></tr>
+          <tr><td><code>.5ds</code></td><td>One animation for that model, keyed by frame name.</td></tr>
+          <tr><td><code>.tck</code></td><td>The movement track beside an animation: where the actor travels while it plays.</td></tr>
+          <tr><td><code>.6ds</code></td><td>The coarse shadow mesh the engine casts from.</td></tr>
+        </tbody>
+      </table>
+
+      <figure class="shot" id="fig-g02">
+        <img src="guide-images/02-import-dialog.png" alt="The 4DS import dialog with its options open."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 2</b> Importing a model. Both options are on by default.</figcaption>
+      </figure>
+
+      <p>The <b>import</b> dialog has two options:</p>
+      <ul>
+        <li><b>Collection Per Model</b> puts everything the file holds in a collection named after
+        it, so two models in one scene stay apart.</li>
+        <li><b>Load Its Animation</b> looks for a <code>.5ds</code> named like the model beside it and
+        loads that too.</li>
+      </ul>
+
+      <p>The <b>export</b> dialog has five:</p>
+      <ul>
+        <li><b>Selected Objects Only</b> writes the selection instead of the scene. Every check and
+        every message then talks about those objects only.</li>
+        <li><b>Fix &gt;2 Joint Influences</b>, <b>Fix Non-Parent-Child Weights</b> &mdash; weight
+        corrections the game&rsquo;s own rules need. See <a href="#character">section 8</a>.</li>
+        <li><b>Fix Long Rotation Turns</b> splits a rotation that turns more than half a circle
+        between two keys, which the game would otherwise play the short way round.</li>
+        <li><b>Write Its Animation</b> writes a <code>.5ds</code> beside the model from the scene&rsquo;s
+        own actions.</li>
+      </ul>
+
+      <h3>The 4DS Object panel</h3>
+      <p>In the <b>Properties editor</b>, on the <b>Object</b> tab, under <b>4DS Object Properties</b>.
+      This is where an object says what it is: its <b>Frame Type</b> and, for a visual frame, its
+      <b>Visual Type</b>, plus the panels of switches that belong to it. Typing <code>4DS</code> in
+      that editor&rsquo;s search box hides everything else, which is the quickest way to see only
+      this.</p>
+
+      <figure class="shot" id="fig-g03">
+        <img src="guide-images/04-object-panel.png" alt="The 4DS Object Properties panel on a mesh."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 3</b> The 4DS Object panel: what this object is, and the switches
+        that go with it.</figcaption>
+      </figure>
+
+      <h3>The three sidebar tabs</h3>
+      <p>Press <b>N</b> in the 3D viewport:</p>
+      <ul>
+        <li><b>4DS Model</b> &mdash; the scene as a whole: <b>Check 4DS Scene</b>, the animated object
+        count, and everything to do with joints.</li>
+        <li><b>4DS Morph</b> &mdash; morph groups and their targets, for a mesh set to Morph or
+        Single Morph.</li>
+        <li><b>5DS Animation</b> &mdash; the animation list, the frame rate, event cues and the
+        movement track.</li>
+      </ul>
+
+      <h3>Add &rsaquo; 4DS</h3>
+      <p>The Add menu builds the frames that are not ordinary meshes &mdash; a dummy, a sector, a
+      portal, an occluder, a target, a light, a projector, a mirror, a billboard, a lens flare, a
+      sun flare, a single joint, or a whole character skeleton. Each one comes out set up the way
+      the game&rsquo;s own models have it, and says in the status bar what to do next.</p>
+
+      <h3>What the viewport draws</h3>
+      <p>The add-on draws what the file describes but Blender shows nothing for: a dummy&rsquo;s box
+      and a mirror&rsquo;s bound, the volume a projector covers, what a light reaches, each
+      joint&rsquo;s influence box, and the frame an armature stands on. Every box carries a dot at
+      its middle, and a box that does not sit on what it belongs to is joined to it by a dashed
+      line &mdash; the same way Blender draws its own relationship lines, and following the same
+      overlay switch. Objects are colored by what they are: sectors and occluders as wireframes,
+      portals in violet, skinned meshes in pink.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="first">
+      <h2><span class="num">03</span>Opening a model</h2>
+
+      <p class="lead-in">Start with one the game ships. <b>File &rsaquo; Import &rsaquo; 4DS Mafia
+      Model</b>, and pick something out of <code>models</code> &mdash; <code>Tommy.4ds</code> is a good
+      first one, since it carries nearly everything the format has.</p>
+
+      <h3>Reading the report</h3>
+      <p>Every import and export writes a staged log to the system console
+      (<b>Window &rsaquo; Toggle System Console</b>) and opens a summary when anything needs your
+      attention. The log names each material and each frame as it goes, so a file that stops
+      halfway says which item it stopped on:</p>
+
+      <pre><code>==============================================================
+[MBT/4DS] Importing Tommy.4ds
+==============================================================
+[MBT/4DS] Version 29, 5 material(s), 24 frame(s)
+--- Materials ---
+  [Mat 01/05] TOMMY1.BMP 0x00040001
+--- Frames ---
+  [Frame 01/24] 'base' Visual/Single Morph
+  [Frame 02/24] 'r_thigh' Joint
+--- Post-processing ---
+  &gt; Building armature (18 joint(s))
+  &gt; Applying skinning (1 mesh(es))
+--- Viewport ---
+[MBT/4DS] Import OK: Tommy.4ds</code></pre>
+
+      <p>Lines are tagged <code>[MBT/4DS]</code>, <code>[MBT/5DS]</code> and so on, so the add-on&rsquo;s
+      output can be picked out of a shared console.</p>
+
+      <h3>What you are looking at</h3>
+      <p>The model lands in a collection named after the file. Each object carries its frame type
+      and, where it has one, its visual type &mdash; the panel in <a href="#tour">section 2</a> shows
+      them. A character brings an armature with its joints, its skin weights and its morphs; a
+      building brings its sectors and portals; a car brings its wheels and its dummies.</p>
+
+      <div class="callout">
+        <span class="label">Export it straight back</span>
+        <p>A model imported and exported again comes back byte for byte, the save date aside.
+        That is worth trying once on a file you care about: if it round-trips, everything the
+        file held survived the trip into Blender, whether or not the add-on has a control for
+        it.</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="checking">
+      <h2><span class="num">04</span>Checking a scene</h2>
+
+      <p class="lead-in">This is the section to open when the export will not go through.
+      <b>Check 4DS Scene</b>, at the top of the <b>4DS Model</b> sidebar tab, runs every check the
+      export runs and writes nothing. Press it before a long export, and after anything you are
+      not sure about.</p>
+
+      <figure class="shot" id="fig-g04">
+        <img src="guide-images/15-check-report.png" alt="The check report, with a warning and the fix it suggests."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 4</b> The report. Errors stop an export; warnings let it through
+        and say what changed. Most carry a suggested fix.</figcaption>
+      </figure>
+
+      <h3>Errors stop the export. Nothing is written</h3>
+      <p>The export builds the whole file in memory and checks it before a single byte is
+      written, then writes to a temporary file and moves it into place. A failed export leaves
+      whatever was there untouched &mdash; no half file, no leftover.</p>
+
+      <h3>The refusals, and what each one means</h3>
+      <table>
+        <thead><tr><th>What it says</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td><b>Sector does not enclose a volume</b>, <b>is not a closed mesh</b>, or <b>has
+          outward-facing normals</b></td>
+          <td>A sector is a room the engine tests points against, so it has to be closed and its
+          normals have to face inward. Close the holes it names; flip the normals with
+          <b>Mesh &rsaquo; Normals &rsaquo; Flip</b>.</td></tr>
+
+          <tr><td><b>Occluder is not a closed mesh</b></td>
+          <td>Same reason: it is a volume, not a surface.</td></tr>
+
+          <tr><td><b>Lens flare has no elements</b>, or <b>element(s) N have no material</b></td>
+          <td>A flare draws its elements, and each one draws a material. Add elements in the
+          object panel and give each a material.</td></tr>
+
+          <tr><td><b>Projector has no material</b></td>
+          <td>A projector paints a material, and the format keeps a material number where zero is
+          not allowed. Point it at one in its panel.</td></tr>
+
+          <tr><td><b>Mirror has a view box with no width</b> (or height, or depth)</td>
+          <td>Its view box is four numbers on the mirror. Give the flat axis a length, or press
+          <b>Fit View Box</b>.</td></tr>
+
+          <tr><td><b>Armature has been moved as an object</b></td>
+          <td>An armature's own location, rotation and scale are left for the body's movement and
+          move nothing at rest, so a move left on them would be written nowhere. Clear its
+          transform, or press <b>Set Default Mesh Origin</b> to stand it where a character's
+          armature belongs.</td></tr>
+
+          <tr><td><b>Armature has no skinned mesh</b> but a Delta Transform</td>
+          <td>Give it the character mesh it is for &mdash; named <code>base</code>, with an Armature
+          modifier pointing at it &mdash; or, for a skeleton meant to stand alone, clear the Delta
+          Transform.</td></tr>
+
+          <tr><td><b>Armature has N skinned meshes</b></td>
+          <td>One armature carries one skinned mesh. Join them, or reparent the extras.</td></tr>
+
+          <tr><td><b>Joint has no influence box and no weights</b></td>
+          <td>A joint has to say what it moves. Paint weights for it, or give it a box with
+          <b>Add Influence Box</b> and then <b>Fit Influence Box</b>.</td></tr>
+
+          <tr><td><b>Single Mesh has shape keys</b></td>
+          <td>Shape keys are morph targets, so the object is a morph: set its Visual Type to
+          <b>Morph</b> or <b>Single Morph</b>. See <a href="#rest">section 10</a>.</td></tr>
+
+          <tr><td><b>Morph group: basis shape key is missing</b></td>
+          <td>The group's first target names a shape key that is no longer on the mesh. Remove
+          the target, or make a key of that name.</td></tr>
+
+          <tr><td><b>Name is N bytes long</b></td>
+          <td>The format holds names in a fixed space. Shorten it.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Warnings let it through</h3>
+      <p>A warning means the file was written and something in it is not what you might expect
+      &mdash; a texture the folder does not hold, a character mesh not called <code>base</code>, a
+      joint with no box written the default one, weights corrected to the two the game allows.
+      Read them once; they say exactly what changed.</p>
+
+      <div class="callout">
+        <span class="label">The console has the full story</span>
+        <p>The dialog shows the first dozen entries. <b>Window &rsaquo; Toggle System Console</b> has
+        every one, in order, with the frame or material each belongs to.</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="prop">
+      <h2><span class="num">05</span>A prop, with LODs</h2>
+
+      <p class="lead-in">The simplest thing worth exporting: one mesh, one material, and two
+      coarser copies the game swaps in as you walk away from it.</p>
+
+      <h3>1. The mesh</h3>
+      <p>Model it, or bring one in. Then, in the <b>4DS Object</b> panel, set:</p>
+      <ul>
+        <li><b>Frame Type: Visual</b> &mdash; it is something you can see.</li>
+        <li><b>Visual Type: Object</b> &mdash; an ordinary mesh. <b>Lit Object</b> is the same thing
+        with baked lighting the mission holds; <b>Single Mesh</b> is a skinned one; the rest are
+        their own kinds, covered in <a href="#rest">section 10</a>.</li>
+      </ul>
+
+      <h3>2. Its levels of detail</h3>
+      <p>A LOD is a child of the mesh, named after it with <code>_lod1</code>, <code>_lod2</code> and
+      so on. The suffix is the whole rule: nothing else marks them.</p>
+
+      <figure class="shot" id="fig-g05">
+        <img src="guide-images/06-lod-list.png" alt="An object and its two LOD meshes, named by the suffix rule."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 5</b> The naming is the rule: <code>_lod1</code> and <code>_lod2</code>
+        parented to the mesh they belong to.</figcaption>
+      </figure>
+
+      <p>Each LOD carries the distance it takes over at, in meters, in its own object panel. The
+      first one is the mesh itself, at zero. Give the coarser ones the distance you want the swap
+      to happen at &mdash; 10 m, 30 m &mdash; and remember the game measures from the camera.</p>
+
+      <div class="callout">
+        <span class="label">One frame, several meshes</span>
+        <p>The model holds a LOD chain as a single frame carrying several meshes, so the whole
+        chain comes out as one object in the file. Blender shows them as parent and children
+        because that is the only way to hold several meshes in one place.</p>
+      </div>
+
+      <h3>3. Its material</h3>
+      <p>One material, its texture named by file name. <a href="#materials">Section 6</a> is the
+      whole story; for a plain prop, a diffuse texture and nothing else is enough.</p>
+
+      <h3>4. Write it</h3>
+      <p><b>File &rsaquo; Export &rsaquo; 4DS Mafia Model</b>. Read the report. Then drop the file into
+      the game's <code>models</code> folder and look at it in game.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="materials">
+      <h2><span class="num">06</span>Materials</h2>
+
+      <p class="lead-in">A material is one flag word, some colors, an opacity and up to three
+      textures. The panel is in the <b>Properties editor</b> on the <b>Material</b> tab, under
+      <b>4DS Material Properties</b>.</p>
+
+      <figure class="shot" id="fig-g06">
+        <img src="guide-images/07-material-panel.png" alt="The material panel: its three texture boxes and what it draws as."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 6</b> The three texture boxes, and the <b>Draws as</b> line that
+        says what the game will make of them.</figcaption>
+      </figure>
+
+      <h3>The three boxes</h3>
+      <ul>
+        <li><b>Diffuse</b> &mdash; the texture the surface is painted with. <b>Use Diffuse Texture</b>
+        has to be on for it to be read at all; a texture set with the switch off is a warning at
+        export, because that is almost always a mistake.</li>
+        <li><b>Alpha</b> &mdash; a second texture holding transparency, with <b>Use Alpha Texture</b>
+        to switch it on.</li>
+        <li><b>Environment</b> &mdash; a reflection texture, blended over the diffuse by the
+        environment ratio.</li>
+      </ul>
+
+      <h3>Draws as</h3>
+      <p>The panel says, in words, what the game will do with the combination you have set:
+      opaque, blended at some opacity, cut out by a color key, added, and so on. It is worked out
+      the way the engine works it out, so it is the quickest way to see whether the switches you
+      picked mean what you wanted.</p>
+
+      <h3>Color keys</h3>
+      <p>A color-keyed material cuts away every pixel of one color &mdash; the game's usual way of
+      making a fence, a sign or a railing. Switch on <b>Color Key</b> and the add-on reads the key
+      color out of the texture's own palette when it is a paletted BMP, which is what the game's
+      textures are. The preview in Blender cuts exactly what the game cuts.</p>
+
+      <h3>Animated textures</h3>
+      <p>A material can play a sequence of textures: <code>FIRE00.BMP</code>, <code>FIRE01.BMP</code>
+      and on. Only the last two digits change, and the count and period live on the material. The
+      panel says which files it expects and how many it found, and offers <b>Fix Texture File</b>
+      where one of them is written in a way the game misreads.</p>
+
+      <div class="callout">
+        <span class="label">Textures are named, not embedded</span>
+        <p>A model holds file names. Anything you use has to exist in the game's
+        <code>maps</code> folder under that name, in a format the game reads &mdash; and the add-on
+        warns at export about any that do not.</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="car">
+      <h2><span class="num">07</span>A car</h2>
+
+      <p class="lead-in">A vehicle is an ordinary model whose frames carry names the game looks
+      for. Get a name or a frame type wrong and the car loads with that part missing and no
+      message about it &mdash; this is the single most common reason a car comes out broken.</p>
+
+      <div class="callout">
+        <span class="label">The frame type is what the game tests</span>
+        <p>Each lookup asks for a name <i>and</i> a kind. In Blender that kind is the
+        <b>Frame Type</b> field in the 4DS Object panel, not what sort of Blender object it is. In
+        practice an empty is a <b>Dummy</b>, with its box drawn from the empty's size, and a mesh
+        is a <b>Visual &middot; Object</b>. A name looked for as a dummy never finds a mesh, and the
+        other way round.</p>
+      </div>
+
+      <h3>The shape it makes</h3>
+      <pre><code>carname                  the model itself, named without the two-digit suffix
+ |
+ +- BODY                 dummy or mesh    everything is measured from it
+ |   +- CENTRE           dummy            the collision box; no car without it
+ |   +- BODYCOL0 ...     dummies          crash volumes
+ |   +- BALLAST0 ...     dummies          weight points (only found under BODY)
+ |   +- body panels      meshes           [DEFORM BODY] / [DEFORM GLASS] ...
+ |
+ +- DWHL0  DWHR0  ...    dummies          wheel mounts, UPPER CASE, one per wheel
+ |   +- WHL0  WHR0       meshes           the wheels; the mount carries [15], the trail width
+ +- AXISL0a ...          meshes           suspension arms, carrying [x y z] offsets in cm
+ |
+ +- DOOR1 ...            meshes           hinged panels; [DEFORM BODY,I] reverses the hinge
+ |   +- WINDOW1          mesh             the glass that winds down (only found under its door)
+ +- SEAT0                dummy            the driver; SEAT1 ... the passengers
+ +- HEAD                 dummy            the driver's head</code></pre>
+
+      <h3>Three things worth knowing before you start</h3>
+      <ul>
+        <li><b>Case matters where the game says it does.</b> The wheel mounts are
+        <code>DWHL</code> and <code>DWHR</code> in upper case; several other names are matched
+        without regard to case. The reference page gives the exact spelling each one needs.</li>
+        <li><b>Two names are searched in one place only.</b> <code>BALLAST*</code> is looked for
+        beneath <code>BODY</code>, and <code>WINDOW*</code> beneath its own door. Everything else
+        may sit anywhere in the tree.</li>
+        <li><b>Text in a name does work.</b> <code>[DEFORM BODY]</code>, <code>[15]</code>,
+        <code>[x y z]</code> &mdash; square brackets on a frame carry numbers and switches the game
+        reads. They are listed in the 4DS User Properties reference.</li>
+      </ul>
+
+      <p>Every name, with what happens when it is wrong, is in
+      <b>LS3D-4DS-Dummy-Names.html</b> beside this guide. Start from a car the game ships:
+      import it, look at how its frames are named and typed, and build yours the same way.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="character">
+      <h2><span class="num">08</span>A character</h2>
+
+      <div class="callout">
+        <span class="label">Two things decide whether a character works at all</span>
+        <p>Its mesh has to be called <code>base</code>, and its armature has to stand where the
+        game's animations expect &mdash; at hip height, held in the armature's <b>Delta
+        Transform</b>. The game's own animations move the body through the frame of that name and
+        only turn the joints. Get either wrong and the limbs bend while the body stays standing
+        through a crouch or a roll, or the whole character floats.</p>
+      </div>
+
+      <h3>1. The skeleton</h3>
+      <p><b>Add &rsaquo; 4DS &rsaquo; Character Skeleton</b> builds Tommy's: eighteen joints in the
+      order the game numbers them, standing at the default mesh origin, with the character's
+      usual extra frames &mdash; <code>notify</code> for animation cues, <code>gun1</code> and
+      <code>gun2</code>, <code>blnd</code> and <code>targetN</code>. Building one by hand works too:
+      <b>Add &rsaquo; 4DS &rsaquo; Joint</b> adds a joint at the 3D cursor, on a new armature or on
+      the one you have.</p>
+
+      <h3>2. The mesh</h3>
+      <p>Name it <code>base</code>. Set <b>Frame Type: Visual</b> and <b>Visual Type: Single
+      Mesh</b> &mdash; or <b>Single Morph</b> if it has shape keys. Parent it to the armature and
+      give it an <b>Armature</b> modifier pointing at the same armature. Its origin can be
+      anywhere; what matters is the armature's.</p>
+
+      <p>If the armature is not standing where it should, press <b>Set Default Mesh Origin</b> in
+      the 4DS Model tab. It works the place out from the character's own skeleton &mdash; 6.66 cm
+      above the point midway between its <code>l_thigh</code> and <code>r_thigh</code> joints &mdash;
+      so a character of another size stands at its own hip height, not Tommy's.</p>
+
+      <h3>3. Weights, or boxes</h3>
+      <p>The game plays vertex weights, and it plays them under two rules: <b>at most two joints
+      per vertex</b>, and those two have to be <b>a joint and its own parent</b>. The export can
+      correct both for you &mdash; the two <b>Fix</b> switches in the export dialog &mdash; and says
+      what it changed.</p>
+
+      <p>You have two ways to get there:</p>
+      <ul>
+        <li><b>Paint them yourself</b>, in Weight Paint mode, one vertex group per joint. Painted
+        weights are exported exactly as they are.</li>
+        <li><b>Let the boxes make them.</b> Every joint carries an <i>influence box</i>: a box
+        across the limb that says which vertices it moves. A joint with no painted weights is
+        written the weights its box makes. This is how the game's own models were built.</li>
+      </ul>
+
+      <figure class="shot" id="fig-g07">
+        <img src="guide-images/10-joint-boxes.png" alt="Influence boxes in green, with the handles on the joint being posed."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 7</b> Influence boxes, and the handles on the joint that is picked:
+        six to resize, three to slide, three to turn.</figcaption>
+      </figure>
+
+      <h3>Working with the boxes</h3>
+      <ul>
+        <li>In <b>Pose Mode</b>, the selected joint's box carries handles: six grey ones on its
+        faces to resize it, three arrows to slide it, three rings to turn it. Each kind keeps its
+        own distance on screen, so a box a few centimeters across is still easy to hit, and
+        <b>Handles</b> in the 4DS Model tab narrows them to one kind at a time.</li>
+        <li><b>Fit Influence Box</b> builds one the way the game's own sit: on the joint, aimed
+        at the joint below it, reaching a fifth of the way there, and as wide as the mesh around
+        it.</li>
+        <li><b>Make Weights From Boxes</b> paints what the export would have made, so you can see
+        it and change it. Pressing it changes nothing about what gets written.</li>
+        <li><b>Clear All Weights</b> empties the groups again and leaves their order alone, so the
+        joints keep their numbering.</li>
+        <li>The sidebar hides or shows every box at once, draws them <b>In Front</b> of the mesh,
+        and scales the joint markers with <b>Joint Size</b> &mdash; all viewport switches, none of
+        which change what is written.</li>
+      </ul>
+
+      <figure class="shot" id="fig-g08">
+        <img src="guide-images/12-weights.png" alt="The weights the boxes made, seen in Weight Paint mode."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 8</b> What the boxes make, shown in Weight Paint mode: the blend
+        runs along the box's own Y.</figcaption>
+      </figure>
+
+      <h3>The limits</h3>
+      <ul>
+        <li><b>64 joints</b> below a skinned mesh. The game gathers no more, so the export
+        refuses more. The game's own characters use 25 at most.</li>
+        <li><b>One skinned mesh per armature.</b></li>
+        <li>A vertex the mesh keeps for itself &mdash; not following any joint &mdash; holds its share
+        in the vertex group the Armature modifier holds back, with <b>Invert</b> on.</li>
+      </ul>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="animation">
+      <h2><span class="num">09</span>Animation</h2>
+
+      <p class="lead-in">An animation is a <code>.5ds</code> beside the model, keyed by frame name:
+      whatever the model has that the animation names, it moves. The whole of it lives in the
+      <b>5DS Animation</b> sidebar tab.</p>
+
+      <figure class="shot" id="fig-g09">
+        <img src="guide-images/13-animation-tab.png" alt="The 5DS Animation sidebar tab."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 9</b> The animation tab: the list, the model's own count, the
+        movement track and the event cues.</figcaption>
+      </figure>
+
+      <h3>Making one</h3>
+      <ol>
+        <li><b>New Animation</b> starts an action on the selected objects.</li>
+        <li>Put the scene on the game's own rate: the tab's <b>25 fps</b> button, one frame every
+        40 ms. Key at any rate you like and the export resamples, but keying at the game's rate
+        means what you see is what plays.</li>
+        <li>Pose and key as you would anything in Blender. <b>Fit Scene Range</b> pulls the
+        scene's start and end onto what is actually keyed.</li>
+        <li><b>File &rsaquo; Export &rsaquo; 5DS Mafia Animation</b>, or tick <b>Write Its Animation</b>
+        when exporting the model and it is written beside it under the same name.</li>
+      </ol>
+
+      <h3>What the export will tell you</h3>
+      <ul>
+        <li><b>Eased keys.</b> The game plays straight lines between keys. Anything with easing is
+        resampled, and the report says how many.</li>
+        <li><b>Long turns.</b> A rotation of more than half a circle between two keys plays the
+        short way round in game. <b>Fix Long Rotation Turns</b> splits them.</li>
+        <li><b>The animated object count.</b> A model carries a number saying how many of its
+        frames an animation drives. It follows what the scene has keyed on its own; pin it if you
+        want a number of your own, and the tab says which it is doing.</li>
+      </ul>
+
+      <h3>Event cues</h3>
+      <p>Cues are what the game listens for while an animation plays &mdash; a footstep, a sound,
+      a script hook. They live on a <b>Dummy</b> called <code>notify</code>, which the character
+      preset already builds for you. Select it, stand on the frame you want, and add one from the
+      tab. Named events carry free text the game hands straight to whatever is listening.</p>
+
+      <h3>The movement track</h3>
+      <p>A <code>.tck</code> beside the animation holds where the actor travels while it plays.
+      In Blender it is an empty marked as the movement track, with the model parented under it:
+      key the empty and the travel is what you keyed. The tab names which empty is carrying it,
+      and the export refuses plainly if the model is not under it &mdash; the travel would never
+      reach it.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="rest">
+      <h2><span class="num">10</span>Shadows, and the rest of the frames</h2>
+
+      <p class="lead-in">Everything a model can hold that is not an ordinary mesh. Each is a
+      <b>Frame Type</b>, or a <b>Visual Type</b> under Visual, and the Add menu builds every one of
+      them ready to edit.</p>
+
+      <h3>Shadows (<code>.6ds</code>)</h3>
+      <p>A shadow file is the coarse mesh the engine casts shadows from, one piece per frame of
+      the model, and it carries geometry and nothing else &mdash; no materials, no UVs. Mark a mesh
+      with <b>Use As Shadow Piece</b> in its object panel and export
+      <b>File &rsaquo; Export &rsaquo; 6DS Mafia Shadow</b>. It is a separate file that lives beside
+      the model, not something inside it.</p>
+
+      <h3>Sectors and portals</h3>
+      <p>A <b>sector</b> is a room: a closed mesh with its normals facing inward, which the engine
+      tests points against. A <b>portal</b> is the opening between two of them &mdash; a flat outline
+      of at most eight corners, parented to its sector and named after it with
+      <code>_portal1</code>. Both are built by the Add menu, and the check has plenty to say about
+      them if they are not closed.</p>
+
+      <figure class="shot" id="fig-g10">
+        <img src="guide-images/08-sector-portal.png" alt="A sector and its portal, seen from inside the room."
+             onerror="this.closest('figure').classList.add('empty');this.remove();">
+        <figcaption><b>Figure 10</b> A sector and the portal in it, drawn by the add-on: the
+        sector as a wireframe, the portal in violet.</figcaption>
+      </figure>
+
+      <h3>The others, in a line each</h3>
+      <table>
+        <thead><tr><th>Frame</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><b>Dummy</b></td><td>A named box: a mount point, a spawn marker, a script anchor.
+          The box is stored, so resizing the empty changes what is written.</td></tr>
+          <tr><td><b>Target</b></td><td>An empty holding links to other frames by name, bones
+          included. A link to something that is not being exported is dropped with a
+          warning.</td></tr>
+          <tr><td><b>Occluder</b></td><td>A closed volume that hides what is behind it.</td></tr>
+          <tr><td><b>Light</b></td><td>The game's own light, with two-value falloff and a pair of
+          cone angles that Blender's lights cannot hold, so it is its own thing. It shines along
+          local +Y and is drawn with its cone, its range and an aim ball.</td></tr>
+          <tr><td><b>Billboard</b></td><td>A quad that turns to face the camera &mdash; freely, or
+          around one axis. The Add menu builds the upright kind, which is what most of the
+          game's do.</td></tr>
+          <tr><td><b>Mirror</b></td><td>A surface that reflects, with an authored bound and a view
+          box saying what it is allowed to reflect. <b>Fit View Box</b> sizes it.</td></tr>
+          <tr><td><b>Lens flare</b></td><td>A stack of sprites drawn along a line from a light.
+          Each element needs a material.</td></tr>
+          <tr><td><b>Projector</b></td><td>A volume that paints a material onto whatever is inside
+          it &mdash; a headlight, a lamp on a wall. It projects along local +Y.</td></tr>
+          <tr><td><b>Morph</b> and <b>Single Morph</b></td><td>A mesh that blends between shapes.
+          Blender's shape keys are the targets; the <b>4DS Morph</b> tab groups them the way the
+          format does.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Morphs, in short</h3>
+      <p>A morph is organised into <b>groups</b>, each holding an ordered list of targets that are
+      shape keys. The first target in a group is its basis, and everything in the group is
+      written against it. The <b>+</b> makes a new shape key and adds it; the button below the
+      pair takes one the mesh already carries; the <b>&minus;</b> removes the target
+      <i>and</i> its shape key, unless another group still holds it.</p>
+
+      <p>Which vertices a group covers is not something you set: a group that came out of a file
+      keeps the region the file listed for it, and a group made in Blender covers the vertices its
+      own targets move. The panel says which of the two it is.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="lookup">
+      <h2><span class="num">11</span>Where to look things up</h2>
+
+      <p class="lead-in">This guide is the way in. These are the references to keep beside it,
+      all in the same folder.</p>
+
+      <table>
+        <thead><tr><th>File</th><th>What it answers</th></tr></thead>
+        <tbody>
+          <tr><td><b>LS3D-4DS-Field-Manual.html</b></td>
+          <td>Every frame type and visual type, every panel of switches, the checks and their
+          messages, and what the format holds. The reference this guide is the path
+          through.</td></tr>
+
+          <tr><td><b>LS3D-4DS-Dummy-Names.html</b></td>
+          <td>Every frame name the game looks for &mdash; vehicles, characters, weapons, the city
+          &mdash; with the exact spelling and frame type each one needs, and what happens when it
+          is wrong.</td></tr>
+
+          <tr><td><b>LS3D-4DS-User-Properties.html</b></td>
+          <td>The text a frame can carry in square brackets, and what each piece of it does.</td></tr>
+
+          <tr><td><b>LS3D-4DS-Flag-Usage.html</b></td>
+          <td>Every material and object flag, with how many of the game's own models use it.</td></tr>
+
+          <tr><td><b>LS3D-4DS-Joint-Viewer.html</b></td>
+          <td>Opens a <code>.4ds</code> in the browser and draws its joints, weights and influence
+          boxes &mdash; useful for looking at how the game's own characters are built.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>The command line</h3>
+      <p>The add-on can be driven from a command prompt by the <b>MBT CLI</b> &mdash;
+      <code>mbt.bat</code>, beside the add-on's own code. It finds Blender itself and needs nothing
+      else installed:</p>
+
+      <pre><code>mbt --install --textures "D:\Hry\Mafia Editovani\maps"
+mbt --open "D:\models\tommy.4ds" --check
+mbt --open "D:\models\tommy.4ds" --export "D:\out\tommy.4ds"
+mbt --open "D:\models\tommy.4ds" --gui</code></pre>
+
+      <p><code>--open</code> takes any of the four kinds and reads which from the name; repeat it to
+      load an animation onto its model. <code>--export</code> writes the scene back out,
+      <code>--save</code> keeps it as a <code>.blend</code>, <code>--check</code> runs the export
+      checks without writing, and <code>--gui</code> leaves Blender open with the result. The exit
+      code is 0 when everything asked for was done, 1 when a step was refused and 2 when the
+      command made no sense &mdash; so another program can drive it and know what happened.
+      <code>mbt --help</code> lists the lot.</p>
+
+      <h3>When something is wrong</h3>
+      <ol>
+        <li>Press <b>Check 4DS Scene</b> and read what it says &mdash; most refusals carry a
+        suggested fix.</li>
+        <li>Open the system console for the full report.</li>
+        <li>Import a model the game ships that does the thing you are trying to do, and look at
+        how it is built. That is the reference that is always right.</li>
+      </ol>
+    </section>
+
+    <hr>
+    <footer>
+      <p>Written against Mafia Toolkit 1.0.0, on Blender 5.2. Behavior checked against what the
+      game actually does, and tested against every model shipped with Mafia.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

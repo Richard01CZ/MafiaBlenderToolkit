@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4DS Dummy Names</title>
+<meta name="description" content="Every frame name Mafia looks for in a 4DS model - vehicles, characters, weapons, the city - and the names nothing reads.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  :root {
+    --ground:   #FAFAF9;
+    --surface:  #FFFFFF;
+    --sunken:   #F3F1ED;
+    --ink:      #1A1917;
+    --muted:    #6E6862;
+    --rule:     #E4E0DA;
+    --accent:   #8E2B22;
+    --accent-soft: #F6EBE9;
+    --engine:   #2F5D62;
+    --engine-soft: #E7F0F0;
+    --warn:     #8A5A00;
+    --warn-soft: #FBF1DC;
+    --shadow:   rgba(26, 25, 23, 0.07);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #141312;
+      --surface:  #1C1A18;
+      --sunken:   #232120;
+      --ink:      #EBE7E1;
+      --muted:    #9B948C;
+      --rule:     #2F2B27;
+      --accent:   #E68A76;
+      --accent-soft: #2C1E1B;
+      --engine:   #7FBEC3;
+      --engine-soft: #16292B;
+      --warn:     #E0B45C;
+      --warn-soft: #2A2214;
+      --shadow:   rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #141312;
+    --surface:  #1C1A18;
+    --sunken:   #232120;
+    --ink:      #EBE7E1;
+    --muted:    #9B948C;
+    --rule:     #2F2B27;
+    --accent:   #E68A76;
+    --accent-soft: #2C1E1B;
+    --engine:   #7FBEC3;
+    --engine-soft: #16292B;
+    --warn:     #E0B45C;
+    --warn-soft: #2A2214;
+    --shadow:   rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 120px;
+  }
+
+  /* navigation */
+  .nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    font-size: 13.5px;
+  }
+  .nav-brand { font-family: var(--serif); font-weight: 600; font-size: 17px; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .nav-build { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.02em; margin-bottom: 22px; }
+  .nav h4 { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.11em; color: var(--muted); margin: 22px 0 6px; }
+  .nav a {
+    display: block; padding: 3px 0 3px 11px; margin-left: -13px;
+    color: var(--ink); text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .nav a:hover { color: var(--accent); border-left-color: var(--accent); }
+  .nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* content */
+  main { padding: 40px 0 0; min-width: 0; }
+
+  .masthead { border-bottom: 1px solid var(--rule); padding-bottom: 32px; margin-bottom: 8px; }
+  .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+  h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(32px, 5vw, 48px); line-height: 1.08; letter-spacing: -0.022em;
+    margin: 12px 0 16px; text-wrap: balance;
+  }
+  .standfirst { font-size: 18px; line-height: 1.55; color: var(--muted); max-width: 62ch; margin: 0; }
+
+  .part {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); margin: 64px 0 0; padding-top: 18px; border-top: 2px solid var(--ink);
+  }
+
+  section { padding-top: 46px; scroll-margin-top: 16px; }
+  h2 { font-family: var(--serif); font-weight: 600; font-size: 26px; letter-spacing: -0.015em; margin: 0 0 8px; text-wrap: balance; }
+  h3 { font-size: 16.5px; font-weight: 600; margin: 30px 0 8px; }
+
+  p, li { max-width: 68ch; }
+  p { margin: 0 0 14px; }
+  ul { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  b { font-weight: 600; }
+
+  code {
+    font-family: var(--mono); font-size: 0.86em;
+    background: var(--sunken); padding: 1.5px 5px; border-radius: 2px;
+    overflow-wrap: anywhere;
+  }
+
+  .lead-in { color: var(--muted); font-size: 16.5px; max-width: 66ch; margin: 0 0 20px; }
+
+  .callout {
+    border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    background: var(--surface); padding: 16px 20px; margin: 0 0 20px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+  .callout.engine { border-left-color: var(--engine); }
+  .callout.warn { border-left-color: var(--warn); }
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+  .callout .label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); display: block; margin-bottom: 6px;
+  }
+  .callout.engine .label { color: var(--engine); }
+  .callout.warn .label { color: var(--warn); }
+
+  /* tables */
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th {
+    text-align: left; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); border-bottom: 1px solid var(--ink); padding: 0 14px 7px 0; white-space: nowrap;
+  }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+  td.k { font-family: var(--mono); font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--accent); }
+  td.n { white-space: nowrap; color: var(--muted); }
+
+  /* one frame name or property */
+  .entry { border-top: 1px solid var(--rule); padding: 22px 0 6px; }
+  .entry:first-of-type { border-top: 0; }
+  .entry-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 10px; margin: 0 0 10px; }
+  .entry-head h3 {
+    font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--accent);
+    margin: 0; margin-right: 4px; letter-spacing: 0; overflow-wrap: anywhere;
+  }
+  .entry-head h3 .alt { color: var(--muted); font-weight: 400; }
+  .entry p { margin: 0 0 10px; }
+  .entry ul { margin-bottom: 10px; }
+
+  .chip {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
+    padding: 2px 7px; border-radius: 2px; white-space: nowrap; text-transform: uppercase;
+    background: var(--sunken); color: var(--muted);
+  }
+  .chip.type { background: var(--engine-soft); color: var(--engine); }
+  .chip.req  { background: var(--accent-soft); color: var(--accent); }
+  .chip.gone { background: var(--sunken); color: var(--muted); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+
+  /* how the game takes a name apart */
+  .anatomy { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0 14px; }
+  .seg { display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
+  .seg b {
+    font-family: var(--mono); font-size: 15px; font-weight: 600; text-align: center;
+    padding: 5px 10px; background: var(--sunken); border-bottom: 2px solid var(--ink); color: var(--ink);
+  }
+  .seg.var b { background: var(--engine-soft); color: var(--engine); border-bottom-color: var(--engine); font-weight: 500; }
+  .seg.opt b { background: transparent; color: var(--muted); border: 1px dashed var(--rule); border-bottom: 2px dashed var(--muted); }
+  .seg em { font-style: normal; font-size: 11px; line-height: 1.3; color: var(--muted); text-align: center; padding: 5px 4px 0; max-width: 16ch; }
+
+  .facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px; color: var(--muted); margin: 8px 0 6px; }
+  .facts span b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .forms { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 8px; }
+  .forms span {
+    font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); border-radius: 2px;
+    padding: 3px 7px; background: var(--surface); overflow-wrap: anywhere;
+  }
+  .forms span i { font-style: normal; color: var(--muted); }
+
+  .deadlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 28px; margin: 0 0 20px; }
+  .deadlist div { border-top: 1px solid var(--rule); padding: 10px 0 12px; font-size: 14px; }
+  .deadlist div code { font-weight: 600; color: var(--ink); }
+  .deadlist div span { display: block; color: var(--muted); margin-top: 3px; }
+
+  footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--muted); }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 20px 80px; }
+    .nav {
+      position: static; max-height: none; padding: 28px 0 8px;
+      border-bottom: 1px solid var(--rule); columns: 2; column-gap: 28px;
+    }
+    .nav-brand, .nav-build { column-span: all; }
+    .nav h4 { break-after: avoid; }
+    main { padding-top: 24px; }
+  }
+  @media (max-width: 460px) {
+    .nav { columns: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+
+.tree { font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+  background: var(--sunken); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 16px; margin: 0; white-space: pre; color: var(--ink); }
+</style>
+
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav" aria-label="Contents">
+    <div class="nav-brand">Dummy Names</div>
+    <div class="nav-build">4DS reference</div>
+
+    <h4>How a name is read</h4>
+    <a href="#matching">How names are matched</a>
+    <a href="#required">Required to load</a>
+    <a href="#assembly">Putting a car together</a>
+
+    <h4>Vehicles</h4>
+    <a href="#chassis">Body, wheels and axles</a>
+    <a href="#people">Doors, seats and camera</a>
+    <a href="#collision">Collision and damage</a>
+    <a href="#lights">Lights</a>
+    <a href="#service">Exhaust, fuel and AI points</a>
+    <a href="#trams">Trams and metro</a>
+    <a href="#planes">Airplanes</a>
+
+    <h4>Everything else</h4>
+    <a href="#characters">Characters</a>
+    <a href="#weapons">Weapons</a>
+    <a href="#city">The city and the garage</a>
+    <a href="#mission">Named by a mission</a>
+    <a href="#free">Names nothing reads</a>
+    <a href="#unused">Known, never used</a>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Mafia &middot; 4DS reference</div>
+      <h1>Every frame name the game looks for</h1>
+      <p class="standfirst">The names Mafia matches when it loads a model &mdash; on vehicles, characters, weapons and in the city &mdash; with the exact spelling each one needs, what happens when it is wrong, and the names that look meaningful but nothing reads. The text each frame carries is a subject of its own: see <a href="LS3D-4DS-User-Properties.html">4DS User Properties</a>.</p>
+    </header>
+
+    <section>
+      <div class="callout engine">
+        <span class="label">Axes and counts</span>
+        <p>Directions are given in Mafia&rsquo;s axes &mdash; <b>X right, Y up,
+        Z forward</b> &mdash; with Blender&rsquo;s in brackets where it matters
+        (Blender shows Mafia&rsquo;s Y as Z and Z as Y). A frame&rsquo;s
+        <b>facing</b> is its local +Z, which is +Y on the object in Blender.</p>
+        <p>Counts outside the vehicle part come from every <code>.4ds</code> shipped: 3,206 files, the <code>models</code> folder and the mission scenes together. &ldquo;Shipped&rdquo; counts in the vehicle part come from the <b>440</b> models in the
+        game&rsquo;s <code>models</code> folder that have both a
+        <code>BODY</code> and a <code>CENTRE</code>; that includes cutscene
+        copies, and 54 of them have no wheels at all.</p>
+      </div>
+    </section>
+
+    <p class="part">Part one &middot; Frame names</p>
+
+    <!-- ================================================================ -->
+    <section id="matching">
+      <h2>How names are matched</h2>
+      <p class="lead-in">The rules below apply to every name in this part unless
+      an entry says otherwise. Most of the surprises in vehicle modding come
+      from the second one.</p>
+
+      <div class="scroller">
+      <table>
+        <thead><tr><th>Rule</th><th>What it means for you</th></tr></thead>
+        <tbody>
+          <tr><td class="n">Own name only</td><td>The game puts the model&rsquo;s name in front of every frame when it loads (<code>polimFor00.BODY</code>). Lookups ignore that part, so you name the frame just <code>BODY</code>.</td></tr>
+          <tr><td class="n">Prefix patterns</td><td>A name shown with a trailing <code>*</code> matches <b>anything starting with it</b>. <code>WH*</code> takes <code>WHL0</code> &mdash; and also <code>WHEELCAP</code>, which then fails the wheel checks and stops the car loading. <code>DOOR*</code> turns <code>DOORHANDLE</code> into a door. Keep unrelated parts away from these prefixes.</td></tr>
+          <tr><td class="n">Case</td><td>Ignored for name lookups (<code>body</code> works), except the wheel parents <code>DWHL</code>/<code>DWHR</code>, which must be upper case.</td></tr>
+          <tr><td class="n">Exact names</td><td>Names shown without <code>*</code> must match in full. <code>HEAD</code> is found; <code>HEAD01</code> is not.</td></tr>
+          <tr><td class="n">Frame type</td><td>Each lookup only considers certain types (the chips on each entry). A <code>SEAT0</code> that is a mesh instead of a dummy is simply not seen.</td></tr>
+          <tr><td class="n">Numbers</td><td>Read as a whole number right where the entry says: <code>DOOR1</code> and <code>DOOR01</code> are both door 1. Missing digits read as 0.</td></tr>
+          <tr><td class="n">One of many</td><td>Where a single frame is wanted and several match, <code>BODY</code>, <code>CENTRE</code>, <code>HEAD</code>, <code>SWHEEL</code>, <code>SMOKE_MOTOR</code>, <code>AI00</code> and <code>AI01</code> take the <b>last</b> one in the hierarchy; <code>FUEL</code> and <code>TANK</code> take the first.</td></tr>
+          <tr><td class="n">Where it is measured</td><td>Some helper positions are taken as if their parent were <code>BODY</code>, others from the model&rsquo;s origin. Each entry says which; put the frame there or it lands in the wrong place.</td></tr>
+          <tr><td class="n">Removed on load</td><td>Helper dummies marked <span class="chip gone">removed</span> are read and then deleted from the car, so they cost nothing while driving and cannot be animated or looked up later.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="required">
+      <h2>Required to load</h2>
+      <p class="lead-in">If any of these is missing or wrong the game refuses the
+      model as a car. (The only exception is the parked roadblock cars the police set
+      up, which the game loads without seats, wheels or AI points.)</p>
+      <div class="scroller">
+      <table>
+        <thead><tr><th>Name</th><th>Type</th><th>Condition</th></tr></thead>
+        <tbody>
+          <tr><td class="k">BODY</td><td class="n">Dummy or object</td><td>Must exist.</td></tr>
+          <tr><td class="k">CENTRE</td><td class="n">Dummy</td><td>Must exist.</td></tr>
+          <tr><td class="k">SEAT*</td><td class="n">Dummy</td><td>At least one.</td></tr>
+          <tr><td class="k">WH*</td><td class="n">Object or dummy</td><td>At least four, an even number, each with a side letter and a parent named <code>DWHL&hellip;</code> or <code>DWHR&hellip;</code>.</td></tr>
+          <tr><td class="k">AI00, AI01</td><td class="n">Dummy</td><td>Both must exist.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+
+    <!-- ================================================================ -->
+    <section id="assembly">
+      <h2>Putting a car together</h2>
+      <p class="lead-in">What every name has to <b>be</b>, where it has to
+      <b>sit</b>, and what it takes with it. The entries below this one give
+      each name in full; this is the shape they make together.</p>
+
+      <div class="callout engine">
+        <span class="label">What becomes what</span>
+        <p>The 4DS frame type is what the lookups test, and in Blender that is
+        the <b>Frame Type</b> field in the 4DS Object panel &mdash; not the
+        kind of Blender object. In practice an <b>empty</b> is a
+        <span class="chip type">Dummy</span>, its box drawn from the empty's
+        size, and a <b>mesh</b> is a
+        <span class="chip type">Visual &middot; Object</span>. A name looked
+        for as a dummy never finds a mesh, and the other way round: this is the
+        single most common reason a car loads with a part missing and no
+        message about it.</p>
+      </div>
+
+      <h3>Where the names sit</h3>
+      <p>Every lookup starts at the model's own root and walks the whole tree,
+      so most names may sit anywhere &mdash; with two exceptions:
+      <code>BALLAST*</code> is looked for only beneath <code>BODY</code>, and
+      <code>WINDOW*</code> only beneath its own door. Where a frame's
+      <i>position</i> is measured from is a separate question, and each entry
+      says which: some are read as if their parent were <code>BODY</code>,
+      others from the model's origin.</p>
+
+      <div class="scroller">
+<pre class="tree">carname                  the model itself, named without the two-digit suffix
+ |
+ +- BODY                 dummy or mesh    everything is measured from it
+ |   +- CENTRE           dummy            the collision box; no car without it
+ |   +- BODYCOL0 ...     dummies          crash volumes, each with child dummies
+ |   +- BALLAST0 ...     dummies          weight points (only found here)
+ |   +- body panels      meshes           [DEFORM BODY] / [DEFORM GLASS] ...
+ |
+ +- DWHL0  DWHR0  ...    dummies          wheel mounts, UPPER CASE, one per wheel
+ |   +- WHL0  WHR0       mesh             the wheel; parent carries [15] trail width
+ +- AXISL0a ...          meshes           suspension arms; carry [x y z] offsets
+ +- STRIPL0 ... STRIPBR0 meshes           what the suspension drags along
+ |
+ +- DOOR1 ...            meshes           hinged panels; [DEFORM BODY,I] to reverse
+ |   +- WINDOW1          mesh             the glass that winds down
+ +- SEAT0                dummy            the driver; SEAT1... the passengers
+ |   +- SM0 / LG0        dummies          where a character stands to get in
+ +- HEAD                 dummy            the driver's head
+ +- AI00  AI01           dummies          the two points the AI measures from
+ |
+ +- PROJECTOR            dummy            headlight pool, needs two LIGHT* below
+ |   +- LIGHTRE0 ...     dummies          the lights themselves
+ +- EXHAUST              dummy or mesh    where the smoke leaves
+ +- SMOKE_MOTOR          dummy            engine smoke
+ +- FUEL                 dummy            filler cap (from the model's origin)
+ +- TANK                 dummy            the tank that can be shot (same)
+ +- SWHEEL               mesh             the steering wheel, turned by steering
+</pre>
+      </div>
+
+      <h3>What goes wrong, and why</h3>
+      <div class="scroller">
+      <table>
+        <thead><tr><th>What you did</th><th>What the game does</th></tr></thead>
+        <tbody>
+          <tr><td class="k">A seat, head or wheel mount modeled as a mesh</td><td>Never found. Those names are looked for as dummies only, and nothing is reported.</td></tr>
+          <tr><td class="k">A door or steering wheel made an empty</td><td>Never found. Doors, windows, strips, axles and <code>SWHEEL</code> are looked for as meshes only.</td></tr>
+          <tr><td class="k">A part named <code>WHEELCAP</code> or <code>DOORHANDLE</code></td><td>Caught by <code>WH*</code> and <code>DOOR*</code>. The cap then fails the wheel checks and the car refuses to load; the handle becomes a door that opens.</td></tr>
+          <tr><td class="k">Wheel mounts named <code>dwhl0</code></td><td>Not matched. The wheel parents are the one lookup that is case-sensitive; everything else ignores case.</td></tr>
+          <tr><td class="k">Five wheels, or three</td><td>Refused. Wheels come in pairs, at least four, each one a child of a <code>DWHL</code>/<code>DWHR</code> mount.</td></tr>
+          <tr><td class="k">Two frames with the same name</td><td>One is used and the other ignored. <code>BODY</code>, <code>CENTRE</code>, <code>HEAD</code>, <code>SWHEEL</code>, <code>SMOKE_MOTOR</code>, <code>AI00</code> and <code>AI01</code> take the last one in the tree; <code>FUEL</code> and <code>TANK</code> take the first.</td></tr>
+          <tr><td class="k">An animation on a helper dummy</td><td>Nothing moves. The dummies marked <span class="chip gone">Removed</span> are read once and deleted as the car loads.</td></tr>
+          <tr><td class="k"><code>DOOR01</code> beside <code>DOOR1</code></td><td>Both are door 1. The number is read as a number, so leading zeros make no difference and a gap in the numbering is a gap in the car.</td></tr>
+          <tr><td class="k">A car with no <code>CENTRE</code>, no <code>SEAT0</code> or no <code>AI</code> points</td><td>The car does not load at all. Those, with <code>BODY</code> and four wheels, are the set the game insists on.</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3>The text that rides along</h3>
+      <p>Four of these frames are read twice &mdash; once for the name, once
+      for what is typed in the object's user properties. The
+      <a href="LS3D-4DS-User-Properties.html">user properties reference</a>
+      gives each in full:</p>
+      <div class="scroller">
+      <table>
+        <thead><tr><th>On</th><th>Text</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="k">A wheel's mount</td><td><code>[15]</code></td><td>How wide a trail that wheel leaves, in centimeters. Without it, the wheel's own width.</td></tr>
+          <tr><td class="k">An <code>AXIS</code> arm</td><td><code>[5 4.8]</code></td><td>Moves that axle point by the offset, in centimeters.</td></tr>
+          <tr><td class="k">A door</td><td><code>[DEFORM BODY,I]</code></td><td>Both at once: the panel dents, and the <code>I</code> turns the hinge the other way.</td></tr>
+          <tr><td class="k">The projector</td><td><code>[both.bmp,left.bmp,right.bmp]</code></td><td>The pictures the headlight pool is cast with, whole and with one side broken.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+    <!-- ================================================================ -->
+    <section id="chassis">
+      <h2>Body, wheels and axles</h2>
+
+      <div class="entry" id="f-body">
+        <div class="entry-head"><h3>BODY</h3><span class="chip type">Dummy or object</span><span class="chip req">Required</span></div>
+        <p>The car&rsquo;s frame of reference. <code>HEAD</code>, <code>CENTRE</code>, <code>EXHAUST</code>, <code>SMOKE_MOTOR</code>, <code>AI00</code> and <code>AI01</code> are all measured in its space, and <code>BALLAST</code> dummies are only looked for beneath it.</p>
+        <div class="facts"><span>Shipped: <b>440</b> models, always a dummy</span></div>
+      </div>
+
+      <div class="entry" id="f-centre">
+        <div class="entry-head"><h3>CENTRE</h3><span class="chip type">Dummy</span><span class="chip req">Required</span><span class="chip gone">Removed</span></div>
+        <p>Its box is the car&rsquo;s main collision box &mdash; what other cars, people and objects bump into (shrunk 0.1 inward on each side), plus a second copy reaching 0.5 lower. The centre of mass is placed inside this box by the percentages in the vehicle table. Child of <code>BODY</code>.</p>
+        <div class="facts"><span>Shipped: <b>440</b> models</span></div>
+      </div>
+
+      <div class="entry" id="f-wh">
+        <div class="entry-head"><h3>WH* <span class="alt">under</span> DWHL* / DWHR*</h3><span class="chip type">Object or dummy</span><span class="chip req">Required</span></div>
+        <div class="anatomy">
+          <div class="seg"><b>WH</b><em>prefix</em></div>
+          <div class="seg var"><b>L</b><em>side: L l R r</em></div>
+          <div class="seg var"><b>0</b><em>axle, 0 = front</em></div>
+        </div>
+        <p>The wheel itself. The character right after <code>WH</code> must be a letter or the car is refused; <code>L</code>/<code>l</code> is left, <code>R</code>/<code>r</code> is right, and any other letter leaves the wheel without a place on the car. The number is the axle, counting from 0 at the front, and every axle needs one wheel on each side.</p>
+        <p>Its parent must be a dummy whose name starts with <code>DWHL</code> or <code>DWHR</code> in upper case (either one; it need not agree with the wheel&rsquo;s side). That dummy is the suspension point &mdash; it moves up and down, and leans when a single axle arm drives it &mdash; while the wheel spins about X inside it. The rolling radius is half the wheel&rsquo;s height and the default skid-mark width is its width along X.</p>
+        <p>A <code>[number]</code> on the <code>DWH</code> dummy sets the skid-mark width &mdash; see <a href="#p-trail">wheel trail width</a>.</p>
+        <div class="facts"><span>Shipped: <b>386</b> models &middot; <b>1,558</b> wheels, all objects</span><span>383 models have 4, one has 8, one has 16</span></div>
+      </div>
+
+      <div class="entry" id="f-axis">
+        <div class="entry-head"><h3>AXIS*</h3><span class="chip type">Object</span><span class="chip">Optional</span></div>
+        <div class="anatomy">
+          <div class="seg"><b>AXIS</b><em>prefix</em></div>
+          <div class="seg var"><b>L</b><em>0 solid axle; L or R arm (upper case)</em></div>
+          <div class="seg var"><b>0</b><em>axle</em></div>
+          <div class="seg opt"><b>A</b><em>anything, to tell arms apart</em></div>
+        </div>
+        <p>Suspension parts the game points at the wheels every frame while the camera is close. Model each one lying along its local +Z (Blender +Y) exactly <b>one unit long</b>: the game aims that axis at its target and stretches it to the distance.</p>
+        <ul>
+          <li><code>AXIS0&lt;n&gt;</code> &mdash; a solid axle. Placed at the right wheel of axle <i>n</i> and stretched to the left one; both wheels lean with it.</li>
+          <li><code>AXISL&lt;n&gt;&hellip;</code> / <code>AXISR&lt;n&gt;&hellip;</code> &mdash; an arm that stays at its own pivot and reaches for that side&rsquo;s wheel. If it is the <b>only</b> arm on that side of the axle, the wheel leans with it (a swing axle); with two or more (<code>AXISL0A</code>, <code>AXISL0B</code>) the wheel stays upright.</li>
+          <li>An axle number past the last axle is ignored.</li>
+        </ul>
+        <p>An <code>[x y z]</code> property shifts the aiming point &mdash; see <a href="#p-axis">axle aim offset</a>.</p>
+        <div class="facts"><span>Shipped: <b>229</b> models &middot; 242 solid axles, 94 arms (<code>AXISL0A</code>, <code>AXISR1B</code>&hellip;)</span></div>
+      </div>
+
+      <div class="entry" id="f-strip">
+        <div class="entry-head"><h3>STRIPL* &middot; STRIPR* &middot; STRIPML/MR* &middot; STRIPFL/FR* &middot; STRIPBL/BR*</h3><span class="chip type">Object</span><span class="chip">Optional</span></div>
+        <div class="anatomy">
+          <div class="seg"><b>STRIP</b><em>prefix</em></div>
+          <div class="seg var"><b>M</b><em>M, F, B or none</em></div>
+          <div class="seg var"><b>L</b><em>side</em></div>
+          <div class="seg var"><b>0</b><em>axle</em></div>
+        </div>
+        <p>Caterpillar tracks. On every strip of a side the texture scrolls with engine speed. The lettered ones are also stretched to follow the wheels:</p>
+        <ul>
+          <li><code>STRIPL</code> / <code>STRIPR</code> &mdash; scroll only, never move.</li>
+          <li><code>STRIPML&lt;n&gt;</code> / <code>STRIPMR&lt;n&gt;</code> &mdash; the ground run from the bottom of wheel <i>n</i> to the bottom of wheel <i>n+1</i>.</li>
+          <li><code>STRIPFL&lt;n&gt;</code> / <code>STRIPFR&lt;n&gt;</code> &mdash; the front run, from the strip&rsquo;s own pivot to the bottom of wheel <i>n</i>.</li>
+          <li><code>STRIPBL&lt;n&gt;</code> / <code>STRIPBR&lt;n&gt;</code> &mdash; the back run, the same toward the rear.</li>
+        </ul>
+        <p>Stretching happens along local Z (Blender Y), but the resting length is taken from the strip&rsquo;s <b>size along X</b>. Only plain objects get the scrolling texture.</p>
+        <div class="facts"><span>Shipped: <b>2</b> models (<code>bull00</code>, <code>panz</code>)</span></div>
+      </div>
+
+      <div class="entry" id="f-swheel">
+        <div class="entry-head"><h3>SWHEEL</h3><span class="chip type">Object</span><span class="chip">Optional</span></div>
+        <p>The steering wheel. It turns about its own facing direction as the driver steers, while the camera is close. A dummy with this name is ignored.</p>
+        <div class="facts"><span>Shipped: <b>383</b> models (one is a dummy and does nothing)</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="people">
+      <h2>Doors, seats and camera</h2>
+
+      <div class="entry" id="f-seat">
+        <div class="entry-head"><h3>SEAT*</h3><span class="chip type">Dummy</span><span class="chip req">At least one</span><span class="chip gone">Removed</span></div>
+        <div class="anatomy">
+          <div class="seg"><b>SEAT</b><em>prefix</em></div>
+          <div class="seg var"><b>0</b><em>seat, 0 = driver</em></div>
+        </div>
+        <p>Where a character sits and which way they face. Seat <i>n</i> is paired with door <i>n</i>. The seat&rsquo;s side (positive X is the right side) picks the side characters get in from.</p>
+        <div class="facts"><span>Shipped: <b>439</b> models &middot; 184 with one seat, 173 with two, 82 with four</span></div>
+      </div>
+
+      <div class="entry" id="f-smlg">
+        <div class="entry-head"><h3>SM&lt;n&gt;* <span class="alt">or</span> LG&lt;n&gt;*</h3><span class="chip type">Dummy</span><span class="chip">Per seat</span><span class="chip gone">Removed</span></div>
+        <p>The spot a character walks to before getting into seat <i>n</i>. <code>SM</code> uses the front-seat get-in animations, <code>LG</code> the rear-seat ones; <code>SM</code> is tried first. A seat with neither cannot be entered.</p>
+        <p>Both are prefixes, so <code>SM1</code> also matches <code>SM10</code> &mdash; on a car with ten or more seats, name carefully.</p>
+        <div class="facts"><span>Shipped: <code>SM</code> in <b>137</b> models, <code>LG</code> in <b>246</b></span></div>
+      </div>
+
+      <div class="entry" id="f-door">
+        <div class="entry-head"><h3>DOOR*</h3><span class="chip type">Object</span><span class="chip">Optional</span></div>
+        <div class="anatomy">
+          <div class="seg"><b>DOOR</b><em>prefix</em></div>
+          <div class="seg var"><b>0</b><em>matches seat</em></div>
+        </div>
+        <p>A door that swings open about its vertical axis, up to about 72&deg;, when someone gets in or out of the matching seat. Which way it swings depends on the side of the car it is on.</p>
+        <ul>
+          <li>An <code>I</code> in its property text flips the swing &mdash; see <a href="#p-doorI">door hinge flag</a>.</li>
+          <li>If the door&rsquo;s facing points backward (Mafia &minus;Z), characters use the get-in animations for a seat without a door to open.</li>
+          <li>Doors on shipped cars also carry <code>[DEFORM BODY]</code> so they dent.</li>
+        </ul>
+        <div class="facts"><span>Shipped: <b>357</b> models &middot; <b>697</b> doors</span></div>
+      </div>
+
+      <div class="entry" id="f-window">
+        <div class="entry-head"><h3>WINDOW*</h3><span class="chip type">Object</span><span class="chip">Optional</span></div>
+        <p>A door window, looked for <b>beneath a door</b>. It slides 0.5 units down and hides once fully open. A <code>WINDOW</code> anywhere else is not treated as one. Shipped windows are <code>[DEFORM GLASS]</code> so they crack and break.</p>
+        <div class="facts"><span>Shipped: <b>108</b> models &middot; 304 under doors, 14 under BODY that do nothing</span></div>
+      </div>
+
+      <div class="entry" id="f-head">
+        <div class="entry-head"><h3>HEAD</h3><span class="chip type">Dummy</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>Where the camera sits in the first-person driving view, looking straight ahead along the car. Child of <code>BODY</code>. Without it the camera sits at the car&rsquo;s origin.</p>
+        <div class="facts"><span>Shipped: <b>386</b> models (their <code>[4,1]</code>-style properties are <a href="#p-unread">not read</a>)</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="collision">
+      <h2>Collision and damage</h2>
+
+      <div class="entry" id="f-bodycol">
+        <div class="entry-head"><h3>BODYCOL*</h3><span class="chip type">Dummy</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <div class="anatomy">
+          <div class="seg"><b>BODYCOL</b><em>prefix</em></div>
+          <div class="seg opt"><b>B</b><em>box; else sphere</em></div>
+          <div class="seg opt"><b>M</b><em>keep in model</em></div>
+          <div class="seg opt"><b>0</b><em>anything</em></div>
+        </div>
+        <p>The volumes the body crashes with. Each one sweeps along with the car; when it touches something, its <b>child dummies</b> are tested as small spheres to find the actual contact points that dent the body and deliver the impact.</p>
+        <ul>
+          <li>The letter right after <code>BODYCOL</code>: <code>B</code> makes a box from the dummy&rsquo;s bounds; anything else makes a sphere whose radius is half the box&rsquo;s height.</li>
+          <li>Child dummies not named <code>BODYCOL&hellip;</code> are the contact spheres (radius: half their height). A <code>BODYCOL</code> under another <code>BODYCOL</code> becomes a smaller volume inside it.</li>
+          <li>An <code>M</code> right after <code>BODYCOL</code> or <code>BODYCOLB</code> keeps that volume and everything under it in the model instead of removing it.</li>
+        </ul>
+        <div class="facts"><span>Shipped: <b>440</b> models &middot; 946 boxes, 40 spheres, none with <code>M</code></span></div>
+      </div>
+
+      <div class="entry" id="f-speccoll">
+        <div class="entry-head"><h3>SPECCOLL*</h3><span class="chip type">Dummy or object</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>Extra collision boxes that move with the car, taken from each dummy&rsquo;s bounds, in addition to the <code>CENTRE</code> box.</p>
+        <div class="facts"><span>Shipped: <b>4</b> truck models, 18 boxes</span></div>
+      </div>
+
+      <div class="entry" id="f-tank">
+        <div class="entry-head"><h3>TANK</h3><span class="chip type">Dummy</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>The fuel tank: its position, and a radius of half its box&rsquo;s height. Hits passing within that radius wear the tank down until the car catches fire. Without it the tank cannot be hit. Measured from the model&rsquo;s origin, so keep it at the top level rather than under <code>BODY</code>.</p>
+        <div class="facts"><span>Shipped: <b>363</b> models &middot; 17 of them under <code>BODY</code></span></div>
+      </div>
+
+      <div class="callout">
+        <span class="label">Dents, glass and parts that fall off</span>
+        <p>Deformation is not set by a frame name but by the <a href="#p-deform"><code>[DEFORM &hellip;]</code></a> property on each mesh. Lights and doors tie into it: a light breaks with the deformable part it belongs to.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="lights">
+      <h2>Lights</h2>
+      <p class="lead-in">A car light is not a Light frame. It is an object or
+      dummy whose name picks when it shines; what you see comes from a
+      <code>BILLBOARD</code> beneath it that the game switches on and off, and
+      optionally a texture projected onto the road at night.</p>
+
+      <div class="scroller">
+      <table>
+        <thead><tr><th>Name</th><th>What it is</th><th>Lit when</th><th>Shipped</th></tr></thead>
+        <tbody>
+          <tr><td class="k">LIGHTRE*</td><td>Headlights</td><td>The car&rsquo;s lights are on: engine running at night, in a tunnel, or switched on by a mission script.</td><td class="n">359 models</td></tr>
+          <tr><td class="k">LIGHTIN*</td><td>Turn indicators</td><td>Blinking while the turn signal on its side is on. AI drivers signal their turns.</td><td class="n">211 models</td></tr>
+          <tr><td class="k">LIGHTBI*</td><td>Brake light and rear indicator in one</td><td>While braking &mdash; but while the turn signal on its side is on, it blinks instead.</td><td class="n">283 models</td></tr>
+          <tr><td class="k">LIGHTBR*</td><td>Brake lights</td><td>While braking.</td><td class="n">72 models</td></tr>
+          <tr><td class="k">LIGHTBA*</td><td>Reverse lights</td><td>In reverse gear.</td><td class="n">none</td></tr>
+          <tr><td class="k">LIGHTLI*</td><td>Emergency flashers</td><td>The left group and the right group flash in turn while the flashers are on &mdash; switched by the police AI or a mission script.</td><td class="n">6 models: <code>fire00/10</code>, <code>polimFor00/10</code>, <code>polimTud00/10</code></td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="callout warn">
+        <span class="label">Side comes from position, not from the name</span>
+        <p>For <code>LIGHTIN</code>, <code>LIGHTBI</code> and <code>LIGHTLI</code> the side is where the frame sits in the car: <b>positive X is right</b>, zero or negative is left. There is no L or R in these names &mdash; the number after the prefix is free. All of them take objects or dummies, and all of them are dark unless the camera is within the game&rsquo;s activity range.</p>
+      </div>
+
+      <div class="entry" id="f-billboard">
+        <div class="entry-head"><h3>BILLBOARD*</h3><span class="chip type">Any type</span><span class="chip">Beneath a light</span></div>
+        <p>The first frame starting with <code>BILLBOARD</code> anywhere beneath a light frame is its visible glow, shown only while the light is lit. Shipped glows are objects with <code>no_fog</code>, sometimes real billboards with <code>BBRD=z!</code>.</p>
+        <div class="facts"><span>Shipped: <b>354</b> models &middot; <b>1,769</b> glows</span></div>
+      </div>
+
+      <div class="entry" id="f-projector">
+        <div class="entry-head"><h3>PROJECTOR* <span class="alt">with two</span> LIGHT*</h3><span class="chip type">Dummy</span><span class="chip">Optional</span></div>
+        <p>A pair of headlights that cast one shared pool of light, with a picture that changes as they break. The dummy needs a <a href="#p-projector">three-texture property</a> and <b>exactly two</b> frames starting with <code>LIGHT</code> beneath it; both must use one of the six light names and have no texture of their own. The pool is cast along the dummy&rsquo;s facing.</p>
+        <div class="facts"><span>Shipped: <b>348</b> models, each holding two <code>LIGHTRE</code></span></div>
+      </div>
+
+      <h3>What every light shares</h3>
+      <ul>
+        <li><b>Ground pool.</b> A <a href="#p-lighttex"><code>[texture]</code></a> on the light frame projects that picture onto the road &mdash; only at night or in a tunnel, and only while the camera is near. For <code>LIGHTRE</code> it is aimed straight ahead along the car; other lights aim along their own facing.</li>
+        <li><b>Real light.</b> A car the player is sitting in also gets a warm spot light (25&ndash;60 range) at each projecting light.</li>
+        <li><b>Breaking.</b> A light is broken when the <code>[DEFORM LIGHT]</code> part it is, or the nearest deformable part above it, gives way. A broken light stays dark until the car is repaired.</li>
+      </ul>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="service">
+      <h2>Exhaust, fuel and AI points</h2>
+
+      <div class="entry" id="f-exhaust">
+        <div class="entry-head"><h3>EXHAUST*</h3><span class="chip type">Dummy or object</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>Where exhaust smoke comes out, and in which direction (its facing). Any number of them. Child of <code>BODY</code>.</p>
+        <div class="facts"><span>Shipped: <b>381</b> models &middot; mostly a single <code>EXHAUST</code></span></div>
+      </div>
+
+      <div class="entry" id="f-smoke">
+        <div class="entry-head"><h3>SMOKE_MOTOR</h3><span class="chip type">Dummy</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>Where smoke rises from a damaged engine. Child of <code>BODY</code>; without it the smoke comes from the car&rsquo;s origin.</p>
+        <div class="facts"><span>Shipped: <b>312</b> models</span></div>
+      </div>
+
+      <div class="entry" id="f-fuel">
+        <div class="entry-head"><h3>FUEL</h3><span class="chip type">Dummy</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>The filler cap. At a gas station the attendant lines the car up so this point sits by the pump. Measured from the model&rsquo;s origin, so keep it at the top level rather than under <code>BODY</code>.</p>
+        <div class="facts"><span>Shipped: <b>359</b> models &middot; 12 of them under <code>BODY</code></span></div>
+      </div>
+
+      <div class="entry" id="f-ai">
+        <div class="entry-head"><h3>AI00 &middot; AI01</h3><span class="chip type">Dummy</span><span class="chip req">Required</span><span class="chip gone">Removed</span></div>
+        <p>Two reference points, normally front and rear, that the AI measures the car from: spacing traffic when it spawns, spotting what the car is about to hit, and the direction a character is pushed out when forced from the car. The first one&rsquo;s height also sets how high the AI&rsquo;s outline of the car sits. Children of <code>BODY</code>. Exact names &mdash; <code>AI0</code> or <code>AI000</code> do not count.</p>
+        <div class="facts"><span>Shipped: <b>388</b> models</span></div>
+      </div>
+
+      <div class="entry" id="f-ballast">
+        <div class="entry-head"><h3>BALLAST*</h3><span class="chip type">Dummy</span><span class="chip">Optional</span><span class="chip gone">Removed</span></div>
+        <p>Extra weight points, looked for only beneath <code>BODY</code> and sorted by the number after the name. They count alongside the seats when the game shifts the centre of mass for the weight on board.</p>
+        <div class="facts"><span>Shipped: none</span></div>
+      </div>
+
+      <div class="callout engine">
+        <span class="label">The file name matters too</span>
+        <p>The game reads a car&rsquo;s name from its file without the last two characters before the extension (<code>polimFor<b>00</b>.4ds</code> &rarr; <code>POLIMFOR</code>). A car named <code>POLCAD</code>, <code>POLI</code>, <code>POLIMFOR</code> or <code>POLIMTUD</code> this way is treated as a police car.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="trams">
+      <h2>Trams and metro</h2>
+      <p class="lead-in">Rail vehicles use almost no names &mdash; their fittings are
+      marked with <a href="#p-rail"><code>RAIL_&hellip;</code> properties</a> on
+      ordinary dummies instead.</p>
+
+      <div class="entry" id="f-dummycol">
+        <div class="entry-head"><h3>DUMMY_COL</h3><span class="chip type">Dummy</span><span class="chip">Optional</span></div>
+        <p>The whole car&rsquo;s collision box, from the dummy&rsquo;s bounds.</p>
+        <div class="facts"><span>Shipped: <code>salina.4ds</code></span></div>
+      </div>
+
+      <div class="entry" id="f-ridic">
+        <div class="entry-head"><h3>RIDIC</h3><span class="chip type">Dummy</span><span class="chip">Optional</span></div>
+        <p>The driver&rsquo;s place. The game seats a driver character here, facing the dummy&rsquo;s way.</p>
+        <div class="facts"><span>Shipped: <code>salina.4ds</code></span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="planes">
+      <h2>Airplanes</h2>
+
+      <div class="entry" id="f-planecol">
+        <div class="entry-head"><h3>Dummy01 &hellip; Dummy04</h3><span class="chip type">Dummy</span><span class="chip">Optional</span></div>
+        <p>Up to four collision boxes, from each dummy&rsquo;s bounds. Exactly these four names; a non-dummy with one of them is skipped.</p>
+      </div>
+
+      <div class="entry" id="f-vrt">
+        <div class="entry-head"><h3>vrt1 &hellip; vrt3 &middot; on_vrt1 &hellip; on_vrt3</h3><span class="chip type">Any type</span><span class="chip">Optional</span></div>
+        <p>Propellers. The <code>vrt</code> ones are the blades shown at low speed; the <code>on_vrt</code> ones are the fast-spinning versions shown instead once the plane speeds up. They spin about their facing direction.</p>
+      </div>
+    </section>
+
+    <p class="part">Part two &middot; User properties</p>
+
+    <section>
+      <div class="callout">
+        <span class="label">What &ldquo;read&rdquo; means here</span>
+        <p>The game never interprets user properties in general. A handful of
+        places look at the text of specific frames, each in its own way &mdash;
+        some want the whole text to match, some search for a word anywhere, some
+        take a single character at a fixed position. Unless an entry says
+        otherwise, <b>case matters</b> and the text can hold other things
+        around it.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    
+    <!-- ================================================================ -->
+    <section id="characters">
+      <h2>Characters</h2>
+      <p class="lead-in">A character is a skinned mesh with joints under it.
+      The game looks up all of these by name, and every one of them is a
+      string in the game&rsquo;s own program.</p>
+
+      <div class="entry" id="c-base">
+        <div class="entry-head"><h3>base</h3><span class="chip type">Single Mesh or Single Morph</span><span class="chip req">Required</span></div>
+        <p>The character&rsquo;s body. The animations the game ships move the
+        body <b>through this frame</b> and only turn the joints, so a skinned
+        mesh under any other name has its limbs bent by an animation while the
+        body itself stays where it stood &mdash; through a crouch or a roll it
+        never leaves the spot. The frame also carries the body&rsquo;s
+        collision sphere, the hit skeleton and the death points.</p>
+        <p>Of the game&rsquo;s 322 skinned meshes, 313 are called
+        <code>base</code>. The nine others are birds called <code>Base</code>,
+        dogs called <code>a</code>, and three custom characters &mdash; each
+        played only by animations made for it, keyed to its own name.</p>
+        <div class="facts"><span>Shipped: <b>293</b> frames</span><span>Where it rests: hip height</span></div>
+      </div>
+
+      <div class="entry" id="c-joints">
+        <div class="entry-head"><h3>back1 &middot; neck &middot; l_thigh &hellip;</h3><span class="chip type">Joint</span></div>
+        <p>The eighteen joints of the human skeleton, hanging under
+        <code>base</code>: <code>back1</code>, <code>back2</code>,
+        <code>back3</code>, <code>neck</code>, <code>l_shoulder</code>,
+        <code>l_arm</code>, <code>l_elbow</code>, <code>l_hand</code> and the
+        same four on the right, <code>l_thigh</code>, <code>l_shin</code>,
+        <code>l_foot</code> and the same three on the right. The game&rsquo;s
+        character animations name these joints, so a skeleton that spells one
+        differently is not turned by them. The add-on&rsquo;s character preset
+        builds exactly this set.</p>
+        <div class="facts"><span>Shipped: <b>284</b> characters carry the full set</span><span>Ceiling: 64 joints under a mesh</span></div>
+      </div>
+
+      <div class="entry" id="c-guns">
+        <div class="entry-head"><h3>gun1 &middot; gun2</h3><span class="chip type">Dummy</span></div>
+        <p>Where a weapon sits in the hand: <code>gun1</code> the right hand,
+        <code>gun2</code> the left. The weapon model is hung on the frame, so
+        its place and facing decide how the gun is held.</p>
+        <div class="facts"><span>Shipped: <b>270</b> each</span></div>
+      </div>
+
+      <div class="entry" id="c-notify">
+        <div class="entry-head"><h3>notify</h3><span class="chip type">Dummy</span></div>
+        <p>Where an animation&rsquo;s event cues land &mdash; footsteps and the
+        like. The game only reads cues from a track of this name, so cues keyed
+        anywhere else are never played. Every one of the 642 animations the
+        game ships puts them here.</p>
+        <div class="facts"><span>Shipped: <b>279</b> characters</span></div>
+      </div>
+
+      <div class="entry" id="c-blnd">
+        <div class="entry-head"><h3>blnd</h3><span class="chip type">Dummy</span></div>
+        <p>Moved by the animations themselves, which use it to join one
+        animation onto the next &mdash; the body carries on from where the
+        last one left it instead of snapping back.</p>
+        <div class="facts"><span>Shipped: <b>261</b> characters</span></div>
+      </div>
+
+      <div class="entry" id="c-targets">
+        <div class="entry-head"><h3>targetN &middot; targetE</h3><span class="chip type">Target</span></div>
+        <p>What the head turns toward. A target frame lists the frames that
+        follow it, and on a character that is the <code>neck</code>; the game
+        moves the target and the head tracks it. <code>targetN</code> is the
+        one nearly every character carries; <code>targetE</code> appears on a
+        handful.</p>
+        <div class="facts"><span>Shipped: <b>178</b> and <b>10</b></span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="weapons">
+      <h2>Weapons</h2>
+      <p class="lead-in">All three are strings in the game&rsquo;s own
+      program, in one run with the weapon animation names.</p>
+
+      <div class="entry" id="w-muzzle">
+        <div class="entry-head"><h3>muzzle</h3><span class="chip type">Dummy</span></div>
+        <p>Where shots leave the gun. The frame&rsquo;s own text is the number
+        of the particle effect for the muzzle flash, and at night the game uses
+        the next number up, so every flash has a night version one higher.</p>
+        <div class="facts"><span>Shipped: <b>11</b> weapons</span><span>e.g. <code>2c1911</code>, <code>2mosin</code></span></div>
+      </div>
+
+      <div class="entry" id="w-zaver">
+        <div class="entry-head"><h3>zaver</h3><span class="chip type">Dummy</span></div>
+        <p>The slide or breech &mdash; <i>z&aacute;věr</i> in Czech. It is on
+        the pistols and rifles that have a moving action: the Colt 1911, the
+        Springfield, the Mosin, the sawn-off.</p>
+        <div class="facts"><span>Shipped: <b>8</b> weapons</span></div>
+      </div>
+
+      <div class="entry" id="w-hit">
+        <div class="entry-head"><h3>hit1 &hellip; hit4</h3><span class="chip type">Dummy</span></div>
+        <p>The striking points of a melee weapon, along the part that lands
+        the blow. They are on the crowbar, the baseball bat, the knife, the
+        bottle and the plank &mdash; never on a gun.</p>
+        <div class="facts"><span>Shipped: <b>24</b> frames over 7 weapons</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="city">
+      <h2>The city and the garage</h2>
+      <p class="lead-in">Names the game looks for in the mission scenes rather
+      than in a model of its own.</p>
+
+      <div class="entry" id="y-park">
+        <div class="entry-head"><h3>park01 &hellip; park16</h3><span class="chip type">Dummy</span></div>
+        <p>Where a car stands in the garage. The game builds the name with two
+        digits, so <code>park1</code> is not found &mdash; it has to be
+        <code>park01</code>. Each mission scene that has a garage carries the
+        full run.</p>
+        <div class="facts"><span>Shipped: <b>704</b> frames across the mission scenes</span></div>
+      </div>
+
+      <div class="entry" id="y-garage">
+        <div class="entry-head"><h3>oblast_garaze_a &middot; oblast_garaze_b</h3><span class="chip type">Dummy</span></div>
+        <p>The two garage areas &mdash; <i>oblast gar&aacute;že</i>, garage
+        area. The game also spells them with the model in front,
+        <code>watercity.oblast_garaze_a</code>, which is how it asks for that
+        frame inside that model.</p>
+        <div class="facts"><span>Shipped: <b>16</b> each</span></div>
+      </div>
+
+      <div class="entry" id="y-roadblock">
+        <div class="entry-head"><h3>ROADBLOCK01 &hellip; ROADBLOCK36</h3><span class="chip type">Dummy</span></div>
+        <p>Where the police put a roadblock. All of them sit in
+        <code>watercity</code>, the city model itself, one per spot.</p>
+        <div class="facts"><span>Shipped: <b>38</b> frames in one model</span></div>
+      </div>
+
+      <div class="entry" id="y-tunnel">
+        <div class="entry-head"><h3>sector tunelmnh</h3><span class="chip type">Sector</span></div>
+        <p>One sector the game knows by name, the tunnel. It is the only
+        sector name in the game&rsquo;s program: every other sector is found
+        through the scene, not by what it is called.</p>
+        <div class="facts"><span>Shipped: <b>26</b> mission scenes</span></div>
+      </div>
+
+      <div class="entry" id="y-wcol">
+        <div class="entry-head"><h3>wcol</h3><span class="chip type">Object</span></div>
+        <p>A collision surface the game looks up by name in the mission
+        scenes &mdash; in the countryside and harbor scenes, where it stands
+        in for water.</p>
+        <div class="facts"><span>Shipped: <b>10</b> objects</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="mission">
+      <h2>Named by a mission, not by the game</h2>
+      <p class="lead-in">These names appear in no game program at all. The
+      mission&rsquo;s own script names them in <code>scene2.bin</code> and acts
+      on them there, so they mean whatever that mission asked of them. They are
+      listed because they look like engine names and are not.</p>
+
+      <div class="entry" id="m-rain">
+        <div class="entry-head"><h3>sem_neprsi01 &middot; semneprsi01 &middot; SEM NEPRSI</h3><span class="chip type">Dummy</span><span class="chip gone">Script only</span></div>
+        <p><i>Sem neprš&iacute;</i> &mdash; &ldquo;it doesn&rsquo;t rain
+        here&rdquo;. In the two scenes that carry the underscored spelling the
+        dummies are plain boxes 5.6 m across, standing under the elevated
+        railway, and their names sit beside the mission&rsquo;s script
+        commands in <code>scene2.bin</code>. The spaced spelling is inside two
+        truck models, where it marks the space under the canvas.</p>
+        <div class="facts"><span>Shipped: <b>14</b> frames</span><span>Three spellings</span></div>
+      </div>
+
+      <div class="entry" id="m-others">
+        <div class="entry-head"><h3>edwe &middot; DEST01&hellip; &middot; misto</h3><span class="chip type">Dummy</span><span class="chip gone">Script only</span></div>
+        <p><code>edwe</code> stands in the Salieri bar scenes;
+        <code>DEST01</code> to <code>DEST12</code> sit in the truck models
+        (<i>destination</i>); <code>misto</code> is Czech for
+        &ldquo;place&rdquo;, on the trucks with a canvas. None of them is in a
+        game program.</p>
+        <div class="facts"><span>Shipped: <b>18</b>, <b>36</b> and <b>3</b></span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="free">
+      <h2>Names nothing reads</h2>
+      <p class="lead-in">Most dummies in the game&rsquo;s models are named by
+      whoever modeled them. What the game acts on there is the frame&rsquo;s
+      <b>user property</b>, not its name &mdash; a collision volume is
+      <code>VOLB</code> in the text, whatever the frame is called. Rename these
+      freely.</p>
+
+      <div class="entry" id="f-kol">
+        <div class="entry-head"><h3>kol &middot; kolize &middot; koli &middot; ~~kol01</h3><span class="chip type">Dummy</span></div>
+        <p><i>Kolize</i> is Czech for collision, and it is the usual name for a
+        collision dummy: <code>kol 1</code>, <code>kolize01</code>,
+        <code>~~kol01</code>, <code>koldes</code>, <code>kolpult</code>. The
+        leading <code>~~</code> is a sorting trick in the modeling tool, not
+        anything the game sees.</p>
+        <div class="facts"><span>Shipped: <b>439</b> frames, dozens of spellings</span></div>
+      </div>
+
+      <div class="entry" id="f-vol">
+        <div class="entry-head"><h3>vol &middot; vol01 &middot; ~~vol1</h3><span class="chip type">Dummy</span></div>
+        <p>Short for the volume the dummy holds. Again only the text on it
+        counts.</p>
+        <div class="facts"><span>Shipped: <b>34</b> frames</span></div>
+      </div>
+
+      <div class="entry" id="f-dummy">
+        <div class="entry-head"><h3>Dummy01 &middot; Group01 &middot; Box01</h3><span class="chip type">Any type</span></div>
+        <p>What the modeling tool names a new object. Over four thousand
+        frames in the game&rsquo;s models still carry one, on everything from
+        collision boxes to lamp posts.</p>
+        <div class="facts"><span>Shipped: <b>4,429</b> named <code>Dummy&lt;n&gt;</code></span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="unused">
+      <h2>Known to the game, never used</h2>
+      <p class="lead-in">The game looks these up, and no model it ships
+      answers. They are the safest names to try if you want behavior nothing
+      else is using &mdash; and the likeliest to have been dropped late.</p>
+
+      <div class="entry" id="u-ballast">
+        <div class="entry-head"><h3>BALLAST*</h3><span class="chip type">Dummy</span><span class="chip gone">Never used</span></div>
+        <p>Looked for under <code>BODY</code> on a vehicle, beside the seats
+        and the collision dummies. Not one of the 440 shipped vehicles carries
+        one. See <a href="#service">Exhaust, fuel and AI points</a> for what
+        the game does with it.</p>
+      </div>
+
+      <div class="entry" id="u-lightba">
+        <div class="entry-head"><h3>LIGHTBA*</h3><span class="chip type">Dummy</span><span class="chip gone">Never used</span></div>
+        <p>One of the vehicle light families, in the table beside
+        <code>LIGHTBR*</code>, <code>LIGHTBI*</code>, <code>LIGHTIN*</code> and
+        <code>LIGHTRE*</code>, which are all used. Nothing shipped has a
+        <code>LIGHTBA</code> light.</p>
+      </div>
+
+      <div class="entry" id="u-scene">
+        <div class="entry-head"><h3>nesahat &middot; road_bl_E &middot; road_bl_I &middot; trf_car_driver &middot; traffic_element</h3><span class="chip type">Scene names</span><span class="chip gone">Never used</span></div>
+        <p>Names the game carries for scene objects rather than model frames
+        &mdash; <i>nesahat</i> is Czech for &ldquo;don&rsquo;t touch&rdquo;,
+        and it sits in the program right beside the garage areas. No frame in
+        any shipped 4DS is called any of them.</p>
+      </div>
+    </section>
+    <footer>
+      Compiled from the names the game&rsquo;s own program carries and how it
+      uses them, checked against every <code>.4ds</code> shipped with Mafia
+      &mdash; the <code>models</code> folder and the mission scenes. Where a
+      shipped model and the game disagree, the entry says so.
+    </footer>
+  </main>
+</div>
+</body>
+</html>

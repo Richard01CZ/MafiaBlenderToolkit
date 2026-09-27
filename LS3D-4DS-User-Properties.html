@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4DS User Properties</title>
+<meta name="description" content="Every user property in Mafia's models, every form it takes, and what each one does.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; }
+  img, svg { max-width: 100%; }
+</style>
+<style>
+  :root {
+    --ground:   #FAFAF9;
+    --surface:  #FFFFFF;
+    --sunken:   #F3F1ED;
+    --ink:      #1A1917;
+    --muted:    #6E6862;
+    --rule:     #E4E0DA;
+    --accent:   #8E2B22;
+    --accent-soft: #F6EBE9;
+    --engine:   #2F5D62;
+    --engine-soft: #E7F0F0;
+    --shadow:   rgba(26, 25, 23, 0.07);
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #141312;
+      --surface:  #1C1A18;
+      --sunken:   #232120;
+      --ink:      #EBE7E1;
+      --muted:    #9B948C;
+      --rule:     #2F2B27;
+      --accent:   #E68A76;
+      --accent-soft: #2C1E1B;
+      --engine:   #7FBEC3;
+      --engine-soft: #16292B;
+      --shadow:   rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #141312;
+    --surface:  #1C1A18;
+    --sunken:   #232120;
+    --ink:      #EBE7E1;
+    --muted:    #9B948C;
+    --rule:     #2F2B27;
+    --accent:   #E68A76;
+    --accent-soft: #2C1E1B;
+    --engine:   #7FBEC3;
+    --engine-soft: #16292B;
+    --shadow:   rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 32px 120px;
+  }
+
+  /* ── navigation ─────────────────────────────────────────── */
+  .nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    font-size: 13.5px;
+  }
+
+  .nav-brand {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+
+  .nav-build {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    margin-bottom: 26px;
+  }
+
+  .nav h4 {
+    font-family: var(--sans);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: var(--muted);
+    margin: 24px 0 8px;
+  }
+
+  .nav a {
+    display: block;
+    padding: 3px 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 11px;
+    margin-left: -13px;
+    transition: border-color 0.12s, color 0.12s;
+  }
+
+  .nav a:hover { color: var(--accent); border-left-color: var(--accent); }
+  .nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── content ────────────────────────────────────────────── */
+  main { padding: 40px 0 0; min-width: 0; }
+
+  .masthead {
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 34px;
+    margin-bottom: 12px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(34px, 5vw, 50px);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    margin: 12px 0 16px;
+    text-wrap: balance;
+  }
+
+  .standfirst {
+    font-size: 18.5px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  section { padding-top: 54px; scroll-margin-top: 20px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 27px;
+    letter-spacing: -0.015em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-right: 12px;
+    letter-spacing: 0;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 16.5px;
+    letter-spacing: -0.005em;
+    margin: 34px 0 8px;
+  }
+
+  h4 {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 26px 0 8px;
+  }
+
+  p, li { max-width: 68ch; }
+  p { margin: 0 0 14px; }
+  ul, ol { margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.875em;
+    background: var(--sunken);
+    padding: 1.5px 5px;
+    border-radius: 2px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--sunken);
+    border-left: 2px solid var(--rule);
+    padding: 15px 18px;
+    overflow-x: auto;
+    margin: 0 0 18px;
+  }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 520px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--ink);
+    padding: 0 14px 7px 0;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 9px 14px 9px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; }
+
+  .bit, .val { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  .name { font-weight: 500; white-space: nowrap; }
+  .dim { color: var(--muted); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .tag-live   { background: var(--accent-soft); color: var(--accent); }
+  .tag-engine { background: var(--engine-soft); color: var(--engine); }
+  .tag-dead   { background: var(--sunken); color: var(--muted); }
+
+  tr.engine-row td:not(.desc) { color: var(--muted); }
+
+  .callout {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 16px 20px;
+    margin: 0 0 20px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+
+  .callout.engine { border-left-color: var(--engine); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .callout .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .callout.engine .label { color: var(--engine); }
+
+  .lead-in {
+    color: var(--muted);
+    font-size: 16.5px;
+    max-width: 64ch;
+    margin: 0 0 22px;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    margin-right: 7px;
+    vertical-align: -1px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 46px 0 0;
+  }
+
+  footer {
+    margin-top: 60px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; gap: 0; padding: 0 22px 80px; }
+    .nav {
+      position: static;
+      max-height: none;
+      padding: 30px 0 6px;
+      border-bottom: 1px solid var(--rule);
+      columns: 2;
+      column-gap: 28px;
+    }
+    .nav-brand, .nav-build { column-span: all; }
+    main { padding-top: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+    .prop { border-top: 1px solid var(--rule); padding: 22px 0 4px; }
+    .prop:first-of-type { border-top: 0; }
+    .prop h3 { font-family: var(--mono); font-size: 16px; font-weight: 600;
+               color: var(--accent); margin: 0 0 4px; word-break: break-word; }
+    .prop .sub { font-size: 12.5px; color: var(--muted); margin: 0 0 10px;
+                 font-family: var(--mono); }
+    .prop p { margin: 0 0 10px; max-width: 68ch; }
+    .forms { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+    .forms span { font-family: var(--mono); font-size: 12px;
+                  border: 1px solid var(--rule); border-radius: 2px;
+                  padding: 3px 7px; background: var(--sunken);
+                  white-space: pre-wrap; word-break: break-word; }
+    .forms span b { color: var(--muted); font-weight: 400; }
+    .seen { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+    .seen code { word-break: break-word; }
+    table.opts { margin-top: 10px; }
+    table.opts td:first-child { font-family: var(--mono); white-space: nowrap;
+                                font-weight: 600; }
+
+:root { --warn: #8A5A00; --warn-soft: #FBF1DC; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn: #E0B45C; --warn-soft: #2A2214; } }
+:root[data-theme="dark"] { --warn: #E0B45C; --warn-soft: #2A2214; }
+
+/* the sections moved here from the vehicle reference keep their own styling */
+.moved /* navigation */
+  .nav {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 40px 0;
+    font-size: 13.5px;
+  }
+.moved /* content */
+  main { padding: 40px 0 0; min-width: 0; }
+.moved h1 {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(32px, 5vw, 48px); line-height: 1.08; letter-spacing: -0.022em;
+    margin: 12px 0 16px; text-wrap: balance;
+  }
+.moved .part {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); margin: 64px 0 0; padding-top: 18px; border-top: 2px solid var(--ink);
+  }
+.moved section { padding-top: 46px; scroll-margin-top: 16px; }
+.moved h2 { font-family: var(--serif); font-weight: 600; font-size: 26px; letter-spacing: -0.015em; margin: 0 0 8px; text-wrap: balance; }
+.moved h3 { font-size: 16.5px; font-weight: 600; margin: 30px 0 8px; }
+.moved p, .moved li { max-width: 68ch; }
+.moved p { margin: 0 0 14px; }
+.moved ul { margin: 0 0 16px; padding-left: 20px; }
+.moved li { margin-bottom: 6px; }
+.moved a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.moved b { font-weight: 600; }
+.moved code {
+    font-family: var(--mono); font-size: 0.86em;
+    background: var(--sunken); padding: 1.5px 5px; border-radius: 2px;
+    overflow-wrap: anywhere;
+  }
+.moved .lead-in { color: var(--muted); font-size: 16.5px; max-width: 66ch; margin: 0 0 20px; }
+.moved .callout {
+    border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    background: var(--surface); padding: 16px 20px; margin: 0 0 20px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+.moved .callout.engine { border-left-color: var(--engine); }
+.moved .callout.warn { border-left-color: var(--warn); }
+.moved .callout p:last-child, .moved .callout ul:last-child { margin-bottom: 0; }
+.moved .callout .label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); display: block; margin-bottom: 6px;
+  }
+.moved .callout.engine .label { color: var(--engine); }
+.moved .callout.warn .label { color: var(--warn); }
+.moved /* tables */
+  .scroller { overflow-x: auto; margin: 0 0 20px; }
+.moved table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.moved th {
+    text-align: left; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); border-bottom: 1px solid var(--ink); padding: 0 14px 7px 0; white-space: nowrap;
+  }
+.moved td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.moved td:last-child, .moved th:last-child { padding-right: 0; }
+.moved tr:last-child td { border-bottom: none; }
+.moved td.k { font-family: var(--mono); font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--accent); }
+.moved td.n { white-space: nowrap; color: var(--muted); }
+.moved /* one frame name or property */
+  .entry { border-top: 1px solid var(--rule); padding: 22px 0 6px; }
+.moved .entry:first-of-type { border-top: 0; }
+.moved .entry-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 10px; margin: 0 0 10px; }
+.moved .entry-head h3 {
+    font-family: var(--mono); font-size: 17px; font-weight: 600; color: var(--accent);
+    margin: 0; margin-right: 4px; letter-spacing: 0; overflow-wrap: anywhere;
+  }
+.moved .entry-head h3 .alt { color: var(--muted); font-weight: 400; }
+.moved .entry p { margin: 0 0 10px; }
+.moved .entry ul { margin-bottom: 10px; }
+.moved .chip {
+    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
+    padding: 2px 7px; border-radius: 2px; white-space: nowrap; text-transform: uppercase;
+    background: var(--sunken); color: var(--muted);
+  }
+.moved .chip.type { background: var(--engine-soft); color: var(--engine); }
+.moved .chip.req { background: var(--accent-soft); color: var(--accent); }
+.moved .chip.gone { background: var(--sunken); color: var(--muted); }
+.moved .chip.warn { background: var(--warn-soft); color: var(--warn); }
+.moved /* how the game takes a name apart */
+  .anatomy { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0 14px; }
+.moved .seg { display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
+.moved .seg b {
+    font-family: var(--mono); font-size: 15px; font-weight: 600; text-align: center;
+    padding: 5px 10px; background: var(--sunken); border-bottom: 2px solid var(--ink); color: var(--ink);
+  }
+.moved .seg.var b { background: var(--engine-soft); color: var(--engine); border-bottom-color: var(--engine); font-weight: 500; }
+.moved .seg.opt b { background: transparent; color: var(--muted); border: 1px dashed var(--rule); border-bottom: 2px dashed var(--muted); }
+.moved .seg em { font-style: normal; font-size: 11px; line-height: 1.3; color: var(--muted); text-align: center; padding: 5px 4px 0; max-width: 16ch; }
+.moved .facts { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 12.5px; color: var(--muted); margin: 8px 0 6px; }
+.moved .facts span b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.moved .forms { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 8px; }
+.moved .forms span {
+    font-family: var(--mono); font-size: 12px; border: 1px solid var(--rule); border-radius: 2px;
+    padding: 3px 7px; background: var(--surface); overflow-wrap: anywhere;
+  }
+.moved .forms span i { font-style: normal; color: var(--muted); }
+.moved .deadlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 28px; margin: 0 0 20px; }
+.moved .deadlist div { border-top: 1px solid var(--rule); padding: 10px 0 12px; font-size: 14px; }
+.moved .deadlist div code { font-weight: 600; color: var(--ink); }
+.moved .deadlist div span { display: block; color: var(--muted); margin-top: 3px; }
+
+.prop .where { margin: 6px 0 10px; font-size: 14.5px; color: var(--muted); }
+.prop .where b { font-size: 11.5px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--engine); margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <div class="nav-brand">User Properties</div>
+    <div class="nav-build">4DS reference</div>
+    <h4>Contents</h4>
+    <a href="#directives">Switches written into flags</a>
+<a href="#types">What kind of object this is</a>
+<a href="#volumes">Collision and detector volumes</a>
+<a href="#game">Read by the game itself</a>
+<a href="#unknown">Present but not established</a>
+    <h4>What the game does with them</h4>
+    <a href="#p-cars">On cars</a>
+    <a href="#p-trucks">On trucks</a>
+    <a href="#p-rail">On trams and metro</a>
+    <a href="#p-crash">Breakable scenery</a>
+    <a href="#p-objects">Script, physics and door objects</a>
+    <a href="#p-people">Characters and weapons</a>
+    <a href="#p-unread">Never read by the game</a>
+    <h4>Reference</h4>
+    <a href="#appendix">Every spelling found</a>
+  </nav>
+
+  <main>
+    <header class="masthead">
+      <div class="eyebrow">Blender add-on &middot; Mafia</div>
+      <h1>4DS User Properties</h1>
+      <p class="standfirst">Every user property found across the
+      100,987 objects in Mafia&rsquo;s models &mdash;
+      14,132 carry one &mdash; with every form each takes and
+      how often, grouped by what reads it. What a frame is <i>called</i> is a subject of its own: see <a href="LS3D-4DS-Dummy-Names.html">4DS Dummy Names</a>.</p>
+    </header>
+
+    <section class="panel">
+    <div class="callout">
+    <span class="label">How to read this</span>
+    <p>Each entry shows the property, the options it accepts, and then every
+    spelling found in the shipped models with a count. The format is
+    forgiving &mdash; case, spaces around commas and braces around tags all
+    vary between models and none of it changes the meaning.</p>
+    <p>Every object has a <b>User Props</b> box at the bottom of the 4DS panel.
+    Whatever it holds is written back unchanged, so a property this add-on has
+    never heard of still survives a round trip. The format allows 255 bytes;
+    longer text is clipped on export with a warning.</p>
+    </div>
+    </section>
+
+<section id="directives" class="panel">
+<h2><span class="num">01</span>Switches written into flags</h2>
+<p class="lead-in">These never reach the game. The exporter reads the word and sets the matching switch on the object, and that switch is what the game acts on. Verified across every model: each one lines up exactly with its flag, in both directions. In Blender you can tick the switch instead of typing the word.</p>
+<div class="prop"><h3>no_fog</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On any visual object &mdash; a mesh, a billboard, a morph. Nothing reads it on a dummy, a sector or a joint.</p><p>Sets <b>No Fog</b>. The object keeps full color at any distance instead of fading into the sector&rsquo;s fog. Used on skies, backdrops and distant landmarks.</p><div class="forms"><span>no_fog <b>&times;1721</b></span></div><p class="seen"><b>1,721</b> object(s) in <b>355</b> model(s) &middot; Visual / Object &times;1721<br>Most in: <code>models/ambulance00.4ds</code>, <code>models/ambulance10.4ds</code>, <code>models/polimTud00.4ds</code></p></div><div class="prop"><h3>z_bias</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On a visual object, and only useful on one that lies flat against another surface: posters, road markings, stains, shadows painted on the ground.</p><p>Sets <b>Z-Bias</b>, drawing the object just in front of the surface beneath it so posters, road markings and stains do not flicker. Often combined with other properties on the same object, separated by a comma.</p><div class="forms"><span>z_bias <b>&times;150</b></span></div><p class="seen"><b>150</b> object(s) in <b>105</b> model(s) &middot; Visual / Object &times;150<br>Most in: <code>missions/MISE20-GALERY/scene.4ds</code>, <code>missions/mise17-vezeni/scene.4ds</code>, <code>missions/00MENU/scene.4ds</code></p></div><div class="prop"><h3>no_shadow</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On a visual object. A few dummies in the game carry it, where it does nothing.</p><p>Clears <b>Shadows on Diffuse</b>, so the object receives no shadow.</p><div class="forms"><span>no_shadow <b>&times;102</b></span></div><p class="seen"><b>102</b> object(s) in <b>67</b> model(s) &middot; Visual / Object &times;83, Dummy &times;19<br>Most in: <code>models/fmv_zabrgal.4ds</code>, <code>models/2bar.4ds</code>, <code>models/2prkno.4ds</code></p></div><div class="prop"><h3>no_proj</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On a visual object.</p><p>Clears <b>Projection on Diffuse</b>, so headlights and bullet holes do not land on the object.</p><div class="forms"><span>no_proj <b>&times;225</b></span></div><p class="seen"><b>225</b> object(s) in <b>1</b> model(s) &middot; Visual / Object &times;225<br>Most in: <code>models/watercity.4ds</code></p></div><div class="prop"><h3>av_light</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On a visual object.</p><p>Sets <b>Flat Lighting</b> &mdash; the object is lit with one even tone rather than shaded across its surface.</p></div><div class="prop"><h3>NO_MIRROR</h3><p class="sub">exact word, upper case</p><p class="where"><b>Where</b> On a visual object. Two objects in the whole game use it.</p><p>Sets <b>No Mirror</b>. When the game works out what a mirror can see, anything carrying this is left out of the reflection.</p><div class="forms"><span>NO_MIRROR <b>&times;2</b></span></div><p class="seen"><b>2</b> object(s) in <b>1</b> model(s) &middot; Visual / Object &times;2<br>Most in: <code>missions/AUTOSALON/scene.4ds</code></p></div>
+</section>
+<section id="types" class="panel">
+<h2><span class="num">02</span>What kind of object this is</h2>
+<p class="lead-in">Upper-case tags telling the exporter what to write the frame out as. The braced form <code>{TAG}</code> means the same thing. In this add-on you pick the same thing from the <b>Frame Type</b> and <b>Visual Type</b> menus, so you need not type these &mdash; but you will see them on anything imported from the game.</p>
+<div class="prop"><h3>SECT &nbsp;/&nbsp; {SECT}</h3><p class="sub">with or without braces</p><p class="where"><b>Where</b> On the mesh that is to become a sector &mdash; the room volume itself, not what stands in it.</p><p>Marks the mesh as a <b>sector</b>, a room volume for the visibility system.</p><div class="forms"><span>{SECT} <b>&times;1119</b></span><span>SECT <b>&times;639</b></span></div><p class="seen"><b>1,758</b> object(s) in <b>78</b> model(s) &middot; Visual / Object &times;1758<br>Most in: <code>missions/MISE20-GALERY/scene.4ds</code>, <code>missions/mise17-vezeni/scene.4ds</code>, <code>missions/MISE11-VILA/scene.4ds</code></p></div><div class="prop"><h3>SNGM</h3><p class="sub">exact word</p><p class="where"><b>Where</b> On the character&rsquo;s skinned mesh, the one called <code>base</code>.</p><p>Marks the mesh as a <b>Single Mesh</b>: skinned geometry driven by an armature.</p><div class="forms"><span>SNGM <b>&times;146</b></span></div><p class="seen"><b>146</b> object(s) in <b>146</b> model(s) &middot; Visual / Single Mesh &times;146<br>Most in: <code>models/!hadice model.4ds</code>, <code>models/Bguard01.4ds</code>, <code>models/Bguard03.4ds</code></p></div><div class="prop"><h3>SNGMRPH</h3><p class="sub">exact word, sometimes with a second line</p><p class="where"><b>Where</b> On a skinned mesh that also carries morph targets &mdash; a character&rsquo;s <code>base</code> with a face.</p><p>Marks the mesh as a <b>Single Morph</b>: skinned <i>and</i> carrying morph targets. Character faces use this.</p><div class="forms"><span>SNGMRPH <b>&times;198</b></span><span>SNGMRPH
+
+no_shadow <b>&times;2</b></span></div><p class="seen"><b>200</b> object(s) in <b>200</b> model(s) &middot; Visual / Single Morph &times;200<br>Most in: <code>models/!TommyHIGH.4ds</code>, <code>models/Alice1.4ds</code>, <code>models/AsisPZ1.4ds</code></p></div><div class="prop"><h3>MRPH</h3><p class="sub">exact word</p><p class="where"><b>Where</b> On the mesh that carries the morph targets.</p><p>Marks the mesh as a <b>Morph</b> &mdash; morph targets without skinning.</p><div class="forms"><span>MRPH <b>&times;134</b></span></div><p class="seen"><b>134</b> object(s) in <b>79</b> model(s) &middot; Visual / Morph &times;134<br>Most in: <code>missions/MISE07-SARA/scene.4ds</code>, <code>models/!TommyHIGH.4ds</code>, <code>models/Enemy91.4ds</code></p></div><div class="prop"><h3>BBRD[=axis][!]</h3><p class="sub">tag, optional axis, optional exclamation</p><p class="where"><b>Where</b> On the mesh that is to turn toward the camera. Almost always a single quad.</p><p>Marks the mesh as a <b>billboard</b>, which turns to face the camera. The optional parts choose the axis it spins around and whether it is locked to that axis alone. Confirmed against the billboard data in every model that has one.</p><div class="scroller"><table class="opts"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>BBRD</td><td class="desc">Turns freely. Axis Z, not locked.</td></tr><tr><td>BBRD=X</td><td class="desc">Spins around X, not locked.</td></tr><tr><td>BBRD=Y!</td><td class="desc">Locked to Y &mdash; the game&rsquo;s up axis. This is the upright signpost case.</td></tr><tr><td>BBRD=Z!</td><td class="desc">Locked to Z.</td></tr><tr><td>!</td><td class="desc">The exclamation mark is what locks it to the named axis. Without it the billboard turns freely.</td></tr><tr><td>lower case</td><td class="desc">Both <code>=z!</code> and <code>=Z!</code> appear and mean the same.</td></tr></tbody></table></div><div class="forms"><span>{BBRD},no_fog <b>&times;52</b></span><span>BBRD=z!,no_fog <b>&times;40</b></span><span>BBRD=y! <b>&times;32</b></span><span>BBRD <b>&times;24</b></span><span>{BBRD} <b>&times;13</b></span><span>BBRD=z! <b>&times;13</b></span><span>BBRD=Y! <b>&times;3</b></span><span>{BBRD=Y!} <b>&times;2</b></span><span>{BBRD}, no_fog <b>&times;2</b></span><span>BBRD=Y!, no_fog <b>&times;1</b></span><span>BBRD=X <b>&times;1</b></span><span>BBRD=x <b>&times;1</b></span></div><p class="seen"><b>184</b> object(s) in <b>73</b> model(s) &middot; Visual / Billboard &times;184<br>Most in: <code>missions/MISE16-LETISTE/scene.4ds</code>, <code>missions/MISE08-HOTEL/scene.4ds</code>, <code>models/g_jerab.4ds</code></p></div><div class="prop"><h3>LENSF &nbsp;/&nbsp; LENSF[0]</h3><p class="sub">tag, optional index</p><p class="where"><b>Where</b> On the frame the flare is drawn at. Its mesh is not drawn.</p><p>Marks the frame as a <b>lens flare</b>. Two models add a bracketed index.</p><div class="forms"><span>LENSF <b>&times;110</b></span><span>LENSF[0] <b>&times;2</b></span></div><p class="seen"><b>112</b> object(s) in <b>61</b> model(s) &middot; Visual / Lens Flare &times;112<br>Most in: <code>missions/MISE08-HOTEL/scene.4ds</code>, <code>models/9lustr2.4ds</code>, <code>models/xsvetlo 13 on.4ds</code></p></div><div class="prop"><h3>TRGT &nbsp;/&nbsp; TRGT=targetN</h3><p class="sub">tag, optional target name</p><p class="where"><b>Where</b> Two places: the tag alone on the target frame itself, and the <code>=</code> form on each frame that is to turn toward it &mdash; on a character that is the <code>neck</code> joint, and on a few models the eyes.</p><p>Marks the frame as a <b>target</b>. The <code>=</code> form names what it points at. Case varies between models and does not matter.</p><div class="scroller"><table class="opts"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>TRGT</td><td class="desc">A target with no named partner.</td></tr><tr><td>TRGT=targetN</td><td class="desc">Points at the target called <i>targetN</i>.</td></tr><tr><td>TRGT=targetE</td><td class="desc">Points at <i>targetE</i>.</td></tr></tbody></table></div><div class="forms"><span>TRGT <b>&times;294</b></span><span>TRGT=targetN <b>&times;198</b></span><span>TRGT=targetE <b>&times;122</b></span><span>trgt=targetN <b>&times;26</b></span><span>trgt=TargetN <b>&times;4</b></span></div><p class="seen"><b>644</b> object(s) in <b>230</b> model(s) &middot; Target &times;294, Joint &times;228, Visual / Object &times;122<br>Most in: <code>models/!TommyHIGH.4ds</code>, <code>models/FrankHIGH.4ds</code>, <code>models/Michelle.4ds</code></p></div><div class="prop"><h3>mirror</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On the flat mesh the reflection is drawn in.</p><p>Marks the mesh as a <b>mirror</b> surface.</p><div class="forms"><span>mirror <b>&times;9</b></span></div><p class="seen"><b>9</b> object(s) in <b>9</b> model(s) &middot; Visual / Mirror &times;9<br>Most in: <code>models/kaluz.4ds</code>, <code>models/kaluz1.4ds</code>, <code>models/kaluz2.4ds</code></p></div><div class="prop"><h3>JTVS &nbsp;/&nbsp; JTVS+</h3><p class="sub">tag, optional plus</p><p class="where"><b>Where</b> On a dummy beneath a skinned model.</p><p>Marks a dummy as a joint-visual helper on skinned models.</p><div class="forms"><span>JTVS <b>&times;10</b></span><span>JTVS+ <b>&times;1</b></span></div><p class="seen"><b>11</b> object(s) in <b>11</b> model(s) &middot; Dummy &times;11<br>Most in: <code>models/Boxer04.4ds</code>, <code>models/I04Delnik01+.4ds</code>, <code>models/PaulieCOATHAT.4ds</code></p></div>
+</section>
+<section id="volumes" class="panel">
+<h2><span class="num">03</span>Collision and detector volumes</h2>
+<p class="lead-in">Placed on dummies to give an object physical shape. The shape comes from the dummy&rsquo;s box; the tag says how it is treated. Only <code>DYNB</code> is read by the running game &mdash; the rest are consumed when the level&rsquo;s collision data is built.</p><p>The number after the comma is a filter mask deciding what the volume interacts with. It is written as hex (<code>0x13</code>) or plain digits (<code>41</code>), with or without a space, and both spellings appear in the shipped models. The mask is read when the level&rsquo;s collision data is built rather than by the running game, so the meaning of each bit is not established here &mdash; the full set of values used is listed below. A trailing letter code (<code>,S</code>, <code>,M</code>, <code>,NFT</code>, <code>,OFF_</code>) appears on a handful and is also unestablished.</p>
+<div class="prop"><h3>VOLB[,mask][,code]</h3><p class="sub">box &mdash; the most common volume</p><p class="where"><b>Where</b> On a dummy. The dummy&rsquo;s own box is the volume, so its size and turn are the shape; the frame&rsquo;s name is free.</p><p>A <b>box</b> collision volume. 32 different spellings appear in the game, which is a good illustration of how loose the format is.</p><div class="forms"><span>VOLB <b>&times;235</b></span><span>VOLB,0x19 <b>&times;113</b></span><span>VOLB,0x13 <b>&times;87</b></span><span>VOLB, 41 <b>&times;61</b></span><span>VOLB,0x33 <b>&times;30</b></span><span>VOLB,0x14 <b>&times;20</b></span><span>VOLB,0x04 <b>&times;19</b></span><span>VOLB,0x20 <b>&times;14</b></span><span>VOLB, 0x20 <b>&times;13</b></span><span>VOLB,0x17 <b>&times;12</b></span><span>VOLB,0x19,M <b>&times;8</b></span><span>VOLB,0x33,NFT <b>&times;7</b></span><span>VOLB, 0x33 <b>&times;5</b></span><span>VOLB,0x36 <b>&times;4</b></span><span>VOLB,0x02 <b>&times;4</b></span><span>VOLB,0x13,NFT <b>&times;2</b></span><span>VOLB, 0x36 <b>&times;2</b></span><span>VOLB, 0x38 <b>&times;2</b></span><span>VOLB,0x06 <b>&times;2</b></span><span>VOLB,0x21 <b>&times;2</b></span><span>VOLB,0x42 <b>&times;2</b></span><span>VOLB, 33 <b>&times;2</b></span><span>VOLB,0x05 <b>&times;2</b></span><span>VOLB,0x4 <b>&times;1</b></span><span>VOLB,0x38 <b>&times;1</b></span><span>VOLB, 0x33, S <b>&times;1</b></span><span>VOLB, 17 <b>&times;1</b></span><span>VOLB,13 <b>&times;1</b></span><span>{VOLB} <b>&times;1</b></span><span>VOLB, 0 <b>&times;1</b></span><span>VOLB,,0x33 <b>&times;1</b></span><span>VOLB, 0x19 <b>&times;1</b></span></div><p class="seen"><b>657</b> object(s) in <b>353</b> model(s) &middot; Dummy &times;657<br>Most in: <code>models/bazen.4ds</code>, <code>models/nadz_zastavka.4ds</code>, <code>models/9vagdrv.4ds</code></p></div><div class="prop"><h3>VOLA[,mask]</h3><p class="sub">axis-aligned</p><p class="where"><b>Where</b> On a dummy, like the others of the family.</p><p>An <b>axis-aligned</b> volume.</p><div class="forms"><span>VOLA,0x13 <b>&times;87</b></span><span>VOLA,0x33 <b>&times;14</b></span><span>VOLA,0x19 <b>&times;12</b></span><span>VOLA <b>&times;12</b></span><span>VOLA,0x20 <b>&times;4</b></span><span>VOLA,0x17 <b>&times;3</b></span><span>VOLA,0x04 <b>&times;1</b></span></div><p class="seen"><b>133</b> object(s) in <b>90</b> model(s) &middot; Dummy &times;133<br>Most in: <code>models/66stn4S.4ds</code>, <code>models/9stan1s.4ds</code>, <code>models/@Rstul01.4ds</code></p></div><div class="prop"><h3>VOLR[,mask][,code]</h3><p class="sub">rectangle / rounded</p><p class="where"><b>Where</b> On a dummy.</p><p>A <b>rectangular or rounded</b> volume.</p><div class="forms"><span>VOLR,0x13 <b>&times;28</b></span><span>VOLR, 24 <b>&times;16</b></span><span>VOLR <b>&times;15</b></span><span>VOLR,0x19 <b>&times;11</b></span><span>VOLR,0x14 <b>&times;9</b></span><span>VOLR,0x33 <b>&times;9</b></span><span>VOLR,33,S <b>&times;8</b></span><span>VOLR,0x04 <b>&times;4</b></span><span>VOLR,29 <b>&times;3</b></span><span>VOLR, 0x33 <b>&times;2</b></span><span>VOLR,0x02 <b>&times;2</b></span><span>VOLR, 17 <b>&times;2</b></span><span>VOLR,33 <b>&times;2</b></span><span>VOLR,0x21 <b>&times;1</b></span><span>VOLR, 33 <b>&times;1</b></span><span>VOLR,36 <b>&times;1</b></span></div><p class="seen"><b>114</b> object(s) in <b>38</b> model(s) &middot; Dummy &times;114<br>Most in: <code>models/nadz_zastavka.4ds</code>, <code>models/watercity.4ds</code>, <code>models/bazen.4ds</code></p></div><div class="prop"><h3>VOLC[,mask]</h3><p class="sub">cylinder</p><p class="where"><b>Where</b> On a dummy.</p><p>A <b>cylinder</b> volume &mdash; posts, barrels, pipes.</p><div class="forms"><span>VOLC <b>&times;23</b></span><span>VOLC,0x13 <b>&times;20</b></span><span>VOLC,0x19 <b>&times;14</b></span><span>VOLC,0x04 <b>&times;5</b></span><span>VOLC, 0x19 <b>&times;1</b></span></div><p class="seen"><b>63</b> object(s) in <b>50</b> model(s) &middot; Dummy &times;63<br>Most in: <code>models/9chram.4ds</code>, <code>models/9chramd.4ds</code>, <code>models/podstrom.4ds</code></p></div><div class="prop"><h3>VOLS[,mask][,code]</h3><p class="sub">sphere</p><p class="where"><b>Where</b> On a dummy.</p><p>A <b>sphere</b> volume.</p><div class="forms"><span>VOLS,0x33 <b>&times;6</b></span><span>VOLS,0x17 <b>&times;2</b></span><span>VOLS,0x21 <b>&times;1</b></span><span>VOLS, 0x19 <b>&times;1</b></span><span>VOLS,0x33,S <b>&times;1</b></span><span>VOLS,0x19 <b>&times;1</b></span></div><p class="seen"><b>12</b> object(s) in <b>12</b> model(s) &middot; Dummy &times;12<br>Most in: <code>models/9gramec.4ds</code>, <code>models/9hod.4ds</code>, <code>models/9kkytky.4ds</code></p></div><div class="prop"><h3>VOLF[,mask][,code]</h3><p class="sub">face / plane</p><p class="where"><b>Where</b> On a dummy.</p><p>A <b>face or plane</b> volume.</p><div class="forms"><span>VOLF,0x13 <b>&times;9</b></span><span>VOLF, 0x45, OFF_ <b>&times;4</b></span><span>VOLF, 45 <b>&times;4</b></span><span>VOLF <b>&times;3</b></span><span>VOLF,0x19 <b>&times;2</b></span><span>VOLF, 15 <b>&times;2</b></span><span>VOLF,  31 <b>&times;2</b></span><span>VOLF,0x43 <b>&times;2</b></span><span>{VOLF} <b>&times;1</b></span><span>VOLF,0x02 <b>&times;1</b></span><span>VOLF,  1 <b>&times;1</b></span><span>VOLF, 6 <b>&times;1</b></span></div><p class="seen"><b>32</b> object(s) in <b>24</b> model(s) &middot; Dummy &times;28, Visual / Object &times;4<br>Most in: <code>models/watercity.4ds</code>, <code>models/kaluz.4ds</code>, <code>models/kaluz1.4ds</code></p></div><div class="prop"><h3>DYNB[,mask]</h3><p class="sub">dynamic box &mdash; read by the game</p><p class="where"><b>Where</b> On a dummy beneath a model the mission places as a script object.</p><p>A <b>dynamic box</b>. This is the one the running game reads by name: it builds the collision a detector uses to notice the player, so it drives door prompts, triggers and pick-ups. The game looks at dummy children of the object for it.</p><div class="forms"><span>DYNB,0x13 <b>&times;40</b></span><span>DYNB <b>&times;14</b></span><span>DYNB,0x19 <b>&times;14</b></span><span>DYNB,0x14 <b>&times;6</b></span><span>DYNB,0x33 <b>&times;4</b></span><span>DYNB,0x21 <b>&times;4</b></span><span>DYNB,0x24 <b>&times;2</b></span><span>DYNB,0x20 <b>&times;2</b></span><span>DYNB,0X14 <b>&times;1</b></span><span>DYNB, 1 <b>&times;1</b></span></div><p class="seen"><b>88</b> object(s) in <b>83</b> model(s) &middot; Dummy &times;88<br>Most in: <code>models/9zidle2.4ds</code>, <code>models/@ZIDLE01S.4ds</code>, <code>models/xzidle 07.4ds</code></p></div><div class="prop"><h3>DYNS &nbsp;/&nbsp; DYNS+</h3><p class="sub">dynamic sphere</p><p class="where"><b>Where</b> On a dummy beneath a model the mission places as a movable physics object.</p><p>A <b>dynamic sphere</b>. The <code>+</code> form appears where a second variant was needed on the same object.</p><div class="forms"><span>DYNS <b>&times;35</b></span><span>DYNS+ <b>&times;34</b></span><span>DYNS,0x20 <b>&times;2</b></span></div><p class="seen"><b>71</b> object(s) in <b>24</b> model(s) &middot; Dummy &times;71<br>Most in: <code>models/Gangster01.4ds</code>, <code>models/Gangster02.4ds</code>, <code>models/Gangster04.4ds</code></p></div>
+</section>
+<section id="game" class="panel">
+<h2><span class="num">04</span>Read by the game itself</h2>
+<p class="lead-in">Parsed at run time by gameplay code rather than by the exporter, so the exact spelling matters.</p>
+<div class="prop"><h3>[DEFORM &lt;part&gt;]</h3><p class="sub">bracketed, upper case</p><p class="where"><b>Where</b> On a car&rsquo;s visual parts, beneath <code>BODY</code>: the panels, glass, lights and bumpers themselves, never on a dummy.</p><p>A <b>vehicle deformation zone</b>. The game reads the bracketed text to decide how that part of the body behaves in a crash. This is the most common property in the game by a wide margin. The part name chooses the behavior; a trailing <code>,I</code> appears on some body panels.</p><div class="scroller"><table class="opts"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>[DEFORM BODY]</td><td class="desc">General body panel.</td></tr><tr><td>[DEFORM GLASS]</td><td class="desc">Glass that cracks and breaks.</td></tr><tr><td>[DEFORM LIGHT]</td><td class="desc">Headlights and lamps.</td></tr><tr><td>[DEFORM BUMPER]</td><td class="desc">Bumpers.</td></tr><tr><td>[DEFORM ROOF]</td><td class="desc">Roof, handled separately from the body.</td></tr><tr><td>[DEFORM WING]</td><td class="desc">Wings / fenders.</td></tr><tr><td>[DEFORM BODY,I]</td><td class="desc">A body panel with the extra <code>I</code> option.</td></tr></tbody></table></div><div class="forms"><span>[DEFORM GLASS] <b>&times;1680</b></span><span>[DEFORM BODY] <b>&times;1287</b></span><span>[DEFORM LIGHT] <b>&times;468</b></span><span>[DEFORM BUMPER] <b>&times;352</b></span><span>[DEFORM BODY,I] <b>&times;120</b></span><span>[DEFORM ROOF] <b>&times;48</b></span><span>[DEFORM WING] <b>&times;8</b></span><span>[DEFORM BODY,] <b>&times;6</b></span><span>[DEFORM BODY] no_shadow <b>&times;4</b></span><span>[DEFORMGLASS] <b>&times;2</b></span><span>[DEFORM BODY,I] no_shadow <b>&times;2</b></span><span>[DEFORM BODY],[I] <b>&times;1</b></span></div><p class="seen"><b>3,978</b> object(s) in <b>446</b> model(s) &middot; Visual / Object &times;3978<br>Most in: <code>models/bus00.4ds</code>, <code>models/salina.4ds</code>, <code>models/buikFor00.4ds</code></p></div><div class="prop"><h3>~E~</h3><p class="sub">between tildes</p><p class="where"><b>Where</b> On the car&rsquo;s exhaust object.</p><p>Marks an <b>exhaust tip</b> on a car, where the smoke comes out.</p><div class="forms"><span>~DCC~ <b>&times;28</b></span><span>~DCS~ <b>&times;5</b></span><span>~CY3~ <b>&times;2</b></span><span>~E~ <b>&times;2</b></span><span>~CX3~ <b>&times;1</b></span><span>~CX5~ <b>&times;1</b></span><span>~CZ2~ <b>&times;1</b></span><span>~CRX0.35~ <b>&times;1</b></span><span>~CRX0.2~ <b>&times;1</b></span></div><p class="seen"><b>42</b> object(s) in <b>8</b> model(s) &middot; Dummy &times;35, Visual / Object &times;7<br>Most in: <code>models/trucksplachtou.4ds</code>, <code>models/FMVanimTruckB00.4ds</code>, <code>models/traktor.4ds</code></p></div><div class="prop"><h3>~C&lt;axis&gt;&lt;amount&gt;~</h3><p class="sub">between tildes</p><p class="where"><b>Where</b> On a car part that is to shake with the engine, or on <code>BODY</code> itself.</p><p>Marks a part that <b>moves with the engine</b> &mdash; the shake you see at idle. The letter picks the axis and the number the amount. The <code>~CR</code> forms use fractional amounts and appear to rock rather than shift the part.</p><div class="scroller"><table class="opts"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>~CX3~, ~CY3~, ~CZ2~</td><td class="desc">Move along X, Y or Z by the given amount.</td></tr><tr><td>~CX5~</td><td class="desc">A larger movement on X.</td></tr><tr><td>~CRX0.35~, ~CRX0.2~</td><td class="desc">The <code>R</code> forms, with fractional amounts.</td></tr></tbody></table></div><div class="forms"><span>~DCC~ <b>&times;28</b></span><span>~DCS~ <b>&times;5</b></span><span>~CY3~ <b>&times;2</b></span><span>~E~ <b>&times;2</b></span><span>~CX3~ <b>&times;1</b></span><span>~CX5~ <b>&times;1</b></span><span>~CZ2~ <b>&times;1</b></span><span>~CRX0.35~ <b>&times;1</b></span><span>~CRX0.2~ <b>&times;1</b></span></div><p class="seen"><b>42</b> object(s) in <b>8</b> model(s) &middot; Dummy &times;35, Visual / Object &times;7<br>Most in: <code>models/trucksplachtou.4ds</code>, <code>models/FMVanimTruckB00.4ds</code>, <code>models/traktor.4ds</code></p></div><div class="prop"><h3>~DCS~ &nbsp;/&nbsp; ~DCC~</h3><p class="sub">between tildes</p><p class="where"><b>Where</b> On dummies of a car.</p><p>A car&rsquo;s <b>dynamic collision source</b> and <b>component</b>: the parts that detach or deform as separate pieces on impact.</p><div class="forms"><span>~DCC~ <b>&times;28</b></span><span>~DCS~ <b>&times;5</b></span><span>~CY3~ <b>&times;2</b></span><span>~E~ <b>&times;2</b></span><span>~CX3~ <b>&times;1</b></span><span>~CX5~ <b>&times;1</b></span><span>~CZ2~ <b>&times;1</b></span><span>~CRX0.35~ <b>&times;1</b></span><span>~CRX0.2~ <b>&times;1</b></span></div><p class="seen"><b>42</b> object(s) in <b>8</b> model(s) &middot; Dummy &times;35, Visual / Object &times;7<br>Most in: <code>models/trucksplachtou.4ds</code>, <code>models/FMVanimTruckB00.4ds</code>, <code>models/traktor.4ds</code></p></div><div class="prop"><h3>RAIL_&lt;role&gt;</h3><p class="sub">upper case, underscore separated</p><p class="where"><b>Where</b> On dummies of a rail model, and on a few of its objects.</p><p>Railway fittings, read by the train code. Almost all of them live on <code>models/metro.4ds</code>. The numbered forms let one carriage describe several doors, seat rows and boarding points.</p><div class="scroller"><table class="opts"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>RAIL_COLL</td><td class="desc">Collision geometry for the train.</td></tr><tr><td>RAIL_DOOR1_L / _R</td><td class="desc">Left and right leaf of door 1. Doors 1 and 2 appear.</td></tr><tr><td>RAIL_ENTRY&lt;n&gt;_START / _END</td><td class="desc">Where passengers board, as a start and end pair. Entries 1&ndash;4 appear.</td></tr><tr><td>RAIL_ROW&lt;n&gt;_START / _END</td><td class="desc">A row of seats, as a start and end pair. Rows 1&ndash;6 appear.</td></tr><tr><td>RAIL_LIGHT_ON / _OFF</td><td class="desc">Lamps in their lit and unlit state.</td></tr><tr><td>RAIL_PROJECTOR</td><td class="desc">The carriage&rsquo;s projector frame.</td></tr></tbody></table></div><div class="forms"><span>RAIL_COLL <b>&times;23</b></span><span>RAIL_ROW1_START <b>&times;2</b></span><span>RAIL_ROW1_END <b>&times;2</b></span><span>RAIL_ROW2_END <b>&times;2</b></span><span>RAIL_ROW2_START <b>&times;2</b></span><span>RAIL_ENTRY1_START <b>&times;2</b></span><span>RAIL_ENTRY2_START <b>&times;2</b></span><span>RAIL_ENTRY1_END <b>&times;2</b></span><span>RAIL_ENTRY2_END <b>&times;2</b></span><span>RAIL_LIGHT_ON <b>&times;2</b></span><span>RAIL_LIGHT_OFF <b>&times;2</b></span><span>RAIL_DOOR2_R <b>&times;1</b></span><span>RAIL_ROW3_START <b>&times;1</b></span><span>RAIL_ROW3_END <b>&times;1</b></span><span>RAIL_ROW4_END <b>&times;1</b></span><span>RAIL_ROW4_START <b>&times;1</b></span><span>RAIL_ROW5_START <b>&times;1</b></span><span>RAIL_ROW5_END <b>&times;1</b></span><span>RAIL_ROW6_END <b>&times;1</b></span><span>RAIL_ROW6_START <b>&times;1</b></span><span>RAIL_DOOR2_L <b>&times;1</b></span><span>RAIL_DOOR1_L <b>&times;1</b></span><span>RAIL_DOOR1_R <b>&times;1</b></span><span>RAIL_ENTRY4_START <b>&times;1</b></span><span>RAIL_ENTRY3_START <b>&times;1</b></span><span>RAIL_ENTRY4_END <b>&times;1</b></span><span>RAIL_ENTRY3_END <b>&times;1</b></span><span>RAIL_PROJECTOR <b>&times;1</b></span></div><p class="seen"><b>60</b> object(s) in <b>2</b> model(s) &middot; Dummy &times;52, Visual / Object &times;8<br>Most in: <code>models/metro.4ds</code>, <code>models/salina.4ds</code></p></div><div class="prop"><h3>glass</h3><p class="sub">exact word, lower case</p><p class="where"><b>Where</b> On any part of a model the mission places as a door.</p><p>Makes the surface <b>breakable glass</b>. When something hits it the game shatters it and plays the break sound. Note this is separate from <code>[DEFORM GLASS]</code>, which is the vehicle version.</p><div class="forms"><span>glass <b>&times;195</b></span></div><p class="seen"><b>195</b> object(s) in <b>26</b> model(s) &middot; Visual / Object &times;195<br>Most in: <code>missions/mise19-banka/scene.4ds</code>, <code>missions/MISE08-HOTEL/scene.4ds</code>, <code>missions/MISE11-VILA/scene.4ds</code></p></div><div class="prop"><h3>[&lt;texture&gt;.bmp, &hellip;]</h3><p class="sub">bracketed list of files</p><p class="where"><b>Where</b> On a car&rsquo;s <code>PROJECTOR</code> dummy, and on the <code>LIGHTRE</code> lights that pair with it.</p><p>Texture names for a <b>projector</b> &mdash; a cinema or slide projector frame. One name, or a three-way list for a setup with a combined image and a left/right pair.</p><div class="scroller"><table class="opts"><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td>[projector.bmp]</td><td class="desc">A single image.</td></tr><tr><td>[both.bmp,left.bmp,right.bmp]</td><td class="desc">Combined, left and right images.</td></tr></tbody></table></div><div class="forms"><span>[both.bmp,left.bmp,right.bmp] <b>&times;347</b></span><span>[projector.bmp] <b>&times;12</b></span></div><p class="seen"><b>359</b> object(s) in <b>353</b> model(s) &middot; Dummy &times;359<br>Most in: <code>models/FMVcad_phaet.4ds</code>, <code>models/FMVcad_road2P.4ds</code>, <code>models/FMVchema.4ds</code></p></div><div class="prop"><h3>[&lt;width&gt;] <span style="font-weight:400">on a wheel&rsquo;s parent</span></h3><p class="sub">one number in square brackets</p><p class="where"><b>Where</b> On the dummy a wheel hangs from &mdash; <code>DWHL0</code>, <code>DWHR1</code> and the rest &mdash; never on the wheel mesh itself.</p><p>How wide a trail that wheel leaves on the road: the number is in centimeters, so <code>[15]</code> paints a 15 cm skid mark. Without it the game uses the wheel&rsquo;s own width, measured across the mesh. The game looks for the first <code>[</code> anywhere in the text and reads the number after it, so it can sit beside other text; anything shorter than three characters is ignored.</p><div class="forms"><span>[15] <b>&times;1246</b></span><span>[17] <b>&times;104</b></span><span>[40] <b>&times;50</b></span><span>[20] <b>&times;39</b></span><span>[25] <b>&times;12</b></span><span>[30] <b>&times;8</b></span></div><p class="seen">Widest in the game: <b>40</b> cm on the heavy trucks; <b>20</b> on the bus; <b>15</b> on most cars.</p></div>
+<div class="prop"><h3>[&lt;x&gt; &lt;y&gt; &lt;z&gt;] <span style="font-weight:400">on an axle point</span></h3><p class="sub">up to three numbers, spaces between</p><p class="where"><b>Where</b> On an <code>AXIS</code> frame of a car &mdash; <code>AXISL1a</code>, <code>AXISR0b</code> and so on.</p><p>Moves that axle point by the offset given, in centimeters: <code>[5 4.8]</code> is 5 cm along X and 4.8 cm along Y, and a number left out stays zero. It is how a suspension arm is nudged into place without moving the frame itself. Read from the first <code>[</code> in the text.</p><div class="forms"><span>[5 4.8] <b>&times;26</b></span><span>[5 -4.8] <b>&times;18</b></span><span>[5 8] <b>&times;10</b></span><span>[5 -8] <b>&times;10</b></span><span>[2 -10) <b>&times;2</b></span></div><p class="seen">One of them closes with a round bracket, <code>[2 -10)</code>, which the game reads all the same: it only ever looks for the opening one.</p></div>
+<div class="prop"><h3>I <span style="font-weight:400">on a door</span></h3><p class="sub">a capital I after the bracket or a comma</p><p class="where"><b>Where</b> On a car&rsquo;s <code>DOOR</code> object.</p><p>Turns the door&rsquo;s hinge the other way. The game looks for a capital <code>I</code> that comes right after the opening <code>[</code> or right after a comma &mdash; so it rides along in the same text as the deformation tag, which is why the rear doors of so many cars read <code>[DEFORM BODY,I]</code>. An <code>I</code> anywhere else in the text is not seen.</p><div class="forms"><span>[DEFORM BODY,I] <b>&times;120</b></span><span>[DEFORM BODY],[I] <b>&times;1</b></span><span>[DEFORM BODY,] <b>&times;6</b></span></div><p class="seen">The empty form <code>[DEFORM BODY,]</code> shipped on six doors and does nothing but deform.</p></div>
+<div class="prop"><h3>a plain number</h3><p class="sub">digits only</p><p class="where"><b>Where</b> On a weapon&rsquo;s <code>muzzle</code> dummy, or on the top frame of a model placed as a gunfire effect.</p><p>On a weapon muzzle or a shot effect, the number picks which <b>particle effect</b> to play. The game adds one to it at night, so the effect can differ after dark.</p><div class="forms"><span>14 <b>&times;5</b></span><span>16 <b>&times;5</b></span><span>12 <b>&times;1</b></span></div><p class="seen"><b>11</b> object(s) in <b>11</b> model(s) &middot; Dummy &times;11<br>Most in: <code>models/2c1911.4ds</code>, <code>models/2coltDS.4ds</code>, <code>models/2m1903.4ds</code></p></div>
+</section>
+<section id="unknown" class="panel">
+<h2><span class="num">05</span>Present but not established</h2>
+<p class="lead-in">These appear in shipping models and no reader for them was found in what of the game can be read. They are listed in full so you know what exists and can leave them alone &mdash; the add-on writes user properties back unchanged. Three families that sat here before are now understood and have moved up into <a href="#game">Read by the game itself</a>.</p>
+<div class="prop"><h3>~~~ACTR:BOX&lt;n&gt;,&lt;a&gt;,&lt;b&gt;,&lt;c&gt;~~~</h3><p class="sub">between triple tildes</p><p class="where"><b>Where</b> On a visual object, nearly always in a mission scene rather than a model.</p><p>An actor marker with four numbers. The first follows <code>BOX</code> and looks like a size; the remaining three vary together in a small number of combinations (<code>1,1,14</code>, <code>4,1,22</code>, <code>2,1,21</code>). Frequently paired with <code>z_bias</code>.</p><div class="forms"><span>~~~ACTR:BOX300,1,1,14~~~, z_bias <b>&times;24</b></span><span>~~~ACTR:BOX~~~ <b>&times;16</b></span><span>~~~ACTR:BOX40,4,1,22~~~ <b>&times;5</b></span><span>~~~ACTR:BOX40,1,1,14~~~ <b>&times;4</b></span><span>~~~ACTR:BOX35,4,1,22~~~ <b>&times;4</b></span><span>~~~ACTR:BOX40,2,1,21~~~ <b>&times;1</b></span><span>~~~ACTR:BOX15,4,1,22~~~ <b>&times;1</b></span><span>~~~ACTR:BOX18,1,1,14~~~ <b>&times;1</b></span><span>~~~ACTR:BOX20,1,1,14~~~ <b>&times;1</b></span><span>~~~ACTR:BOX30,1,1,14~~~ <b>&times;1</b></span><span>~~~ACTR:BOX300,1,1,14~~~,z_bias <b>&times;1</b></span><span>~~~ACTR:BOX45,1,1,14~~~, z_bias <b>&times;1</b></span><span>~~~ACTR:BOX50,1,1,14~~~ <b>&times;1</b></span><span>~~~ACTR:BOX45,1,1,14~~~ <b>&times;1</b></span><span>~~~ACTR:BOX35,1,1,14~~~ <b>&times;1</b></span><span>~~~ACTR:BOX50,4,1,22~~~ <b>&times;1</b></span><span>~~~ACTR:BOX60,4,1,22~~~ <b>&times;1</b></span></div><p class="seen"><b>65</b> object(s) in <b>63</b> model(s) &middot; Visual / Object &times;65<br>Most in: <code>missions/MISE10-LETISTE/scene.4ds</code>, <code>missions/MISE16-LETISTE/scene.4ds</code>, <code>missions/MISE07B-CHULIGANI/scene.4ds</code></p></div><div class="prop"><h3>[&lt;distance&gt;,&lt;height&gt;] <span style="font-weight:400">on HEAD</span></h3><p class="sub">a pair in square brackets</p><p class="where"><b>Where</b> On a car&rsquo;s <code>HEAD</code> dummy, the driver&rsquo;s head.</p><p>Every car in the game carries one, and the numbers rise with the vehicle: <code>[4,1]</code> on an ordinary car, <code>[7.5,1]</code> on a truck, <code>[10,2]</code> on the bus. They read like a camera distance and height, but the vehicle code takes only the dummy&rsquo;s position from <code>HEAD</code> and then deletes the frame &mdash; no reader for the text was found. Left as it is, it costs nothing.</p><div class="forms"><span>[4,1] <b>&times;136</b></span><span>[3,1] <b>&times;54</b></span><span>[5,1] <b>&times;29</b></span><span>[5,0.5] <b>&times;25</b></span><span>[5,0.3] <b>&times;23</b></span><span>[10,2] <b>&times;2</b></span></div><p class="seen"><b>25</b> different pairs over the game&rsquo;s vehicles.</p></div><div class="prop"><h3>semicolon codes</h3><p class="sub">letters and numbers between semicolons</p><p class="where"><b>Where</b> On visual objects of scenery models &mdash; most of them the <code>_c1</code> / <code>_c2</code> pieces a breakable object is built from.</p><p>Codes such as <code>;N22M50I13;</code> on scenery meshes. The letters repeat across models, suggesting named fields, but no reader was identified.</p><div class="forms"><span>;x200N15Z.+;, z_bias <b>&times;18</b></span><span>;N15Z; <b>&times;14</b></span><span>;N15Z;, z_bias <b>&times;10</b></span><span>;M35N21I4; <b>&times;8</b></span><span>;X200N15Z.+;, z_bias <b>&times;5</b></span><span>;M300N20; <b>&times;5</b></span><span>;X150M250N17.+; <b>&times;4</b></span><span>;X200M50I2N22+; <b>&times;4</b></span><span>;X1G; <b>&times;3</b></span><span>;M10N17I6; <b>&times;3</b></span><span>;N22I5; <b>&times;3</b></span><span>;M100N22; <b>&times;2</b></span><span>;M100N17I6; <b>&times;2</b></span><span>;M20N17I6; <b>&times;2</b></span><span>;M30N20; <b>&times;2</b></span><span>;M50N15I1; <b>&times;2</b></span><span>;M150N17I6; <b>&times;2</b></span><span>;M50N17I6; <b>&times;2</b></span><span>;M40N17I6; <b>&times;2</b></span><span>;M50I2N22; <b>&times;2</b></span><span>;M20N22I5; <b>&times;2</b></span><span>;N15Z; z_bias <b>&times;2</b></span><span>;N22; <b>&times;2</b></span><span>;N22M50I13; <b>&times;1</b></span><span><b>and 51 further variant(s)</b></span></div><p class="seen"><b>153</b> object(s) in <b>116</b> model(s) &middot; Visual / Object &times;153<br>Most in: <code>models/PHbox01_c1.4ds</code>, <code>models/exp_cis_c1.4ds</code>, <code>models/socha02_c2.4ds</code></p></div><div class="prop"><h3>everything else</h3><p class="sub">mixed</p><p>The remaining forms, including combinations of the tags above on one line, and one-off strings.</p><div class="forms"><span>SECT, OFF_ <b>&times;340</b></span><span>SECT,off_ <b>&times;80</b></span><span>SECT,OFF_ <b>&times;80</b></span><span>OFF_ <b>&times;38</b></span><span>AV_LIGHT <b>&times;38</b></span><span>ABA095 <b>&times;10</b></span><span>BAA093 <b>&times;10</b></span><span>volb,0x19 <b>&times;8</b></span><span>volb,0x33 <b>&times;7</b></span><span>volb,0x14 <b>&times;7</b></span><span>ABA100 <b>&times;7</b></span><span>{auto_lod 50 250 12 .3} <b>&times;6</b></span><span>{volb} <b>&times;5</b></span><span>_off <b>&times;4</b></span><span>ABA098 <b>&times;4</b></span><span>NO_SHADOW <b>&times;4</b></span><span>volr,0x19 <b>&times;4</b></span><span>SECT,occlude <b>&times;3</b></span><span>volb,0x13 <b>&times;3</b></span><span>ABA096 <b>&times;3</b></span><span>ACA097 <b>&times;3</b></span><span>AAA100 <b>&times;3</b></span><span>ABC099 <b>&times;3</b></span><span>ABC100 <b>&times;3</b></span><span>BAA095 <b>&times;3</b></span><span>{vols} <b>&times;3</b></span><span>ABB100 <b>&times;3</b></span><span>ABD100 <b>&times;3</b></span><span>volb,0x17 <b>&times;3</b></span><span>SECT
+
+OFF_ <b>&times;2</b></span><span><b>and 39 further variant(s)</b></span></div><p class="seen"><b>746</b> object(s) in <b>236</b> model(s) &middot; Visual / Object &times;606, Joint &times;83, Dummy &times;51<br>Most in: <code>missions/MISE15-PRISTAV/scene.4ds</code>, <code>missions/MISE18-PRISTAV/scene.4ds</code>, <code>missions/MISE12-GARAGE/scene.4ds</code></p></div>
+</section>
+
+<div class="moved">
+<section id="p-cars">
+      <h2>On cars</h2>
+
+      <div class="entry" id="p-deform">
+        <div class="entry-head"><h3>[DEFORM <span class="alt">&lt;part&gt;</span>]</h3><span class="chip type">On any car mesh</span></div>
+        <p>Makes that mesh a damage zone. The game needs a <code>[</code>, then the tag in upper case, then a <code>]</code>; anything after the tag inside the brackets is ignored by this check, and the whole text must be at least 12 characters. <code>[DEFORMGLASS]</code> (no space) does nothing. How hard each part is comes from the vehicle table.</p>
+        <div class="scroller">
+        <table>
+          <thead><tr><th>Tag</th><th>Behavior</th><th>Shipped</th></tr></thead>
+          <tbody>
+            <tr><td class="k">[DEFORM BODY]</td><td>Dents: vertices are pushed in, limited per axis.</td><td class="n">1,287 + 120 with <code>,I</code></td></tr>
+            <tr><td class="k">[DEFORM GLASS]</td><td>Cracks (the game draws <code>2ft19r.bmp</code> over it) and then shatters.</td><td class="n">1,680</td></tr>
+            <tr><td class="k">[DEFORM LIGHT]</td><td>Dents and can fall off; lights on or under it break with it.</td><td class="n">468</td></tr>
+            <tr><td class="k">[DEFORM BUMPER]</td><td>Dents and can fall off.</td><td class="n">352</td></tr>
+            <tr><td class="k">[DEFORM SPZ]</td><td>License plate. Dents and can fall off.</td><td class="n">none</td></tr>
+            <tr><td class="k">[DEFORM MIRROR]</td><td>Dents and can fall off.</td><td class="n">none</td></tr>
+            <tr><td class="k">[DEFORM WING]</td><td>Fender. Dents and can fall off.</td><td class="n">8</td></tr>
+            <tr><td class="k">[DEFORM DOOR]</td><td>Dents and can fall off.</td><td class="n">none</td></tr>
+            <tr><td class="k">[DEFORM ROOF]</td><td>Dents; counts as roof when shot. The game can hide every roof part of a car at once to take the roof off.</td><td class="n">48</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>Trams and the metro read <code>[DEFORM GLASS]</code> differently &mdash; see <a href="#p-railglass">below</a>.</p>
+      </div>
+
+      <div class="entry" id="p-doorI">
+        <div class="entry-head"><h3>I <span class="alt">after [ or ,</span></h3><span class="chip type">On DOOR*</span></div>
+        <div class="forms"><span>[DEFORM BODY,I]</span><span>[I]</span></div>
+        <p>After the first <code>[</code> in a door&rsquo;s text, an <code>I</code> that directly follows <code>[</code> or <code>,</code> flips the way the door swings (a rear-hinged door) and makes characters use the get-in animations for a seat without a door to open. Only upper-case <code>I</code>.</p>
+        <div class="facts"><span>Shipped: <b>116</b> doors with <code>[DEFORM BODY,I]</code>, one with <code>[DEFORM BODY],[I]</code></span></div>
+      </div>
+
+      <div class="entry" id="p-trail">
+        <div class="entry-head"><h3>[<span class="alt">width</span>]</h3><span class="chip type">On DWHL* / DWHR*</span></div>
+        <div class="forms"><span>[15] <i>&rarr; 0.15</i></span><span>[40] <i>&rarr; 0.40</i></span></div>
+        <p>The width of the skid marks this wheel leaves, in hundredths of a unit. The number after the first <code>[</code> is read; without one, the wheel&rsquo;s own width is used. Text on the <code>WH</code> wheel itself is not read.</p>
+        <div class="facts"><span>Shipped: <code>[15]</code> on <b>1,250</b> wheel dummies, then <code>[17]</code>, <code>[40]</code>, <code>[20]</code></span></div>
+      </div>
+
+      <div class="entry" id="p-axis">
+        <div class="entry-head"><h3>[<span class="alt">x y z</span>]</h3><span class="chip type">On AXIS*</span></div>
+        <div class="forms"><span>[5 4.8] <i>&rarr; 0.05, 0.048, 0</i></span><span>[2 -10)</span></div>
+        <p>Moves the point the axle part aims at away from the wheel centre, in hundredths of a unit. Up to three numbers separated by spaces; missing ones are 0. On right-side arms X is mirrored. Reading stops at the first thing that is not a number, which is why the shipped <code>[2 -10)</code> still works.</p>
+        <div class="facts"><span>Shipped: <b>95</b> axle parts</span></div>
+      </div>
+
+      <div class="entry" id="p-lighttex">
+        <div class="entry-head"><h3>[<span class="alt">texture</span>]</h3><span class="chip type">On LIGHT&hellip; frames</span></div>
+        <div class="forms"><span>[projector.bmp]</span></div>
+        <p>On any of the six light names, everything between the first <code>[</code> and the last <code>]</code> is a texture projected onto the road from that light at night. A texture that does not load leaves a projector with no picture.</p>
+        <div class="callout warn">
+          <span class="label">Watch the brackets</span>
+          <p>Any bracketed text counts. A light frame that is also <code>[DEFORM LIGHT]</code> gets a projector looking for a texture called <code>DEFORM LIGHT</code> &mdash; 28 shipped headlights do exactly that.</p>
+        </div>
+        <div class="facts"><span>Shipped: <b>12</b> real ones</span></div>
+      </div>
+
+      <div class="entry" id="p-projector">
+        <div class="entry-head"><h3>[<span class="alt">both</span>,<span class="alt">left</span>,<span class="alt">right</span>]</h3><span class="chip type">On PROJECTOR*</span></div>
+        <div class="forms"><span>[both.bmp,left.bmp,right.bmp]</span></div>
+        <p>Three textures, separated by commas, for the shared headlight pool. All three must load or the pool is not made.</p>
+        <ul>
+          <li><b>First</b> &mdash; both lights working.</li>
+          <li><b>Second</b> &mdash; after the light on the right (positive X) breaks, leaving the left one.</li>
+          <li><b>Third</b> &mdash; after the light on the left breaks.</li>
+        </ul>
+        <div class="facts"><span>Shipped: <b>348</b> models, always this exact text</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="p-trucks">
+      <h2>On trucks</h2>
+      <p class="lead-in">Read from every frame of a car placed in the mission as a
+      <b>truck</b> object &mdash; ordinary cars and traffic ignore them. The game
+      searches for each tag anywhere in the text, so the closing <code>~</code> is
+      optional.</p>
+
+      <div class="entry" id="p-e">
+        <div class="entry-head"><h3>~E</h3><span class="chip type">Any frame</span></div>
+        <p>An exhaust flap, hinged on its local Z axis. With the engine off it rests a quarter turn from its modelled position; with the engine running it flutters.</p>
+        <div class="facts"><span>Shipped: <code>traktor</code>, <code>valec</code></span></div>
+      </div>
+
+      <div class="entry" id="p-c">
+        <div class="entry-head"><h3>~C<span class="alt">&lt;axis&gt;&lt;amount&gt;</span>~</h3><span class="chip type">Any frame</span></div>
+        <div class="forms"><span>~CX3~</span><span>~CZ2~</span><span>~CRX0.35~</span></div>
+        <p>The part shakes with the engine, faster at higher revs.</p>
+        <ul>
+          <li><code>X</code>, <code>Y</code> or <code>Z</code> &mdash; moves mostly along that axis, by the amount in thousandths of a unit.</li>
+          <li><code>R</code> plus an axis &mdash; rocks about that axis by the amount in degrees.</li>
+          <li>Any other letter &mdash; moves along all three axes. The axis letter may be either case.</li>
+        </ul>
+        <div class="facts"><span>Shipped: <code>traktor</code>, <code>fordtTud00K</code></span></div>
+      </div>
+
+      <div class="entry" id="p-dcs">
+        <div class="entry-head"><h3>~DCS <span class="alt">and</span> ~DCC</h3><span class="chip type">~DCC on dummies</span></div>
+        <p>A truck bed people can ride on. A mission script can put a character on the bed; they are placed at the <code>~DCS</code> frame, facing its way. Every <b>dummy</b> with <code>~DCC</code> is a box, from its bounds, that riders stand on and bump into. The script only works when the truck has a <code>~DCS</code> and at least one <code>~DCC</code>. Riders are thrown off when the truck burns or overturns.</p>
+        <div class="facts"><span>Shipped: <code>trucksplachtou</code>, <code>TruckBxx00</code>, <code>FMVanimTruckB00</code>, <code>truckmorph</code>, <code>truckmorph00</code></span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="p-rail">
+      <h2>On trams and metro</h2>
+      <p class="lead-in">Checked on every object and dummy of a rail car. The
+      <code>RAIL_</code> tags must start the text and be upper case; the pairs
+      are matched by their number.</p>
+
+      <div class="scroller">
+      <table>
+        <thead><tr><th>Text</th><th>On</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td class="k">RAIL_COLL</td><td class="n">Dummy</td><td>A collision box from the dummy&rsquo;s bounds. The <b>whole</b> text must be exactly this.</td></tr>
+          <tr><td class="k">RAIL_ENTRY&lt;n&gt;_START<br>RAIL_ENTRY&lt;n&gt;_END</td><td class="n">Dummy</td><td>A boarding path: <code>START</code> outside the car, <code>END</code> inside. Only the <code>S</code> or <code>E</code> after the second underscore is read.</td></tr>
+          <tr><td class="k">RAIL_ROW&lt;n&gt;_START<br>RAIL_ROW&lt;n&gt;_END</td><td class="n">Dummy</td><td>The two ends of a row of seats passengers sit along.</td></tr>
+          <tr><td class="k">RAIL_DOOR&lt;n&gt;_L<br>RAIL_DOOR&lt;n&gt;_R</td><td class="n">Object</td><td>The left and right leaf of door <i>n</i>. On extra cars of the same train, a frame with the same name is used as that car&rsquo;s leaf.</td></tr>
+          <tr id="p-railglass"><td class="k">[DEFORM GLASS]</td><td class="n">Object</td><td>A window that breaks when hit. Here the <b>whole</b> text must be exactly this &mdash; <code>[DEFORM GLASS] no_shadow</code> does not count.</td></tr>
+          <tr><td class="k">RAIL_LIGHT_ON<br>RAIL_LIGHT_OFF<br>RAIL_PROJECTOR</td><td class="n">Any</td><td><b>No effect as shipped.</b> The game switches night and day lamps and makes a headlight projector by looking for these words as <i>frame names</i>, compared against the whole name including the model&rsquo;s name in front; the shipped models write them as user properties, which that check never looks at.</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="facts"><span>Shipped: <code>salina.4ds</code> and <code>metro.4ds</code></span></div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="p-crash">
+      <h2>Breakable scenery</h2>
+      <p class="lead-in">When a car, a punch, a bullet or an explosion breaks a
+      scenery model, the game swaps it for pieces from a file with the same name
+      plus <code>_c1</code> (<code>PHbox01.4ds</code> &rarr; <code>PHbox01_c1.4ds</code>).
+      Both the hit model and the pieces take a code between semicolons.</p>
+
+      <div class="entry" id="p-codes">
+        <div class="entry-head"><h3>;<span class="alt">letters and numbers</span>;</h3><span class="chip type">On the meshes</span></div>
+        <div class="forms"><span>;M50N17I6;</span><span>;X200N15Z.+;</span><span>;X20G;</span></div>
+        <p>The part between the first semicolon and the next one is read, in any case. Each letter is looked for anywhere in it, so order does not matter, and a number is the digits straight after its letter. On the model that gets hit, the text of its last mesh directly under the model is read &mdash; or of the part itself, when the hit lands on a part.</p>
+        <div class="scroller">
+        <table>
+          <thead><tr><th>Code</th><th>Read on</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td class="k">.</td><td class="n">Hit model</td><td>Take the pieces from this model&rsquo;s own file instead of <code>_c1</code>.</td></tr>
+            <tr><td class="k">P&lt;n&gt;</td><td class="n">Hit model</td><td>When finding which piece was struck, climb at most <i>n</i> parents from the part that was hit.</td></tr>
+            <tr><td class="k">Z</td><td class="n">Both</td><td>Pieces do not inherit the push of the impact.</td></tr>
+            <tr><td class="k">M&lt;n&gt;</td><td class="n">Piece</td><td>Mass (default 10).</td></tr>
+            <tr><td class="k">X&lt;n&gt;</td><td class="n">Piece</td><td>Health. Without it a piece can be knocked around but never destroyed; with it, the piece is destroyed once hits exceed the number, which fires the codes below.</td></tr>
+            <tr><td class="k">+</td><td class="n">Piece</td><td>When destroyed, the next file in the series replaces it (<code>_c2</code>, <code>_c3</code>&hellip;).</td></tr>
+            <tr><td class="k">G</td><td class="n">Piece</td><td>When destroyed, shatters as glass.</td></tr>
+            <tr><td class="k">D</td><td class="n">Piece</td><td>When destroyed, throws debris.</td></tr>
+            <tr><td class="k">S</td><td class="n">Piece</td><td>When destroyed, throws sparks.</td></tr>
+            <tr><td class="k">F</td><td class="n">Piece</td><td>When destroyed, starts a fire.</td></tr>
+            <tr><td class="k">E</td><td class="n">Piece</td><td>When destroyed, explodes.</td></tr>
+            <tr><td class="k">L&lt;n&gt;</td><td class="n">Piece</td><td>When destroyed, plays particle effect <i>n</i> (high effects detail only).</td></tr>
+            <tr><td class="k">H</td><td class="n">Piece</td><td>A burst fire hydrant: a water jet with a looping sound starts where the piece appears (high effects detail, near the camera).</td></tr>
+            <tr><td class="k">N&lt;n&gt;</td><td class="n">Piece</td><td>Material number, for what hitting it looks and sounds like.</td></tr>
+            <tr><td class="k">V&lt;n&gt;</td><td class="n">Piece</td><td>Collision material number.</td></tr>
+            <tr><td class="k">I&lt;n&gt;</td><td class="n">Piece</td><td>Sound played when it collides.</td></tr>
+            <tr><td class="k">T&lt;n&gt;</td><td class="n">Piece</td><td><code>T0</code>: that collision sound is not cut off by the next one.</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="callout warn">
+          <span class="label">Letters are searched, not parsed</span>
+          <p>Only the first occurrence of each letter counts: in <code>;N22M50I13I4;</code> the sound is 13. Letters that are not codes are ignored, but a code letter anywhere in the text takes effect.</p>
+        </div>
+        <div class="facts"><span>Shipped: <b>153</b> meshes in <b>116</b> models</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="p-objects">
+      <h2>Script, physics and door objects</h2>
+
+      <div class="entry" id="p-dynb">
+        <div class="entry-head"><h3>DYNB</h3><span class="chip type">Dummies of a script object</span></div>
+        <div class="forms"><span>DYNB</span><span>DYNB,0x13</span></div>
+        <p>On a model placed as a script object, every dummy beneath it whose text <b>starts</b> with <code>DYNB</code> in upper case becomes one of its collision boxes, from the dummy&rsquo;s bounds &mdash; what gets hit and touched. Anything after the four letters is ignored. With none, the object&rsquo;s own box is used.</p>
+        <div class="facts"><span>Shipped: <b>88</b> dummies</span></div>
+      </div>
+
+      <div class="entry" id="p-dyn">
+        <div class="entry-head"><h3>dynS &middot; dynB &middot; dynA</h3><span class="chip type">Dummies of a physics object</span></div>
+        <p>On a model placed as a movable physics object, a dummy whose text starts with <code>dyn</code> in any case sets the object&rsquo;s collision shape from its bounds. The fourth letter picks it: <code>S</code> sphere, <code>B</code> box that turns with the object, <code>A</code> box that stays aligned to the world. The object has one shape, so the last such dummy wins.</p>
+      </div>
+
+      <div class="entry" id="p-glass">
+        <div class="entry-head"><h3>glass</h3><span class="chip type">Parts of a door object</span></div>
+        <p>On a model placed as a door, any part whose text contains <code>glass</code> in lower case shatters when shot or hit.</p>
+        <div class="facts"><span>Shipped: <b>195</b> objects</span></div>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="p-people">
+      <h2>Characters and weapons</h2>
+
+      <div class="entry" id="p-back1">
+        <div class="entry-head"><h3>ABA095 <span class="alt">on</span> back1</h3><span class="chip type">Frame named back1</span></div>
+        <div class="anatomy">
+          <div class="seg var"><b>A</b><em>A man, B woman</em></div>
+          <div class="seg var"><b>B</b><em>not used</em></div>
+          <div class="seg var"><b>A</b><em>walker kind</em></div>
+          <div class="seg var"><b>095</b><em>size, percent</em></div>
+        </div>
+        <p>How a character model behaves as a city pedestrian. The text must be exactly six characters. The third letter: <code>A</code> or <code>C</code> an ordinary walker; <code>B</code> and <code>D</code> special walkers with their own walk styles who do not stop when a car nudges them; <code>E</code> a gangster. <code>B</code>, <code>D</code> and <code>E</code> may carry on along paths that board the elevated railway. The size also scales the pedestrian&rsquo;s collision.</p>
+        <p>For a taxi passenger only the first letter is used, and the text need only be three characters long.</p>
+        <div class="facts"><span>Shipped: <code>BAA093</code>, <code>ABA095</code>, <code>ABA100</code>, <code>ABE100</code>&hellip;</span></div>
+      </div>
+
+      <div class="entry" id="p-muzzle">
+        <div class="entry-head"><h3><span class="alt">a number on</span> muzzle</h3><span class="chip type">Weapon models</span></div>
+        <div class="forms"><span>14</span><span>16</span><span>12</span></div>
+        <p>The frame named <code>muzzle</code> in a weapon model marks where shots leave; its text is the particle effect for the muzzle flash. At night the game uses the next effect number, so each flash has a night version one higher.</p>
+        <div class="facts"><span>Shipped: <b>11</b> weapons</span></div>
+      </div>
+
+      <div class="entry" id="p-shot">
+        <div class="entry-head"><h3><span class="alt">a number on a</span> shot object</h3><span class="chip type">Mission gunfire effect</span></div>
+        <p>A model placed as a scripted gunfire effect reads the text on its own top frame as a particle effect number, one higher at night &mdash; the same rule as <code>muzzle</code>.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="p-unread">
+      <h2>Never read by the game</h2>
+      <p class="lead-in">These appear in the shipped models but the running game
+      does not look at them. Most mirror a switch or type that the file already
+      stores properly; they are safe to keep and safe to leave out.</p>
+
+      <div class="deadlist">
+        <div><code>no_fog</code> &middot; <code>z_bias</code> &middot; <code>no_shadow</code> &middot; <code>no_proj</code> &middot; <code>av_light</code> &middot; <code>NO_MIRROR</code><span>Match rendering switches stored in the frame itself.</span></div>
+        <div><code>SECT</code> &middot; <code>{SECT}</code> &middot; <code>SNGM</code> &middot; <code>SNGMRPH</code> &middot; <code>MRPH</code> &middot; <code>mirror</code><span>Match the frame or visual type the file already stores.</span></div>
+        <div><code>BBRD=z!</code> &middot; <code>LENSF</code> &middot; <code>TRGT=targetN</code> &middot; <code>JTVS</code><span>Same &mdash; the billboard axis, flare and target links are stored as data.</span></div>
+        <div><code>VOLB</code> &middot; <code>VOLA</code> &middot; <code>VOLR</code> &middot; <code>VOLC</code> &middot; <code>VOLS</code> &middot; <code>VOLF</code><span>Collision volume tags with a mask number.</span></div>
+        <div><code>DYNB</code> &middot; <code>DYNS</code> <span>Outside script objects and physics objects &mdash; for example on character models.</span></div>
+        <div><code>[4,1]</code> &middot; <code>[5,0.5]</code> on <code>HEAD</code><span>386 car heads carry these; the camera ignores them.</span></div>
+        <div><code>[DEFORM LIGHT]</code> on <code>LIGHTRE</code><span>Read, but as a <a href="#p-lighttex">texture name</a>, not as damage.</span></div>
+        <div><code>~~~ACTR:BOX&hellip;~~~</code> &middot; <code>OFF_</code> &middot; <code>occlude</code> &middot; <code>{auto_lod &hellip;}</code><span>Nothing in the game looks for these.</span></div>
+        <div><code>RAIL_LIGHT_ON</code> &middot; <code>RAIL_LIGHT_OFF</code> &middot; <code>RAIL_PROJECTOR</code><span>Looked for as frame names, never as properties &mdash; <a href="#p-rail">see above</a>.</span></div>
+      </div>
+
+      <div class="callout engine">
+        <span class="label">Not from a 4DS</span>
+        <p>One more reader exists for scene data: city music zones. An area whose
+        name starts with <code>city_music_</code> plays
+        <code>sounds\music\city_music_XX.ogg</code>, where <code>XX</code> is the
+        12th and 13th characters of its property text. Areas only come from
+        mission scene data &mdash; a 4DS area frame has no name or text.</p>
+      </div>
+    </section>
+
+    
+</div>
+
+<section id="appendix" class="panel">
+<h2><span class="num">06</span>Every spelling found</h2>
+<p class="lead-in">Each of the 394 exact texts the shipped files carry,
+most used first, with where it appears. The entries above explain what each
+family means; this is the raw tally, so a comma, a brace or a capital that a
+modeler typed differently shows up as its own line. Read from 3,206 files:
+the <code>models</code> folder and the mission scenes, 13,820 frames of which
+carry a property.</p>
+<div class="moved"><div class="scroller">
+<table>
+<thead><tr><th>Property text</th><th>In models</th><th>In missions</th><th>On</th><th>First example</th></tr></thead>
+<tbody>
+<tr><td class="k"><code>no_fog</code></td><td class="n">1719</td><td class="n">2</td><td>Visual/Object</td><td><code>models/9motorka.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM GLASS]</code></td><td class="n">1681</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9modelauta.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BODY]</code></td><td class="n">1288</td><td class="n">1</td><td>Visual/Object</td><td><code>models/9modelauta.4ds</code></td></tr>
+<tr><td class="k"><code>[15]</code></td><td class="n">1250</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9vuz.4ds</code></td></tr>
+<tr><td class="k"><code>{SECT}</code></td><td class="n">36</td><td class="n">1083</td><td>Visual/Object</td><td><code>missions/02NORMANCELA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>SECT</code></td><td class="n">&mdash;</td><td class="n">657</td><td>Visual/Object</td><td><code>missions/02NORMANCELA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM LIGHT]</code></td><td class="n">468</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9modelauta.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BUMPER]</code></td><td class="n">352</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9modelauta.4ds</code></td></tr>
+<tr><td class="k"><code>[both.bmp,left.bmp,right.bmp]</code></td><td class="n">348</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9motorka.4ds</code></td></tr>
+<tr><td class="k"><code>SECT, OFF_</code></td><td class="n">&mdash;</td><td class="n">340</td><td>Visual/Object</td><td><code>missions/FREEITALY/scene.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB</code></td><td class="n">127</td><td class="n">108</td><td>Dummy</td><td><code>models/#rad011.4ds</code></td></tr>
+<tr><td class="k"><code>no_proj</code></td><td class="n">225</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>glass</code></td><td class="n">&mdash;</td><td class="n">195</td><td>Visual/Object</td><td><code>missions/INTERMEZZO03/scene.4ds</code></td></tr>
+<tr><td class="k"><code>TRGT</code></td><td class="n">188</td><td class="n">&mdash;</td><td>Target</td><td><code>models/!TommyHIGH.4ds</code></td></tr>
+<tr><td class="k"><code>TRGT=targetN</code></td><td class="n">154</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Alice1.4ds</code></td></tr>
+<tr><td class="k"><code>z_bias</code></td><td class="n">99</td><td class="n">51</td><td>Visual/Object</td><td><code>models/0rek04.4ds</code></td></tr>
+<tr><td class="k"><code>SNGMRPH</code></td><td class="n">146</td><td class="n">&mdash;</td><td>Visual/Single Morph</td><td><code>models/!TommyHIGH.4ds</code></td></tr>
+<tr><td class="k"><code>SNGM</code></td><td class="n">142</td><td class="n">&mdash;</td><td>Visual/Single Mesh</td><td><code>models/!hadice model.4ds</code></td></tr>
+<tr><td class="k"><code>[4,1]</code></td><td class="n">137</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/BM.4ds</code></td></tr>
+<tr><td class="k"><code>{BBRD},no_fog</code></td><td class="n">16</td><td class="n">108</td><td>Visual/Billboard</td><td><code>models/7plampaon.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BODY,I]</code></td><td class="n">120</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9modelauta.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x19</code></td><td class="n">113</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/8stro1.4ds</code></td></tr>
+<tr><td class="k"><code>LENSF</code></td><td class="n">102</td><td class="n">8</td><td>Visual/Lens Flare</td><td><code>models/8svet1 on.4ds</code></td></tr>
+<tr><td class="k"><code>[17]</code></td><td class="n">104</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/buiCou00.4ds</code></td></tr>
+<tr><td class="k"><code>no_shadow</code></td><td class="n">70</td><td class="n">32</td><td>Dummy, Visual/Object</td><td><code>models/2bar.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA,0x13</code></td><td class="n">87</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/66stn4S.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x13</code></td><td class="n">87</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9BOXY1.4ds</code></td></tr>
+<tr><td class="k"><code>SECT,off_</code></td><td class="n">&mdash;</td><td class="n">80</td><td>Visual/Object</td><td><code>missions/02NORMANCELA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>SECT,OFF_</code></td><td class="n">&mdash;</td><td class="n">80</td><td>Visual/Object</td><td><code>missions/MISE02-SALIERY/scene.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 41</code></td><td class="n">61</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9KSSVIC1.4ds</code></td></tr>
+<tr><td class="k"><code>[3,1]</code></td><td class="n">54</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fordt2.4ds</code></td></tr>
+<tr><td class="k"><code>[40]</code></td><td class="n">50</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVanimTruckB00.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM ROOF]</code></td><td class="n">48</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/buiCou00.4ds</code></td></tr>
+<tr><td class="k"><code>MRPH</code></td><td class="n">43</td><td class="n">3</td><td>Visual/Morph</td><td><code>models/!TommyHIGH.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=z!,no_fog</code></td><td class="n">40</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/FMVBlackT.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x13</code></td><td class="n">40</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9krbstoj.4ds</code></td></tr>
+<tr><td class="k"><code>[20]</code></td><td class="n">39</td><td class="n">&mdash;</td><td>Dummy, Visual/Object</td><td><code>models/bus00.4ds</code></td></tr>
+<tr><td class="k"><code>AV_LIGHT</code></td><td class="n">38</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9ker1.4ds</code></td></tr>
+<tr><td class="k"><code>OFF_</code></td><td class="n">4</td><td class="n">34</td><td>Visual/Object</td><td><code>missions/MISE06-OSLAVA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>DYNS+</code></td><td class="n">34</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/Enemy01+.4ds</code></td></tr>
+<tr><td class="k"><code>DYNS</code></td><td class="n">33</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/Enemy01+.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=y!</code></td><td class="n">32</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/2vybuch.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x33</code></td><td class="n">30</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9dum4.4ds</code></td></tr>
+<tr><td class="k"><code>[5,1]</code></td><td class="n">29</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/BigFoot.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x13</code></td><td class="n">28</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9ZAVORA.4ds</code></td></tr>
+<tr><td class="k"><code>~DCC~</code></td><td class="n">28</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVanimTruckB00.4ds</code></td></tr>
+<tr><td class="k"><code>[5 4.8]</code></td><td class="n">26</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/BigFoot.4ds</code></td></tr>
+<tr><td class="k"><code>[5,0.5]</code></td><td class="n">25</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/Blackdragon00.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD</code></td><td class="n">8</td><td class="n">16</td><td>Visual/Billboard</td><td><code>models/kule.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX300,1,1,14~~~, z_bias</code></td><td class="n">24</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/obrgal1.4ds</code></td></tr>
+<tr><td class="k"><code>[5,0.3]</code></td><td class="n">23</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/ForAfo00.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_COLL</code></td><td class="n">23</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>VOLC</code></td><td class="n">23</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/7plampaon.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x14</code></td><td class="n">20</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9gramec.4ds</code></td></tr>
+<tr><td class="k"><code>VOLC,0x13</code></td><td class="n">20</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9cinluc.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX~~~</code></td><td class="n">11</td><td class="n">9</td><td>Visual/Object</td><td><code>models/9VENECST.4ds</code></td></tr>
+<tr><td class="k"><code>trgt=targetN</code></td><td class="n">19</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/!TommyHIGH.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x04</code></td><td class="n">19</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9VLAKNAR.4ds</code></td></tr>
+<tr><td class="k"><code>;x200N15Z.+;, z_bias</code></td><td class="n">18</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9obr12.4ds</code></td></tr>
+<tr><td class="k"><code>[5 -4.8]</code></td><td class="n">18</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/Bugatti.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR, 24</code></td><td class="n">16</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/kaluz6b.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR</code></td><td class="n">15</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9opera.4ds</code></td></tr>
+<tr><td class="k"><code>[6,0.6]</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9vuz.4ds</code></td></tr>
+<tr><td class="k"><code>[6,1]</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVstaticTruckA00.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9lustr1.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x19</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9vesak3.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA,0x33</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9kulsvet.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x20</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/8fabprist1.4ds</code></td></tr>
+<tr><td class="k"><code>VOLC,0x19</code></td><td class="n">14</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/7plampa.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=z!</code></td><td class="n">13</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/FMVtaxi00.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0x20</code></td><td class="n">13</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/kominy01.4ds</code></td></tr>
+<tr><td class="k"><code>{BBRD}</code></td><td class="n">13</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/9petrolejka.4ds</code></td></tr>
+<tr><td class="k"><code>[25]</code></td><td class="n">12</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FThot00.4ds</code></td></tr>
+<tr><td class="k"><code>[projector.bmp]</code></td><td class="n">12</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVcad_phaet.4ds</code></td></tr>
+<tr><td class="k"><code>TRGT=targetE</code></td><td class="n">12</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/!TommyHIGH.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA</code></td><td class="n">12</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/@Rflask.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA,0x19</code></td><td class="n">12</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9KSZABRN.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x17</code></td><td class="n">12</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/0mrak 01.4ds</code></td></tr>
+<tr><td class="k"><code>[7.5,1]</code></td><td class="n">11</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVanimTruckB00.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x19</code></td><td class="n">11</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9KSZABRN.4ds</code></td></tr>
+<tr><td class="k"><code>[4,0.4]</code></td><td class="n">10</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/ForApic00.4ds</code></td></tr>
+<tr><td class="k"><code>[5 8]</code></td><td class="n">10</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/Bugatti.4ds</code></td></tr>
+<tr><td class="k"><code>[5,0]</code></td><td class="n">10</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/airflFor00.4ds</code></td></tr>
+<tr><td class="k"><code>[5]</code></td><td class="n">10</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/Bugatti.4ds</code></td></tr>
+<tr><td class="k"><code>ABA095</code></td><td class="n">10</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil02.4ds</code></td></tr>
+<tr><td class="k"><code>BAA093</code></td><td class="n">10</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena01.4ds</code></td></tr>
+<tr><td class="k"><code>;I10V15N15Z;</code></td><td class="n">9</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz04_c1.4ds</code></td></tr>
+<tr><td class="k"><code>mirror</code></td><td class="n">9</td><td class="n">&mdash;</td><td>Visual/Mirror</td><td><code>models/kaluz.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF,0x13</code></td><td class="n">9</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9BOXSCH.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x14</code></td><td class="n">9</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9deska1.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x33</code></td><td class="n">9</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/nadz_zastavka.4ds</code></td></tr>
+<tr><td class="k"><code>;M35N21I4;</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/dopravni1B.4ds</code></td></tr>
+<tr><td class="k"><code>[30]</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FThot00.4ds</code></td></tr>
+<tr><td class="k"><code>[5 -8]</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/Bugatti.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM WING]</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/alfa8C00.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x19</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9postl3.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x19,M</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/dopravni1B.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,33,S</code></td><td class="n">8</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>ABA100</code></td><td class="n">7</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil33.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x14</code></td><td class="n">7</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9doutnkr.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x33</code></td><td class="n">7</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9destnik.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x33,NFT</code></td><td class="n">7</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/otoman.4ds</code></td></tr>
+<tr><td class="k"><code>;N15ZI10V15;, z_bias</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9obr12_c1.4ds</code></td></tr>
+<tr><td class="k"><code>[2 -10)</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/duesenberg.4ds</code></td></tr>
+<tr><td class="k"><code>[2 10]</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/duesenberg.4ds</code></td></tr>
+<tr><td class="k"><code>[2 5]</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/Miller.4ds</code></td></tr>
+<tr><td class="k"><code>[23]</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/TBirdold00.4ds</code></td></tr>
+<tr><td class="k"><code>[26]</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/TBirdold00.4ds</code></td></tr>
+<tr><td class="k"><code>[38]</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fire00.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BODY,]</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/FMVarrow00-travis.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x14</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/obrgal10.4ds</code></td></tr>
+<tr><td class="k"><code>JTVS</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/I04Delnik01+.4ds</code></td></tr>
+<tr><td class="k"><code>VOLS,0x33</code></td><td class="n">6</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9venec.4ds</code></td></tr>
+<tr><td class="k"><code>{auto_lod 50 250 12 .3}</code></td><td class="n">1</td><td class="n">5</td><td>Visual/Object</td><td><code>missions/FREEKRAJINA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>14</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/2c1911.4ds</code></td></tr>
+<tr><td class="k"><code>16</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/2m1903.4ds</code></td></tr>
+<tr><td class="k"><code>;M300N20;</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/exp_cis_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X200N15Z.+;, z_bias</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9obr14.4ds</code></td></tr>
+<tr><td class="k"><code>[28]</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy, Visual/Object</td><td><code>models/xedos00.4ds</code></td></tr>
+<tr><td class="k"><code>[4,0]</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/alfa00.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0x33</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/%radovk10.4ds</code></td></tr>
+<tr><td class="k"><code>VOLC,0x04</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/podstrom.4ds</code></td></tr>
+<tr><td class="k"><code>{volb}</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9doutn.4ds</code></td></tr>
+<tr><td class="k"><code>~DCS~</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVanimTruckB00.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX40,4,1,22~~~</code></td><td class="n">5</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/zn03b.4ds</code></td></tr>
+<tr><td class="k"><code>;I10V15N15Z;, z_bias</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N15ZI10V15;</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/@HQobr04_c1.4ds</code></td></tr>
+<tr><td class="k"><code>[2 -5]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/Miller.4ds</code></td></tr>
+<tr><td class="k"><code>[21]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fordApick00.4ds</code></td></tr>
+<tr><td class="k"><code>[32]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fordApick00.4ds</code></td></tr>
+<tr><td class="k"><code>[4.5,0]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/polimTud00.4ds</code></td></tr>
+<tr><td class="k"><code>[6,0.4]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVarrow00-travis.4ds</code></td></tr>
+<tr><td class="k"><code>[7,0.5]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVcad_phaet.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BODY] no_shadow</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/FMVblackho00.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORMGLASS]</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/BM.4ds</code></td></tr>
+<tr><td class="k"><code>_off</code></td><td class="n">&mdash;</td><td class="n">4</td><td>Visual/Object</td><td><code>missions/FREEKRAJINA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>ABA098</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil36.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x21</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/vratar1.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x33</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9VENECST.4ds</code></td></tr>
+<tr><td class="k"><code>NO_SHADOW</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/FMVpodsalek01.4ds</code></td></tr>
+<tr><td class="k"><code>trgt=TargetN</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena11M.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA,0x20</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9telefoun.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x02</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/schody_m.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x36</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9PSPR.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF, 0x45, OFF_</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/kaluz.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF, 45</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/kaluz.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x04</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/bazen.4ds</code></td></tr>
+<tr><td class="k"><code>volr,0x19</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/XZVEDAK.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX35,4,1,22~~~</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/zn01.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX40,1,1,14~~~</code></td><td class="n">4</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/bedna00.4ds</code></td></tr>
+<tr><td class="k"><code>;I2V22X200M50I2N22+;</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbarel 2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M10N17I6V9;</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;X1G;</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/PHbox01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>[4,0.5]</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/duesenberg.4ds</code></td></tr>
+<tr><td class="k"><code>[5,0.6]</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/Bugatti.4ds</code></td></tr>
+<tr><td class="k"><code>[5.2]</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVcad_road00.4ds</code></td></tr>
+<tr><td class="k"><code>[6,0.3]</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/FMVpolCad00.4ds</code></td></tr>
+<tr><td class="k"><code>AAA100</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil14.4ds</code></td></tr>
+<tr><td class="k"><code>ABA096</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil03.4ds</code></td></tr>
+<tr><td class="k"><code>ABB100</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/pol01.4ds</code></td></tr>
+<tr><td class="k"><code>ABC099</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil19.4ds</code></td></tr>
+<tr><td class="k"><code>ABC100</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil22.4ds</code></td></tr>
+<tr><td class="k"><code>ABD100</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/pol11.4ds</code></td></tr>
+<tr><td class="k"><code>ACA097</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil05.4ds</code></td></tr>
+<tr><td class="k"><code>BAA095</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena04.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=Y!</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/lamp03.4ds</code></td></tr>
+<tr><td class="k"><code>SECT,occlude</code></td><td class="n">&mdash;</td><td class="n">3</td><td>Visual/Object</td><td><code>missions/MISE11-VILA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA,0x17</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9svecvod.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x13</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9skrn4b.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x17</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/socha01.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/%skola.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,29</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>{vols}</code></td><td class="n">3</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/plech_a1.4ds</code></td></tr>
+<tr><td class="k"><code>;I10V15N15Z; z_bias</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz13_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I2V22M50I2N22;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbarel 2_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;I3V22M20N22I5;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xkybl 1_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I5V22N22;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xplechovka2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I5V22N22I5;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xplechovka5_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I6V9X150M250N17.+;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1a_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M100N17I6V9;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/busta_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M100N22I2V22;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/barel_exp_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M150N17I6V9;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1a_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M20N17I6V9;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/busta_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M30N20;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/fmv 15icist-plch1.4ds</code></td></tr>
+<tr><td class="k"><code>;M40N17I6V9;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1a_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M50N15I1V14;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/PHbox01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M50N17I6V9;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1a_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;N33M20I13V19;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9KSSVIC1_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X150M250N17.+;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1a.4ds</code></td></tr>
+<tr><td class="k"><code>[10,2]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/bus00.4ds</code></td></tr>
+<tr><td class="k"><code>[13]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fordTH00.4ds</code></td></tr>
+<tr><td class="k"><code>[4,0.6]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/Miller.4ds</code></td></tr>
+<tr><td class="k"><code>[5.7,0.3]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/hearseA00.4ds</code></td></tr>
+<tr><td class="k"><code>[6,0.5]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/cad_ford00.4ds</code></td></tr>
+<tr><td class="k"><code>[7,1]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fire00.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BODY,I] no_shadow</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/FMVblackho00.4ds</code></td></tr>
+<tr><td class="k"><code>AAA097</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil31.4ds</code></td></tr>
+<tr><td class="k"><code>AAA098</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil18.4ds</code></td></tr>
+<tr><td class="k"><code>AAC100</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil11.4ds</code></td></tr>
+<tr><td class="k"><code>ABA093</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil16.4ds</code></td></tr>
+<tr><td class="k"><code>ABA094</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil17.4ds</code></td></tr>
+<tr><td class="k"><code>ABA097</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil13.4ds</code></td></tr>
+<tr><td class="k"><code>ABE100</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/FREEgang01.4ds</code></td></tr>
+<tr><td class="k"><code>ACA091</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil06.4ds</code></td></tr>
+<tr><td class="k"><code>ACA100</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil53.4ds</code></td></tr>
+<tr><td class="k"><code>BBA090</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena03.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x20</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9mail.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0x24</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9lampic.4ds</code></td></tr>
+<tr><td class="k"><code>DYNS,0x20</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/barel_s1.4ds</code></td></tr>
+<tr><td class="k"><code>LENSF[0]</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Lens Flare</td><td><code>models/den2.4ds</code></td></tr>
+<tr><td class="k"><code>M300N20;</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/exp_cis_c1.4ds</code></td></tr>
+<tr><td class="k"><code>NO_MIRROR</code></td><td class="n">&mdash;</td><td class="n">2</td><td>Visual/Object</td><td><code>missions/AUTOSALON/scene.4ds</code></td></tr>
+<tr><td class="k"><code>no_proj no_shadow</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>no_proj, OFF_</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY1_END</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY1_START</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY2_END</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY2_START</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_LIGHT_OFF</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_LIGHT_ON</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW1_END</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW1_START</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW2_END</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW2_START</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>SECT ⏎ OFF_</code></td><td class="n">&mdash;</td><td class="n">2</td><td>Visual/Object</td><td><code>missions/MISE13-ZRADCE/scene.4ds</code></td></tr>
+<tr><td class="k"><code>SNGMRPH ⏎ no_shadow</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Single Morph</td><td><code>models/Tommy.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0x36</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/banka.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0x38</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/kominy01.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 33</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/socha02.4ds</code></td></tr>
+<tr><td class="k"><code>volb, 41</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9KSSVIC2.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x05</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/zahon01.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x06</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/pytle01.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x13,NFT</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/@hqzdl01.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x21</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/skrinka01.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x21</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xtrubka 4.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x42</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/slama.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF,  31</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF, 15</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/ukaz.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF,0x19</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9ZABR.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF,0x43</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR, 0x33</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/4build13.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR, 17</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x02</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/schody_v2.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,33</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLS,0x17</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9palma.4ds</code></td></tr>
+<tr><td class="k"><code>vols,0x33</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/XPYTEL1.4ds</code></td></tr>
+<tr><td class="k"><code>z_bias, MRPH</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Morph</td><td><code>models/9whiskbez.4ds</code></td></tr>
+<tr><td class="k"><code>{BBRD=Y!}</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/2zarc.4ds</code></td></tr>
+<tr><td class="k"><code>{BBRD}, no_fog</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/9KSSVIC1.4ds</code></td></tr>
+<tr><td class="k"><code>~CY3~</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/traktor.4ds</code></td></tr>
+<tr><td class="k"><code>~E~</code></td><td class="n">2</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/traktor.4ds</code></td></tr>
+<tr><td class="k"><code>12</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/2tommy.4ds</code></td></tr>
+<tr><td class="k"><code>;I10V15N15Z.+;, z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz17_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I2V22M100I2N22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbarel 4_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;I3V22M10N22I5;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xkybl 2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I3V22M5N22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xkybl 2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I5V22M30N22I5;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xplechovka7_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I5V22M60N22I5;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xplechovka8_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I5V22n22I5;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xplechovka3_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I6V9X200M1000N17.+;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;I6V9X200N17M1000.+;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/socha02_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M100000N20;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/fmv 15icist-dwn.4ds</code></td></tr>
+<tr><td class="k"><code>;M10000N22I13V21;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/dopravni9B_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M1000N22X1EFI7V21;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xpumpa 2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M100;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbarel 4.4ds</code></td></tr>
+<tr><td class="k"><code>;M100N17I6V9T0;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/socha02_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M100N22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/barel_exp_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M10N17I6V9T0;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/socha02_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M120N17;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/ukaz2.4ds</code></td></tr>
+<tr><td class="k"><code>;M150;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/ukaz.4ds</code></td></tr>
+<tr><td class="k"><code>;M150N15I1V14;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/PHbox01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M2000N17I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/socha02_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M200N22I13V21;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/dopravni9B_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M200N4I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/soch1_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M20N17I6V9T0;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/socha02_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M20N20;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/fmv 15icist-plch3.4ds</code></td></tr>
+<tr><td class="k"><code>;M3000N20;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/exp_cis_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M30N17I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/busta2_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M30N33I3V22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/kos01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M40N15I1V14;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/PHbox01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M500N17I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/socha02_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M50N22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/barel_exp_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M50N22I2V22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbarel 1_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;M60N15I1V14;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/PHbox01_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;M60N17I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/busta2_c2.4ds</code></td></tr>
+<tr><td class="k"><code>;N15Z.+I10V15;z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/@HQobr08_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N15Z;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xstul13_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;n15ZI10V15;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/@HQobr02_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N22M30I13V19;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9KSSVIC2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N22M50I13V19;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9KSSVIC1_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N22M50I5I7V21;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xpumpa 2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N22Z;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xpumpa 2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;N33I1;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/kaluz6_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;V22N22I5;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xplechovka1_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X100M1000N17.+I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/busta2_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X100M100N22EF.+I2V22;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/barel_exp_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X100M100N22I2;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/popel01.4ds</code></td></tr>
+<tr><td class="k"><code>;X100N17M1000.+I6V9;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/busta_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X1HI13V21;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/dopravni9B_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;X200M50I2V22N22+;</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbarel 1_c1.4ds</code></td></tr>
+<tr><td class="k"><code>;x200N15.+Z;, z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz16.4ds</code></td></tr>
+<tr><td class="k"><code>;x200N15Z.+; z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/@HQobr07.4ds</code></td></tr>
+<tr><td class="k"><code>;X200N15Z.+;z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/@HQobr08.4ds</code></td></tr>
+<tr><td class="k"><code>;X50N15Z.+;, z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz01.4ds</code></td></tr>
+<tr><td class="k"><code>;x50N15Z.+;, z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xobraz14.4ds</code></td></tr>
+<tr><td class="k"><code>[2 -10]</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/duesenberg.4ds</code></td></tr>
+<tr><td class="k"><code>[50]</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/den2.4ds</code></td></tr>
+<tr><td class="k"><code>[6,1.3]</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/ambulance10.4ds</code></td></tr>
+<tr><td class="k"><code>[6.5,1.5]</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/ambulance00.4ds</code></td></tr>
+<tr><td class="k"><code>[DEFORM BODY],[I]</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/FMVcad_road00.4ds</code></td></tr>
+<tr><td class="k"><code>AAC097</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil52.4ds</code></td></tr>
+<tr><td class="k"><code>ABA103</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil32.4ds</code></td></tr>
+<tr><td class="k"><code>ABC097</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil12.4ds</code></td></tr>
+<tr><td class="k"><code>ACA095</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/civil37.4ds</code></td></tr>
+<tr><td class="k"><code>BAA094</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena08.4ds</code></td></tr>
+<tr><td class="k"><code>BBA091</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena02.4ds</code></td></tr>
+<tr><td class="k"><code>BBA092</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena05.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=X</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/explosion.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=x</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/odlesk.4ds</code></td></tr>
+<tr><td class="k"><code>BBRD=Y!, no_fog</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/2lighting.4ds</code></td></tr>
+<tr><td class="k"><code>bbrd=Z!</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Billboard</td><td><code>models/2sparkle.4ds</code></td></tr>
+<tr><td class="k"><code>BCA088</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Joint</td><td><code>models/Czena06.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB, 1</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xbedna 11.4ds</code></td></tr>
+<tr><td class="k"><code>DYNB,0X14</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/BEDNKA01.4ds</code></td></tr>
+<tr><td class="k"><code>JTVS+</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/Boxer04.4ds</code></td></tr>
+<tr><td class="k"><code>lensf</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Lens Flare</td><td><code>models/okno2.4ds</code></td></tr>
+<tr><td class="k"><code>MRPH no_shadow</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Morph</td><td><code>models/noviny17a.4ds</code></td></tr>
+<tr><td class="k"><code>MRPH, AV_LIGHT</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Morph</td><td><code>models/strom morph.4ds</code></td></tr>
+<tr><td class="k"><code>no_proj  no_shadow</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_DOOR1_L</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_DOOR1_R</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_DOOR2_L</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_DOOR2_R</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY3_END</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/salina.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY3_START</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/salina.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY4_END</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/salina.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ENTRY4_START</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/salina.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_PROJECTOR</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/salina.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW3_END</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW3_START</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW4_END</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW4_START</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW5_END</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW5_START</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW6_END</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>RAIL_ROW6_START</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/metro.4ds</code></td></tr>
+<tr><td class="k"><code>ramp 2_1</code></td><td class="n">&mdash;</td><td class="n">1</td><td>Visual/Object</td><td><code>missions/MISE12-GARAGE/scene.4ds</code></td></tr>
+<tr><td class="k"><code>sect</code></td><td class="n">&mdash;</td><td class="n">1</td><td>Visual/Object</td><td><code>missions/MISE08-KOSTEL/scene.4ds</code></td></tr>
+<tr><td class="k"><code>SECT no_shadow</code></td><td class="n">&mdash;</td><td class="n">1</td><td>Visual/Object</td><td><code>missions/MISE20-GALERY/scene.4ds</code></td></tr>
+<tr><td class="k"><code>vob,0x20</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xtrubka 8.4ds</code></td></tr>
+<tr><td class="k"><code>VOLA,0x04</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/g_vrtacka.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0x19</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xv sud.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 0x33, S</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9drzakhot.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB, 17</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/socha02.4ds</code></td></tr>
+<tr><td class="k"><code>volb,,0x20</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xtrubka 7.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,,0x33</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xkniha 2.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x15</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/@stulhot.4ds</code></td></tr>
+<tr><td class="k"><code>volb,0x20</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xtrubka 8.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x38</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9cihla.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,0x4</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/8fabprist1.4ds</code></td></tr>
+<tr><td class="k"><code>VOLB,13</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/vedeni3.4ds</code></td></tr>
+<tr><td class="k"><code>VOLC, 0x19</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9hod.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF,  1</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF, 6</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity_r.4ds</code></td></tr>
+<tr><td class="k"><code>VOLF,0x02</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/schody_v.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR, 33</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>volr,0x20</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/xznacka 1.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,0x21</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9dvrpult.4ds</code></td></tr>
+<tr><td class="k"><code>VOLR,36</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/watercity.4ds</code></td></tr>
+<tr><td class="k"><code>VOLS, 0x19</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9hod.4ds</code></td></tr>
+<tr><td class="k"><code>VOLS,0x19</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9KSSVIC1.4ds</code></td></tr>
+<tr><td class="k"><code>VOLS,0x21</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9gramec.4ds</code></td></tr>
+<tr><td class="k"><code>VOLS,0x33,S</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9kkytky.4ds</code></td></tr>
+<tr><td class="k"><code>{auto_lod 5 100 12 .05}</code></td><td class="n">&mdash;</td><td class="n">1</td><td>Visual/Object</td><td><code>missions/MISE09-PREJIMKA/scene.4ds</code></td></tr>
+<tr><td class="k"><code>{VOLB}</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/vezeni.4ds</code></td></tr>
+<tr><td class="k"><code>{VOLF}</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/9vuz1.4ds</code></td></tr>
+<tr><td class="k"><code>~CRX0.2~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/traktor.4ds</code></td></tr>
+<tr><td class="k"><code>~CRX0.35~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/traktor.4ds</code></td></tr>
+<tr><td class="k"><code>~CX3~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/fordtTud00K.4ds</code></td></tr>
+<tr><td class="k"><code>~CX5~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/fordtTud00K.4ds</code></td></tr>
+<tr><td class="k"><code>~CZ2~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Dummy</td><td><code>models/traktor.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX15,4,1,22~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9mail2.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX18,1,1,14~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/bedna03.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX20,1,1,14~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/bedna04.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX30,1,1,14~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/kuzel.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX300,1,1,14~~~,z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/obrgal10.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX35,1,1,14~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbedna 07.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX40,2,1,21~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/9mail.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX45,1,1,14~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/xbedna 01.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX45,1,1,14~~~, z_bias</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/obrgal21.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX50,1,1,14~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/plotdrev7.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX50,4,1,22~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/zabradl.4ds</code></td></tr>
+<tr><td class="k"><code>~~~ACTR:BOX60,4,1,22~~~</code></td><td class="n">1</td><td class="n">&mdash;</td><td>Visual/Object</td><td><code>models/zabradl2.4ds</code></td></tr>
+</tbody>
+</table>
+</div></div>
+</section>
+
+    <hr>
+    <footer>
+      <p>Compiled from every <code>.4ds</code> file shipped with Mafia &mdash; the <code>models</code> folder and the mission scenes.
+      Meanings come from how the game treats each property; anything not
+      established is marked as such rather than guessed.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

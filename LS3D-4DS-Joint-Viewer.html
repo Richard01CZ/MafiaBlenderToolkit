@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4DS Joint Viewer</title>
+<meta name="description" content="Open any 4DS model and see every joint: where it sits, the box its sixteen numbers describe, the skin boxes the game uses, and where each value lives in the file.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  :root {
+    --ground:   #FAFAF9;
+    --surface:  #FFFFFF;
+    --sunken:   #F3F1ED;
+    --ink:      #1A1917;
+    --muted:    #6E6862;
+    --rule:     #E4E0DA;
+    --accent:   #8E2B22;
+    --accent-soft: #F6EBE9;
+    --engine:   #2F5D62;
+    --engine-soft: #E7F0F0;
+    --shadow:   rgba(26, 25, 23, 0.07);
+
+    --mesh-fill: rgba(110, 104, 98, 0.13);
+    --mesh-edge: rgba(110, 104, 98, 0.26);
+    --box:       rgba(196, 110, 36, 0.55);
+    --pick:      #B3261E;
+    --pick-fill: rgba(179, 38, 30, 0.10);
+    --group:     #2F5D62;
+    --bone:      #3558A8;
+    --axis-x:    #C62828;
+    --axis-y:    #2E7D32;
+    --axis-z:    #1565C0;
+    --parent-share: #1E5AD6;
+    --joint-share:  #D6281E;
+
+    --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --serif: "IBM Plex Serif", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #141312;
+      --surface:  #1C1A18;
+      --sunken:   #232120;
+      --ink:      #EBE7E1;
+      --muted:    #9B948C;
+      --rule:     #2F2B27;
+      --accent:   #E68A76;
+      --accent-soft: #2C1E1B;
+      --engine:   #7FBEC3;
+      --engine-soft: #16292B;
+      --shadow:   rgba(0, 0, 0, 0.4);
+
+      --mesh-fill: rgba(235, 231, 225, 0.07);
+      --mesh-edge: rgba(235, 231, 225, 0.18);
+      --box:       rgba(240, 164, 90, 0.55);
+      --pick:      #FF7A6E;
+      --pick-fill: rgba(255, 122, 110, 0.13);
+      --group:     #7FBEC3;
+      --bone:      #8FB0FF;
+      --axis-x:    #FF6B5E;
+      --axis-y:    #5FD07F;
+      --axis-z:    #6EA8FF;
+      --parent-share: #5B8CFF;
+      --joint-share:  #FF5A4E;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:   #141312;
+    --surface:  #1C1A18;
+    --sunken:   #232120;
+    --ink:      #EBE7E1;
+    --muted:    #9B948C;
+    --rule:     #2F2B27;
+    --accent:   #E68A76;
+    --accent-soft: #2C1E1B;
+    --engine:   #7FBEC3;
+    --engine-soft: #16292B;
+    --shadow:   rgba(0, 0, 0, 0.4);
+
+    --mesh-fill: rgba(235, 231, 225, 0.07);
+    --mesh-edge: rgba(235, 231, 225, 0.18);
+    --box:       rgba(240, 164, 90, 0.55);
+    --pick:      #FF7A6E;
+    --pick-fill: rgba(255, 122, 110, 0.13);
+    --group:     #7FBEC3;
+    --bone:      #8FB0FF;
+    --axis-x:    #FF6B5E;
+    --axis-y:    #5FD07F;
+    --axis-z:    #6EA8FF;
+    --parent-share: #5B8CFF;
+    --joint-share:  #FF5A4E;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 1440px; margin: 0 auto; padding: 28px 24px 80px; }
+
+  .brand {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 30px;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    margin: 0 0 8px;
+  }
+
+  .lead { color: var(--muted); max-width: 820px; margin: 0 0 18px; }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+  .button {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 500 14px var(--sans);
+    color: var(--surface);
+    background: var(--accent);
+    border: 0; border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+  }
+  .button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .file-name { font-family: var(--mono); font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 980px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px var(--shadow);
+  }
+
+  .stage { position: relative; height: 76vh; min-height: 440px; overflow: hidden; }
+  .stage.dragging { outline: 2px dashed var(--accent); outline-offset: -8px; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  canvas.moving { cursor: grabbing; }
+
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .overlay strong { display: block; font-family: var(--serif); font-size: 20px; color: var(--ink); margin-bottom: 4px; }
+  .overlay.error strong { color: var(--pick); }
+
+  .toggles {
+    position: absolute; top: 10px; left: 12px; right: 12px;
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    font-size: 12.5px; color: var(--muted);
+    pointer-events: none;
+  }
+  .toggles label { pointer-events: auto; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; background: var(--surface); padding: 1px 6px; border-radius: 6px; }
+  .swatch { display: inline-block; width: 12px; height: 3px; border-radius: 2px; }
+
+  .hint {
+    position: absolute; left: 12px; bottom: 8px; right: 12px;
+    font-size: 12px; color: var(--muted);
+    pointer-events: none;
+  }
+
+  .side { padding: 16px; max-height: 76vh; overflow: auto; }
+  @media (max-width: 980px) { .side { max-height: none; } }
+
+  .side h2 { font-family: var(--serif); font-weight: 600; font-size: 19px; margin: 0 0 2px; overflow-wrap: anywhere; }
+  .side h3 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); margin: 18px 0 6px;
+  }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 6px; }
+
+  .summary { font-size: 13.5px; }
+  .summary p { margin: 0 0 4px; }
+
+  .joint-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .joint-list button {
+    font: 12.5px var(--sans); color: var(--ink);
+    background: var(--sunken); border: 1px solid transparent; border-radius: 6px;
+    padding: 2px 8px; cursor: pointer;
+  }
+  .joint-list button:hover { border-color: var(--rule); }
+  .joint-list button.on { border-color: var(--pick); color: var(--pick); font-weight: 600; background: var(--pick-fill); }
+  .joint-list button.odd::after { content: " •"; color: var(--accent); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { padding: 4px 5px; border-bottom: 1px solid var(--rule); text-align: right; font-variant-numeric: tabular-nums; vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  th:first-child, td:first-child { text-align: left; }
+  td.wrap { text-align: left; overflow-wrap: anywhere; }
+  .num { font-family: var(--mono); font-size: 12px; }
+  .bytes { font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: left; white-space: nowrap; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .flag {
+    font-size: 13px; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px;
+    background: var(--accent-soft); color: var(--ink); border-left: 3px solid var(--accent);
+  }
+  .flag.engine { background: var(--engine-soft); border-left-color: var(--engine); }
+
+  .notes { margin-top: 28px; display: grid; gap: 12px; max-width: 980px; }
+  details { padding: 14px 18px; }
+  summary { cursor: pointer; font-family: var(--serif); font-weight: 600; font-size: 17px; }
+  details dl { margin: 10px 0 0; }
+  details dt { font-weight: 600; margin-top: 10px; }
+  details dd { margin: 2px 0 0; color: var(--ink); }
+  details dd .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brand">LS3D 4DS · Tools</div>
+  <h1>Joint viewer</h1>
+  <p class="lead">Open any 4DS model to see its joints. Each joint carries sixteen numbers describing a box
+  in its own space: its area of influence, the region its skin weights were made from. The boxes are drawn on
+  the model with the skin boxes the game uses for bounds, the picked joint's weights are shown on its vertices,
+  and the panel lists every value the joint holds and where it sits in the file. Nothing leaves your computer:
+  the file is read in this page.</p>
+
+  <div class="toolbar">
+    <button class="button" id="openButton" type="button">Open a .4ds model…</button>
+    <input type="file" id="fileInput" accept=".4ds,.4DS" hidden>
+    <span class="file-name" id="fileName">No model open. You can also drop a file onto the view.</span>
+  </div>
+
+  <div class="workspace">
+    <section class="stage card" id="stage" aria-label="Model view">
+      <canvas id="view"></canvas>
+      <div class="toggles">
+        <label><input type="checkbox" id="showMesh" checked> Mesh</label>
+        <label><input type="checkbox" id="showBoxes" checked><span class="swatch" style="background:var(--box)"></span> Influence boxes</label>
+        <label><input type="checkbox" id="showGroups"><span class="swatch" style="background:var(--group)"></span> Skin group boxes</label>
+        <label><input type="checkbox" id="showBones" checked><span class="swatch" style="background:var(--bone)"></span> Skeleton (dashed: hangs from a frame that is not a joint)</label>
+        <label><input type="checkbox" id="showWeights" checked><span class="swatch" style="background:linear-gradient(90deg,var(--parent-share),var(--joint-share))"></span> Weights</label>
+        <label><input type="checkbox" id="showNames"> Names</label>
+      </div>
+      <div class="overlay" id="overlay"><div><strong>Open a model to begin</strong>Use the button above, or drop a .4ds file here.</div></div>
+      <div class="hint" id="hint">Drag to turn · Shift-drag or right-drag to move · Wheel to zoom · Click a joint to pick it · Double-click to fit</div>
+    </section>
+
+    <aside class="side card" id="side">
+      <div class="summary" id="summary"><p class="sub">The model's joints and the selected joint's values appear here.</p></div>
+      <div id="listWrap" hidden>
+        <h3>Joints</h3>
+        <div class="joint-list" id="jointList"></div>
+      </div>
+      <div id="detail"></div>
+    </aside>
+  </div>
+
+  <section class="notes">
+    <details class="card" open>
+      <summary>How the game uses a joint</summary>
+      <dl>
+        <dt>Position, rotation and scale</dt>
+        <dd>Place the joint against the frame it hangs from, the way every frame is placed. Everything hanging
+        below it follows, and a skinned mesh bends with it: each of the mesh's vertices is carried by its
+        joint's current placement through that joint's bind matrix in the skin.</dd>
+        <dt>Culling byte</dt>
+        <dd>Its lowest bit switches the joint on; switched off, nothing hanging below it is drawn. Its highest
+        bit locks the joint's position. The six between are rebuilt when the model loads.</dd>
+        <dt>Name</dt>
+        <dd>The game finds joints by name: a character's hands, for instance, to put a weapon in them.</dd>
+        <dt>User properties</dt>
+        <dd>Kept with the frame, as on any frame.</dd>
+        <dt>The sixteen numbers</dt>
+        <dd>The joint's area of influence: a box in its own space, the first three rows its axes, each running
+        from the center to the middle of a face, and the fourth where its center sits; the last column is always
+        0, 0, 0, 1. It is what the skin weights were made from when the model was exported. The third row runs
+        along the bone, toward the joint's end of the limb: a vertex inside the box is shared between the joint
+        and its parent by where it sits along that axis — none of it the joint's at the back face, all of it at
+        the front — and the vertices past the front face belong to the joint alone. Every one of the 83,347
+        blended vertices in the game's 289 skinned models sits inside its joint's box with exactly that weight.
+        The game itself loads the numbers and copies them when it duplicates a joint, and reads them for nothing
+        else: it plays the weights, not the box. A joint the game makes itself gets a cube two centimeters
+        across.</dd>
+        <dt>Joint number</dt>
+        <dd>A skinned mesh gathers the joints hanging below it, however deep — first child first, in the
+        order the file lists them, at most 64 — and puts each in the slot its number names, counting from 0.
+        Slot N is moved by the skin's group N, so the numbers have to run from 0 up with none missing or
+        repeated. A joint not below a skinned mesh keeps a number nobody reads.</dd>
+        <dt>Bounds</dt>
+        <dd>A skinned mesh's bounds are its skin's group boxes, one per slot, each carried by its joint as it
+        moves. Tick <em>Skin group boxes</em> to see them.</dd>
+      </dl>
+    </details>
+    <details class="card">
+      <summary>What the add-on does with each value</summary>
+      <dl>
+        <dt>Position, rotation and scale</dt>
+        <dd>Become the bone and its joint scale. The export writes the values that put each bone exactly
+        where it is, so a model that goes round unchanged comes back the same.</dd>
+        <dt>Culling byte and user properties</dt>
+        <dd>Kept on the bone and editable in its joint panel.</dd>
+        <dt>Name</dt>
+        <dd>The bone's name.</dd>
+        <dt>Joint number</dt>
+        <dd>Worked out on export from the order of the skinned mesh's vertex groups, one skin group per joint
+        below the mesh. The export refuses more than 64 joints below one skinned mesh.</dd>
+        <dt>The sixteen numbers</dt>
+        <dd>The joint's influence box, whose local +Y is the axis the weight runs along. In the add-on it is
+        kept on the joint itself - sixteen numbers on its pose bone, drawn over the bone and dragged by the
+        handles on it - so a box nobody touches is written back to the bit. A joint made in Blender gets the box
+        the game's own tool gave a new joint, to the last digit.</dd>
+        <dt>Weights</dt>
+        <dd>A joint with weights painted exports them as they are. A joint with none has them made from its
+        box, the way the game's exporter made them: the vertices inside are shared with the joint's parent by
+        where they sit along the box's axis, and the mesh ahead of the box, as far as it runs unbroken, is the
+        joint's alone. On the game's characters that gives back 96.4% of their weights exactly.</dd>
+      </dl>
+    </details>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+// ── reading a .4ds ───────────────────────────────────────────────────────────
+const MAX_SKIN_JOINTS = 64;
+const DEFAULT_BOX = [0.01, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 1];
+const FRAME = { VISUAL: 1, LIGHT: 2, SECTOR: 5, DUMMY: 6, TARGET: 7, JOINT: 10, OCCLUDER: 12, EMITOR: 17 };
+const FRAME_NAMES = ["", "Visual", "Light", "Camera", "Sound", "Sector", "Dummy", "Target", "User",
+  "Model", "Joint", "Volume", "Occluder", "Scene", "Area", "Shadow", "Landscape", "Emitter"];
+const PAYLOADLESS = new Set([3, 8, 9, 11, 13, 15, 16]);
+const SKIPPED = new Set([4, 14]);
+const VISUAL = { BILLBOARD: 4, LENSFLARE: 6, PROJECTOR: 7, MIRROR: 8 };
+const VISUAL_NAMES = ["Object", "Lit Object", "Single Mesh", "Single Morph", "Billboard", "Morph",
+  "Lens Flare", "Projector", "Mirror"];
+const GEOMETRY_VISUALS = new Set([0, 1, 2, 3, 4, 5]);
+const SKINNED_VISUALS = new Set([2, 3]);
+const MORPH_VISUALS = new Set([3, 5]);
+const MTL_DIFFUSE_ENABLE = 1 << 18, MTL_ENV_ENABLE = 1 << 19, MTL_DIFFUSE_ANIMATED = 1 << 26;
+const MTL_ALPHATEX = 1 << 30, MTL_NO_ALPHA_MASK = (1 << 31) | (1 << 29) | (1 << 24);
+const SHARED_UV = 0xFFFF;
+
+const DECODER = (() => { try { return new TextDecoder("windows-1250"); } catch (e) { return new TextDecoder(); } })();
+
+class Reader {
+  constructor(buffer) { this.view = new DataView(buffer); this.bytes = new Uint8Array(buffer); this.pos = 0; }
+  need(n) {
+    if (this.pos + n > this.view.byteLength)
+      throw new Error(`the file ends at byte ${this.view.byteLength}, in the middle of something that needs ${n} more byte(s) from byte ${this.pos}`);
+  }
+  u8() { this.need(1); return this.view.getUint8(this.pos++); }
+  u16() { this.need(2); const v = this.view.getUint16(this.pos, true); this.pos += 2; return v; }
+  u32() { this.need(4); const v = this.view.getUint32(this.pos, true); this.pos += 4; return v; }
+  f32() { this.need(4); const v = this.view.getFloat32(this.pos, true); this.pos += 4; return v; }
+  f32s(n) { this.need(4 * n); const out = new Array(n); for (let i = 0; i < n; i++) { out[i] = this.view.getFloat32(this.pos, true); this.pos += 4; } return out; }
+  skip(n) { this.need(n); this.pos += n; }
+  str() { const n = this.u8(); if (!n) return ""; this.need(n); const s = DECODER.decode(this.bytes.subarray(this.pos, this.pos + n)); this.pos += n; return s; }
+}
+
+function readMaterial(r) {
+  const flags = r.u32();
+  r.skip(40);                                   // ambient, diffuse, emission, opacity
+  if (flags & MTL_ENV_ENABLE) { r.skip(4); r.str(); }
+  let named = false;
+  if (flags & MTL_DIFFUSE_ENABLE) { r.str(); named = true; }
+  if ((flags & MTL_ALPHATEX) && !(flags & MTL_NO_ALPHA_MASK)) { r.str(); named = true; }
+  if (!named) r.skip(1);
+  if (flags & MTL_DIFFUSE_ANIMATED) r.skip(18);
+}
+
+function readGeometry(r) {
+  const geometry = { instance: r.u16(), lods: [] };
+  if (geometry.instance) return geometry;
+  const lodCount = r.u8();
+  for (let l = 0; l < lodCount; l++) {
+    r.skip(4);                                  // distance
+    const count = r.u16();
+    const lod = { count: 0, positions: null, faces: [] };
+    if (count === SHARED_UV) {
+      if (!geometry.lods.length) throw new Error("the first LOD says it reuses an earlier LOD's vertices");
+      lod.count = geometry.lods[0].count;
+      lod.positions = geometry.lods[0].positions;
+      r.skip(lod.count * 8);
+    } else {
+      r.need(count * 32);
+      lod.count = count;
+      lod.positions = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        lod.positions[i * 3] = r.view.getFloat32(r.pos, true);
+        lod.positions[i * 3 + 1] = r.view.getFloat32(r.pos + 4, true);
+        lod.positions[i * 3 + 2] = r.view.getFloat32(r.pos + 8, true);
+        r.pos += 32;
+      }
+    }
+    const groups = r.u8();
+    for (let g = 0; g < groups; g++) {
+      const faceCount = r.u16();
+      r.need(faceCount * 6);
+      const faces = new Uint16Array(faceCount * 3);
+      for (let i = 0; i < faceCount * 3; i++) { faces[i] = r.view.getUint16(r.pos, true); r.pos += 2; }
+      lod.faces.push(faces);
+      r.skip(2);                                // material
+    }
+    geometry.lods.push(lod);
+  }
+  return geometry;
+}
+
+function readSkin(r, lodCount) {
+  const lods = [];
+  for (let l = 0; l < lodCount; l++) {
+    const groupCount = r.u8();
+    const lod = { root: r.u32(), min: r.f32s(3), max: r.f32s(3), groups: [] };
+    for (let g = 0; g < groupCount; g++) {
+      const group = { bind: r.f32s(16), rigid: r.u32(), blended: r.u32(), parent: r.u32(), min: r.f32s(3), max: r.f32s(3) };
+      group.weights = r.f32s(group.blended);
+      lod.groups.push(group);
+    }
+    lods.push(lod);
+  }
+  return lods;
+}
+
+function readMorph(r) {
+  const targets = r.u8();
+  if (!targets) return;
+  const regions = r.u8(), lods = r.u8();
+  for (let l = 0; l < lods; l++)
+    for (let g = 0; g < regions; g++) {
+      const n = r.u16();
+      if (!n) continue;
+      r.skip(n * targets * 24 + 1 + n * 2);
+    }
+  r.skip(40);                                   // box, center, radius
+}
+
+function readFrame(r, id) {
+  const frame = { id, start: r.pos, type: r.u8(), visual: null, parent: 0, name: "", props: "",
+    position: [0, 0, 0], scale: [1, 1, 1], rotation: [1, 0, 0, 0], cull: 0 };
+  if (!(frame.type > 0 && frame.type < 18))
+    throw new Error(`frame ${id} at byte ${frame.start} has frame type ${frame.type}, which does not exist`);
+  if (SKIPPED.has(frame.type)) { frame.parent = r.u16(); frame.end = r.pos; frame.skipped = true; return frame; }
+  if (frame.type === FRAME.VISUAL) {
+    frame.visual = r.u8();
+    if (frame.visual > 8) throw new Error(`frame ${id} at byte ${frame.start} has visual type ${frame.visual}, which does not exist`);
+    r.skip(2);                                  // render flags
+  }
+  frame.parent = r.u16();
+  frame.positionAt = r.pos;
+  frame.position = r.f32s(3);
+  frame.scale = r.f32s(3);
+  frame.rotation = r.f32s(4);
+  frame.cullAt = r.pos;
+  frame.cull = r.u8();
+  frame.name = r.str();
+  frame.props = r.str();
+
+  switch (frame.type) {
+    case FRAME.JOINT:
+      frame.matrixAt = r.pos;
+      frame.matrix = r.f32s(16);
+      frame.number = r.u32();
+      break;
+    case FRAME.VISUAL:
+      if (frame.visual === VISUAL.LENSFLARE) r.skip(r.u8() * 6);
+      else if (frame.visual === VISUAL.MIRROR) {
+        r.skip(120);
+        const vertices = r.u32(), faces = r.u32();
+        r.skip(vertices * 12 + faces * 6);
+      } else if (frame.visual === VISUAL.PROJECTOR) r.skip(4);
+      else if (GEOMETRY_VISUALS.has(frame.visual)) {
+        frame.geometry = readGeometry(r);
+        if (!frame.geometry.instance) {
+          if (SKINNED_VISUALS.has(frame.visual)) frame.skin = readSkin(r, frame.geometry.lods.length);
+          if (MORPH_VISUALS.has(frame.visual)) readMorph(r);
+        }
+        if (frame.visual === VISUAL.BILLBOARD) r.skip(5);
+      }
+      break;
+    case FRAME.SECTOR: {
+      r.skip(8);
+      const vertices = r.u32(), faces = r.u32();
+      r.skip(vertices * 12 + faces * 6 + 24);
+      const portals = r.u8();
+      for (let p = 0; p < portals; p++) { const corners = r.u8(); r.skip(28 + corners * 12); }
+      break;
+    }
+    case FRAME.DUMMY: r.skip(24); break;
+    case FRAME.TARGET: r.skip(2); r.skip(r.u8() * 2); break;
+    case FRAME.OCCLUDER: { const vertices = r.u32(), faces = r.u32(); r.skip(vertices * 12 + faces * 6); break; }
+    case FRAME.LIGHT: r.skip(40); break;
+    case FRAME.EMITOR: frame.geometry = readGeometry(r); frame.particle = true; break;
+    default:
+      if (!PAYLOADLESS.has(frame.type)) throw new Error(`frame ${id} has a type this page cannot read`);
+  }
+  frame.end = r.pos;
+  return frame;
+}
+
+function readDocument(buffer) {
+  const r = new Reader(buffer);
+  const magic = String.fromCharCode(...r.bytes.subarray(0, 4));
+  if (magic !== "4DS\0") throw new Error("this is not a 4DS file: it does not start with the letters 4DS");
+  r.pos = 4;
+  const version = r.u16();
+  if (version !== 29) {
+    const whose = { 41: "Hidden & Dangerous 2", 42: "Chameleon" }[version];
+    throw new Error(`this is 4DS version ${version}${whose ? ", " + whose + "'s own" : ""}; this page reads version 29, Mafia's`);
+  }
+  r.skip(8);                                    // save date
+  const materials = r.u16();
+  for (let i = 0; i < materials; i++) {
+    try { readMaterial(r); } catch (e) { throw new Error(`material ${i + 1}: ${e.message}`); }
+  }
+  const count = r.u16();
+  const frames = [];
+  for (let i = 0; i < count; i++) frames.push(readFrame(r, i + 1));
+  return { version, materials, frames, bytes: r.bytes };
+}
+
+// ── matrices: sixteen numbers by rows, points as rows (p · M) ───────────────
+function localMatrix(frame) {
+  const [w, x, y, z] = frame.rotation, s = frame.scale, p = frame.position;
+  const m = [
+    [1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)],
+    [2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)],
+    [2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)],
+  ];
+  return [m[0][0] * s[0], m[0][1] * s[0], m[0][2] * s[0], 0,
+          m[1][0] * s[1], m[1][1] * s[1], m[1][2] * s[1], 0,
+          m[2][0] * s[2], m[2][1] * s[2], m[2][2] * s[2], 0,
+          p[0], p[1], p[2], 1];
+}
+function multiply(a, b) {
+  const out = new Array(16);
+  for (let r = 0; r < 4; r++)
+    for (let c = 0; c < 4; c++)
+      out[r * 4 + c] = a[r * 4] * b[c] + a[r * 4 + 1] * b[4 + c] + a[r * 4 + 2] * b[8 + c] + a[r * 4 + 3] * b[12 + c];
+  return out;
+}
+function transform(p, m) {
+  return [p[0] * m[0] + p[1] * m[4] + p[2] * m[8] + m[12],
+          p[0] * m[1] + p[1] * m[5] + p[2] * m[9] + m[13],
+          p[0] * m[2] + p[1] * m[6] + p[2] * m[10] + m[14]];
+}
+const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+// The file keeps Y up and Z forward; the view keeps Z up, as Blender does.
+const toView = p => [p[0], p[2], p[1]];
+
+function boxCorners(min, max, matrix) {
+  const out = [];
+  for (let i = 0; i < 8; i++) {
+    const p = [(i & 1) ? max[0] : min[0], (i & 2) ? max[1] : min[1], (i & 4) ? max[2] : min[2]];
+    out.push(toView(transform(p, matrix)));
+  }
+  return out;
+}
+
+// ── a joint's box is its area of influence ──────────────────────────────────
+// Inside the box, a vertex's weight on the joint is where it sits along the
+// box's third axis: 0 at the back face, 1 at the front. Worked out here for the
+// joint's own vertices, next to the weights the file gives them.
+function influenceOf(mesh, slot, box, drawnMesh) {
+  const lod = mesh.geometry.lods[0], skin = mesh.skin[0], group = skin.groups[slot];
+  let start = 0;
+  for (let g = 0; g < slot; g++) start += skin.groups[g].rigid + skin.groups[g].blended;
+  const lengths = [0, 1, 2].map(r => box[r * 4] ** 2 + box[r * 4 + 1] ** 2 + box[r * 4 + 2] ** 2 || 1);
+  const place = index => {
+    const p = transform([lod.positions[index * 3], lod.positions[index * 3 + 1], lod.positions[index * 3 + 2]], group.bind);
+    const d = [p[0] - box[12], p[1] - box[13], p[2] - box[14]];
+    return [0, 1, 2].map(r => (d[0] * box[r * 4] + d[1] * box[r * 4 + 1] + d[2] * box[r * 4 + 2]) / lengths[r]);
+  };
+  const out = { mesh: drawnMesh, rigid: [], blended: [], inside: 0, beyond: 0, worst: 0 };
+  for (let i = 0; i < group.rigid && start + i < lod.count; i++) {
+    const index = start + i;
+    if (place(index)[2] >= 0.999) out.beyond++;
+    out.rigid.push(index);
+  }
+  for (let i = 0; i < group.blended && start + group.rigid + i < lod.count; i++) {
+    const index = start + group.rigid + i;
+    const [a, b, c] = place(index);
+    const weight = group.weights[i];
+    if (Math.max(Math.abs(a), Math.abs(b), Math.abs(c)) <= 1.001) out.inside++;
+    out.worst = Math.max(out.worst, Math.abs(Math.min(1, Math.max(0, (c + 1) / 2)) - weight));
+    out.blended.push({ index, weight });
+  }
+  return out;
+}
+
+// ── turning the file into something to draw ──────────────────────────────────
+function buildModel(doc) {
+  const frames = doc.frames;
+  const byId = id => (id >= 1 && id <= frames.length) ? frames[id - 1] : null;
+  const children = new Map();
+  for (const f of frames) {
+    if (!children.has(f.parent)) children.set(f.parent, []);
+    children.get(f.parent).push(f.id);
+  }
+  const worlds = new Map();
+  function world(frame, guard = 0) {
+    if (worlds.has(frame.id)) return worlds.get(frame.id);
+    const parent = byId(frame.parent);
+    const local = frame.skipped ? IDENTITY : localMatrix(frame);
+    const m = parent && guard < frames.length ? multiply(local, world(parent, guard + 1)) : local;
+    worlds.set(frame.id, m);
+    return m;
+  }
+  const hasJointAbove = new Map();
+  function jointAbove(frame) {
+    if (hasJointAbove.has(frame.id)) return hasJointAbove.get(frame.id);
+    hasJointAbove.set(frame.id, false);
+    const parent = byId(frame.parent);
+    const answer = !!parent && (parent.type === FRAME.JOINT || jointAbove(parent));
+    hasJointAbove.set(frame.id, answer);
+    return answer;
+  }
+
+  // Meshes, first level of detail only.
+  const meshes = [], meshByFrame = new Map();
+  for (const f of frames) {
+    if (!f.geometry || f.particle) continue;
+    let geometry = f.geometry;
+    if (geometry.instance) { const source = byId(geometry.instance); geometry = source && source.geometry; }
+    if (!geometry || !geometry.lods.length) continue;
+    const lod = geometry.lods[0];
+    const m = world(f);
+    const points = new Float32Array(lod.count * 3);
+    for (let i = 0; i < lod.count; i++) {
+      const p = toView(transform([lod.positions[i * 3], lod.positions[i * 3 + 1], lod.positions[i * 3 + 2]], m));
+      points[i * 3] = p[0]; points[i * 3 + 1] = p[1]; points[i * 3 + 2] = p[2];
+    }
+    let triangles = 0;
+    for (const faces of lod.faces) triangles += faces.length / 3;
+    const entry = { frame: f, points, faces: lod.faces, triangles, count: lod.count,
+      linked: !!f.skin || jointAbove(f) || f.visual === 2 || f.visual === 3 };
+    meshes.push(entry);
+    meshByFrame.set(f.id, entry);
+  }
+  // What each skinned mesh gathers, the way the game does.
+  const skins = [];
+  const membership = new Map();                  // joint frame id -> [{skin, slot}]
+  for (const mesh of frames) {
+    if (!mesh.skin || !mesh.skin.length) continue;
+    const gathered = [];
+    (function walk(id) {
+      for (const child of children.get(id) || []) {
+        const f = frames[child - 1];
+        if (f.type === FRAME.JOINT) gathered.push(f);
+        walk(child);
+      }
+    })(mesh.id);
+    const kept = gathered.slice(0, MAX_SKIN_JOINTS);
+    const slots = new Map();
+    for (const joint of kept) if (!slots.has(joint.number)) slots.set(joint.number, joint);
+    const problems = [];
+    if (gathered.length > MAX_SKIN_JOINTS)
+      problems.push(`${gathered.length} joints hang below it; the game takes the first ${MAX_SKIN_JOINTS}.`);
+    const missing = [];
+    for (let n = 0; n < kept.length; n++) if (!slots.has(n)) missing.push(n);
+    if (missing.length) problems.push(`No joint below it is numbered ${missing.slice(0, 6).join(", ")}${missing.length > 6 ? "…" : ""}; the game still reads those slots.`);
+    const groups = mesh.skin[0].groups.length;
+    if (groups !== kept.length) problems.push(`Its skin has ${groups} group(s) for ${kept.length} gathered joint(s).`);
+    const skin = { mesh, gathered, slots, problems };
+    skins.push(skin);
+    for (const joint of gathered) {
+      if (!membership.has(joint.id)) membership.set(joint.id, []);
+      const slot = slots.get(joint.number) === joint ? joint.number : null;
+      membership.get(joint.id).push({ skin, slot });
+    }
+  }
+
+  const joints = [];
+  for (const f of frames) {
+    if (f.type !== FRAME.JOINT) continue;
+    const m = world(f);
+    let depth = 0;
+    for (let p = byId(f.parent); p && depth < frames.length; p = byId(p.parent)) if (p.type === FRAME.JOINT) depth++;
+    const unit = [-1, 1];
+    const corners = [];
+    for (let i = 0; i < 8; i++) {
+      const cube = [unit[i & 1], unit[(i >> 1) & 1], unit[(i >> 2) & 1]];
+      corners.push(toView(transform(transform(cube, f.matrix), m)));
+    }
+    const entry = { frame: f, world: m, depth, origin: toView(transform([0, 0, 0], m)),
+      center: toView(transform(f.matrix.slice(12, 15), m)), corners,
+      isDefault: f.matrix.every((v, i) => Math.abs(v - DEFAULT_BOX[i]) < 1e-7),
+      memberships: membership.get(f.id) || [], groupCorners: null, group: null };
+    const home = entry.memberships.find(e => e.slot !== null);
+    if (home) {
+      const group = home.skin.mesh.skin[0].groups[home.slot];
+      if (group) {
+        entry.group = group;
+        if (group.min[0] <= group.max[0]) entry.groupCorners = boxCorners(group.min, group.max, m);
+        entry.influence = influenceOf(home.skin.mesh, home.slot, f.matrix, meshByFrame.get(home.skin.mesh.id));
+      }
+    }
+    const parent = byId(f.parent);
+    entry.parentFrame = parent;
+    entry.parentOrigin = parent ? toView(transform([0, 0, 0], world(parent))) : null;
+    joints.push(entry);
+  }
+
+  return { doc, frames, joints, skins, meshes };
+}
+
+// ── drawing ──────────────────────────────────────────────────────────────────
+const TRIANGLE_BUDGET = 150000;
+const canvas = document.getElementById("view");
+const ctx = canvas.getContext("2d");
+const stage = document.getElementById("stage");
+const overlay = document.getElementById("overlay");
+let model = null, selected = null, colors = {};
+const camera = { yaw: Math.PI - 0.55, pitch: 0.2, zoom: 1, panX: 0, panY: 0, center: [0, 0, 0], span: 1 };
+let drawn = { meshes: [], note: "" };
+
+function mix(a, b, t) {
+  const parse = c => c.startsWith("#") ? [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)) : [128, 128, 128];
+  const p = parse(a), q = parse(b);
+  return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * t)).join(",")})`;
+}
+
+function readColors() {
+  const style = getComputedStyle(document.documentElement);
+  for (const name of ["mesh-fill", "mesh-edge", "box", "pick", "pick-fill", "group", "bone", "axis-x", "axis-y", "axis-z",
+                      "parent-share", "joint-share", "ink", "muted", "surface"])
+    colors[name] = style.getPropertyValue("--" + name).trim();
+}
+
+function project(p, w, h) {
+  const x = p[0] - camera.center[0], y = p[1] - camera.center[1], z = p[2] - camera.center[2];
+  const cy = Math.sin(camera.yaw) * x + Math.cos(camera.yaw) * y;
+  const cx = Math.cos(camera.yaw) * x - Math.sin(camera.yaw) * y;
+  const sy = z * Math.cos(camera.pitch) + cy * Math.sin(camera.pitch);
+  const depth = cy * Math.cos(camera.pitch) - z * Math.sin(camera.pitch);
+  const s = Math.min(w, h) / camera.span * 0.9 * camera.zoom;
+  return [w / 2 + camera.panX + cx * s, h / 2 + camera.panY - sy * s, depth];
+}
+
+function fit() {
+  if (!model) return;
+  const points = [];
+  const focus = model.joints.length ? model.joints : null;
+  if (focus) {
+    for (const j of focus) { points.push(j.origin, ...j.corners); }
+    for (const m of model.meshes) if (m.linked)
+      for (let i = 0; i < m.count; i++) points.push([m.points[i * 3], m.points[i * 3 + 1], m.points[i * 3 + 2]]);
+  } else {
+    for (const m of model.meshes)
+      for (let i = 0; i < m.count; i++) points.push([m.points[i * 3], m.points[i * 3 + 1], m.points[i * 3 + 2]]);
+  }
+  if (!points.length) { camera.center = [0, 0, 0]; camera.span = 2; return; }
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (const p of points) for (let k = 0; k < 3; k++) {
+    if (!isFinite(p[k])) continue;
+    lo[k] = Math.min(lo[k], p[k]); hi[k] = Math.max(hi[k], p[k]);
+  }
+  camera.center = lo.map((l, k) => (l + hi[k]) / 2);
+  camera.span = Math.max(1e-3, ...hi.map((h, k) => h - lo[k]));
+  camera.zoom = 1; camera.panX = 0; camera.panY = 0;
+}
+
+function chooseMeshes() {
+  if (!model) return;
+  const all = model.meshes.reduce((n, m) => n + m.triangles, 0);
+  let list = model.meshes;
+  let note = "";
+  if (all > TRIANGLE_BUDGET) {
+    list = model.meshes.filter(m => m.linked);
+    const shown = list.reduce((n, m) => n + m.triangles, 0);
+    note = `Showing the ${shown.toLocaleString()} triangles on or below joints, of ${all.toLocaleString()} in the model.`;
+  }
+  drawn = { meshes: list, note };
+}
+
+let pending = false;
+function redraw() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; draw(); }); } }
+
+function draw() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+  if (!model) return;
+
+  if (document.getElementById("showMesh").checked) {
+    const tris = [];
+    const screens = drawn.meshes.map(m => {
+      const s = new Float32Array(m.count * 3);
+      for (let i = 0; i < m.count; i++) {
+        const p = project([m.points[i * 3], m.points[i * 3 + 1], m.points[i * 3 + 2]], w, h);
+        s[i * 3] = p[0]; s[i * 3 + 1] = p[1]; s[i * 3 + 2] = p[2];
+      }
+      return s;
+    });
+    drawn.meshes.forEach((m, mi) => {
+      const s = screens[mi];
+      for (const faces of m.faces)
+        for (let t = 0; t < faces.length; t += 3) {
+          const a = faces[t], b = faces[t + 1], c = faces[t + 2];
+          if (a >= m.count || b >= m.count || c >= m.count) continue;
+          tris.push([mi, a, b, c, (s[a * 3 + 2] + s[b * 3 + 2] + s[c * 3 + 2]) / 3]);
+        }
+    });
+    tris.sort((p, q) => q[4] - p[4]);
+    ctx.fillStyle = colors["mesh-fill"]; ctx.strokeStyle = colors["mesh-edge"]; ctx.lineWidth = 0.5;
+    for (const [mi, a, b, c] of tris) {
+      const s = screens[mi];
+      ctx.beginPath();
+      ctx.moveTo(s[a * 3], s[a * 3 + 1]); ctx.lineTo(s[b * 3], s[b * 3 + 1]); ctx.lineTo(s[c * 3], s[c * 3 + 1]);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+  }
+
+  const EDGES = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
+  const FACES = [[0, 1, 3, 2], [4, 5, 7, 6], [0, 1, 5, 4], [2, 3, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5]];
+  function outline(corners, color, width, dash, fill) {
+    const C = corners.map(c => project(c, w, h));
+    if (fill) {
+      ctx.fillStyle = fill;
+      for (const f of FACES) {
+        ctx.beginPath(); ctx.moveTo(C[f[0]][0], C[f[0]][1]);
+        for (const k of f.slice(1)) ctx.lineTo(C[k][0], C[k][1]);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+    ctx.beginPath();
+    for (const [a, b] of EDGES) { ctx.moveTo(C[a][0], C[a][1]); ctx.lineTo(C[b][0], C[b][1]); }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  if (document.getElementById("showGroups").checked)
+    for (const j of model.joints)
+      if (j.groupCorners) outline(j.groupCorners, colors.group, j === selected ? 2 : 1.1, [4, 3]);
+
+  if (document.getElementById("showBones").checked) {
+    const holders = new Map();
+    for (const j of model.joints) {
+      const a = project(j.origin, w, h);
+      if (j.parentOrigin) {
+        const b = project(j.parentOrigin, w, h);
+        const joined = j.parentFrame.type === FRAME.JOINT;
+        ctx.strokeStyle = joined ? colors.bone : colors.muted;
+        ctx.lineWidth = joined ? 1.8 : 1;
+        ctx.setLineDash(joined ? [] : [3, 3]);
+        ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.lineTo(a[0], a[1]); ctx.stroke();
+        ctx.setLineDash([]);
+        if (!joined) holders.set(j.parentFrame.id, [j.parentFrame, b]);
+      }
+      ctx.fillStyle = colors.bone;
+      ctx.beginPath(); ctx.arc(a[0], a[1], 2.8, 0, Math.PI * 2); ctx.fill();
+    }
+    // the frames joints hang from that are not joints - usually the skinned
+    // mesh - marked as squares, so a link to one is not read as a bone
+    ctx.font = "500 11px 'IBM Plex Sans', system-ui, sans-serif";
+    for (const [frame, p] of holders.values()) {
+      ctx.strokeStyle = colors.muted; ctx.lineWidth = 1.2;
+      ctx.strokeRect(p[0] - 4, p[1] - 4, 8, 8);
+      if (document.getElementById("showNames").checked) {
+        const label = `${frame.name || "frame " + frame.id} (${FRAME_NAMES[frame.type].toLowerCase()})`;
+        ctx.fillStyle = colors.muted;
+        ctx.fillText(label, p[0] - ctx.measureText(label).width - 8, p[1] + 4);
+      }
+    }
+  }
+
+  const showBoxes = document.getElementById("showBoxes").checked;
+  for (const j of model.joints)
+    if (j !== selected && showBoxes) outline(j.corners, colors.box, 1.1);
+  if (selected && selected.influence && selected.influence.mesh && document.getElementById("showWeights").checked) {
+    const inf = selected.influence, pts = inf.mesh.points;
+    const dot = (index, color, radius) => {
+      const s = project([pts[index * 3], pts[index * 3 + 1], pts[index * 3 + 2]], w, h);
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(s[0], s[1], radius, 0, Math.PI * 2); ctx.fill();
+    };
+    for (const index of inf.rigid) dot(index, colors["joint-share"], 2.2);
+    for (const { index, weight } of inf.blended) dot(index, mix(colors["parent-share"], colors["joint-share"], weight), 3);
+  }
+  if (selected) {
+    outline(selected.corners, colors.pick, 2, null, colors["pick-fill"]);
+    const c = selected.corners;
+    const mid = idx => [0, 1, 2].map(k => idx.reduce((sum, i) => sum + c[i][k], 0) / idx.length);
+    const center = project(mid([0, 1, 2, 3, 4, 5, 6, 7]), w, h);
+    [[1, 3, 5, 7], [2, 3, 6, 7], [4, 5, 6, 7]].forEach((face, k) => {
+      const tip = project(mid(face), w, h);
+      const color = colors[["axis-x", "axis-y", "axis-z"][k]];
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 3]);
+      ctx.beginPath(); ctx.moveTo(center[0], center[1]); ctx.lineTo(tip[0], tip[1]); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(tip[0], tip[1], 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.font = "600 12px 'IBM Plex Sans', system-ui, sans-serif";
+      ctx.fillText("row " + (k + 1), tip[0] + 4, tip[1] - 4);
+    });
+    const o = project(selected.origin, w, h);
+    ctx.fillStyle = colors.ink; ctx.beginPath(); ctx.arc(o[0], o[1], 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = colors.pick; ctx.beginPath(); ctx.arc(center[0], center[1], 3.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (document.getElementById("showNames").checked || selected) {
+    ctx.font = "500 11.5px 'IBM Plex Sans', system-ui, sans-serif";
+    for (const j of model.joints) {
+      if (!document.getElementById("showNames").checked && j !== selected) continue;
+      const o = project(j.origin, w, h);
+      ctx.fillStyle = colors.surface;
+      const text = j.frame.name || `frame ${j.frame.id}`;
+      const width = ctx.measureText(text).width;
+      ctx.globalAlpha = 0.8; ctx.fillRect(o[0] + 5, o[1] + 3, width + 6, 15); ctx.globalAlpha = 1;
+      ctx.fillStyle = j === selected ? colors.pick : colors.ink;
+      ctx.fillText(text, o[0] + 8, o[1] + 14);
+    }
+  }
+  document.getElementById("hint").textContent = drawn.note ||
+    "Drag to turn · Shift-drag or right-drag to move · Wheel to zoom · Click a joint to pick it · Double-click to fit";
+}
+
+// ── the side panel ───────────────────────────────────────────────────────────
+const fmt = (v, d = 4) => (Object.is(v, -0) ? "-0" : Number(v).toFixed(d));
+const cm = v => (v * 100).toFixed(1) + " cm";
+const escape = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const hexRow = (bytes, at, n) => Array.from(bytes.subarray(at, at + n), b => b.toString(16).padStart(2, "0")).join(" ");
+
+function summary() {
+  const el = document.getElementById("summary");
+  if (!model) { el.innerHTML = ""; return; }
+  const d = model.doc;
+  const parts = [];
+  parts.push(`<h2>${escape(model.fileName)}</h2>`);
+  parts.push(`<p class="sub">${model.frames.length} frames, ${d.materials} materials, ${model.joints.length} joints, ${d.bytes.length.toLocaleString()} bytes</p>`);
+  for (const s of model.skins) {
+    parts.push(`<p>Skinned mesh <b>${escape(s.mesh.name)}</b> gathers ${s.gathered.length} joint(s) and its skin has ${s.mesh.skin[0].groups.length} group(s).</p>`);
+    for (const problem of s.problems) parts.push(`<p class="flag">${escape(problem)}</p>`);
+  }
+  if (!model.joints.length) parts.push(`<p class="flag engine">This model has no joints.</p>`);
+  const defaults = model.joints.filter(j => j.isDefault).length;
+  if (defaults) parts.push(`<p class="note">${defaults} joint(s) carry the game's own default box, a two-centimeter cube (marked with a dot).</p>`);
+  el.innerHTML = parts.join("");
+
+  const list = document.getElementById("jointList");
+  list.innerHTML = "";
+  for (const j of model.joints) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = j.frame.name || `frame ${j.frame.id}`;
+    if (j.isDefault) b.classList.add("odd");
+    b.onclick = () => pick(j);
+    j.button = b;
+    list.appendChild(b);
+  }
+  document.getElementById("listWrap").hidden = !model.joints.length;
+}
+
+function detail() {
+  const el = document.getElementById("detail");
+  if (!model || !selected) { el.innerHTML = ""; return; }
+  const j = selected, f = j.frame, bytes = model.doc.bytes;
+  for (const other of model.joints) other.button && other.button.classList.toggle("on", other === j);
+  const m = f.matrix;
+  const lengths = [0, 1, 2].map(r => Math.hypot(m[r * 4], m[r * 4 + 1], m[r * 4 + 2]));
+  const parentName = j.parentFrame ? `${escape(j.parentFrame.name || "frame " + j.parentFrame.id)} <span class="sub">(${FRAME_NAMES[j.parentFrame.type]}${j.parentFrame.visual !== null ? ", " + VISUAL_NAMES[j.parentFrame.visual] : ""})</span>` : "nothing";
+  const rowNames = ["Row 1 · X axis", "Row 2 · Y axis", "Row 3 · Z axis", "Row 4 · center"];
+  const rowColors = ["var(--axis-x)", "var(--axis-y)", "var(--axis-z)", "var(--pick)"];
+  let rows = "";
+  for (let r = 0; r < 4; r++)
+    rows += `<tr><td><span class="dot" style="background:${rowColors[r]}"></span>${rowNames[r]}</td>` +
+      [0, 1, 2, 3].map(c => `<td class="num">${fmt(m[r * 4 + c])}</td>`).join("") + `</tr>`;
+  let raw = "";
+  for (let r = 0; r < 4; r++) {
+    const at = f.matrixAt + r * 16;
+    raw += `<tr><td class="num">${at}–${at + 15}</td><td class="bytes" colspan="4">${hexRow(bytes, at, 16)}</td></tr>`;
+  }
+  const on = (f.cull & 1) ? "yes" : "no", locked = (f.cull & 128) ? "yes" : "no";
+  const home = j.memberships.find(e => e.slot !== null);
+  let skin = "";
+  if (!j.memberships.length) {
+    skin = `<p class="note">Not below a skinned mesh, so the game never reads its number (${f.number}).</p>`;
+  } else if (!home) {
+    skin = `<p class="flag">Below skinned mesh ${escape(j.memberships[0].skin.mesh.name)}, but the game does not give it a slot: another joint found first carries its number (${f.number}), or it is past the first ${MAX_SKIN_JOINTS}.</p>`;
+  } else {
+    const g = j.group, inf = j.influence;
+    const size = g && g.min[0] <= g.max[0] ? [0, 1, 2].map(k => cm(g.max[k] - g.min[k])).join(" × ") : "empty";
+    const influence = inf ? `
+      <tr><td>Blended vertices inside the influence box</td><td class="num">${inf.inside} of ${inf.blended.length}</td></tr>
+      <tr><td>Largest gap between a weight and the box</td><td class="num">${inf.blended.length ? inf.worst.toFixed(6) : "none blended"}</td></tr>
+      <tr><td>Moved alone, past the box's front face</td><td class="num">${inf.beyond} of ${inf.rigid.length}</td></tr>` : "";
+    skin = `<table><tbody>
+      <tr><td>Skinned mesh</td><td class="wrap">${escape(home.skin.mesh.name)}</td></tr>
+      <tr><td>Slot</td><td class="num">${home.slot}</td></tr>
+      ${g ? `<tr><td>Vertices it moves alone</td><td class="num">${g.rigid}</td></tr>
+      <tr><td>Vertices it shares with ${g.parent ? "its parent joint" : "the mesh"}</td><td class="num">${g.blended}</td></tr>
+      <tr><td>Group box</td><td class="num">${size}</td></tr>${influence}` : `<tr><td colspan="2" class="wrap">The skin has no group for this slot.</td></tr>`}
+    </tbody></table>
+    <p class="note">The weights are drawn on the mesh: red is the joint's share, blue its parent's. Inside the influence
+    box a vertex's weight on the joint is where it sits along row 3, from none at the back face to all of it at the front.</p>
+    <p class="note">The group box is what the game uses for the mesh's bounds. Tick <em>Skin group boxes</em> to draw it.</p>`;
+  }
+  el.innerHTML = `
+    <h3>Selected joint</h3>
+    <h2>${escape(f.name || "frame " + f.id)}</h2>
+    <p class="sub">Frame ${f.id} of ${model.frames.length} · bytes ${f.start}–${f.end - 1} · joint number ${f.number}</p>
+    <table><tbody>
+      <tr><td>Hangs from</td><td class="wrap">${parentName}</td></tr>
+      <tr><td>Position</td><td class="num">${f.position.map(v => fmt(v)).join(", ")}</td></tr>
+      <tr><td>Rotation (w, x, y, z)</td><td class="num">${f.rotation.map(v => fmt(v)).join(", ")}</td></tr>
+      <tr><td>Scale</td><td class="num">${f.scale.map(v => fmt(v)).join(", ")}</td></tr>
+      <tr><td>Culling byte</td><td class="num">${f.cull} · on: ${on} · position locked: ${locked}</td></tr>
+      <tr><td>User properties</td><td class="wrap">${f.props ? escape(f.props) : '<span class="sub">none</span>'}</td></tr>
+    </tbody></table>
+    <p class="note">Position, rotation and scale are in the file's own axes (Y up, Z forward), against the frame the joint hangs from.</p>
+
+    <h3>The sixteen numbers</h3>
+    <table><thead><tr><th></th><th>x</th><th>y</th><th>z</th><th>w</th></tr></thead><tbody>${rows}</tbody></table>
+    <table style="margin-top:6px"><tbody>
+      <tr><td>Box size</td><td class="num">${lengths.map(l => cm(2 * l)).join(" × ")}</td></tr>
+      <tr><td>Center from the joint</td><td class="num">${cm(Math.hypot(m[12], m[13], m[14]))}</td></tr>
+    </tbody></table>
+    ${j.isDefault ? `<p class="flag engine">This is the game's own default: the box it gives a joint it makes itself.</p>` : ""}
+    <p class="note">In the file at bytes ${f.matrixAt}–${f.matrixAt + 63}, right after the name and user properties; the four bytes after them hold the joint number.</p>
+    <table style="margin-top:6px"><tbody>${raw}</tbody></table>
+
+    <h3>Skin</h3>
+    ${skin}`;
+}
+
+function pick(joint) { selected = joint; detail(); redraw(); }
+
+// ── loading ─────────────────────────────────────────────────────────────────
+function showMessage(title, text, isError) {
+  overlay.hidden = false;
+  overlay.classList.toggle("error", !!isError);
+  const sentence = text.charAt(0).toUpperCase() + text.slice(1) + (/[.!?]$/.test(text) ? "" : ".");
+  overlay.innerHTML = `<div><strong>${escape(title)}</strong>${escape(sentence)}</div>`;
+}
+
+async function load(file) {
+  if (!file) return;
+  document.getElementById("fileName").textContent = file.name;
+  try {
+    const buffer = await file.arrayBuffer();
+    const doc = readDocument(buffer);
+    model = buildModel(doc);
+    model.fileName = file.name;
+  } catch (e) {
+    model = null; selected = null;
+    summary(); detail(); draw();
+    document.getElementById("listWrap").hidden = true;
+    showMessage("This file could not be read", e.message, true);
+    return;
+  }
+  overlay.hidden = true;
+  camera.yaw = Math.PI - 0.55; camera.pitch = 0.2;
+  fit(); chooseMeshes();
+  selected = model.joints[0] || null;
+  summary(); detail(); redraw();
+  if (!model.joints.length) showMessage("No joints in this model", "It has no joint frames to show; its meshes are drawn behind this note.", false);
+}
+
+document.getElementById("openButton").onclick = () => document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange = e => load(e.target.files[0]);
+for (const type of ["dragenter", "dragover"])
+  stage.addEventListener(type, e => { e.preventDefault(); stage.classList.add("dragging"); });
+for (const type of ["dragleave", "drop"])
+  stage.addEventListener(type, e => { e.preventDefault(); stage.classList.remove("dragging"); });
+stage.addEventListener("drop", e => load(e.dataTransfer.files[0]));
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => e.preventDefault());
+
+// ── moving the view ─────────────────────────────────────────────────────────
+let press = null;
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+canvas.addEventListener("pointerdown", e => {
+  press = { x: e.clientX, y: e.clientY, lastX: e.clientX, lastY: e.clientY, pan: e.shiftKey || e.button === 2, moved: false };
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add("moving");
+});
+canvas.addEventListener("pointermove", e => {
+  if (!press) return;
+  const dx = e.clientX - press.lastX, dy = e.clientY - press.lastY;
+  press.lastX = e.clientX; press.lastY = e.clientY;
+  if (Math.abs(e.clientX - press.x) + Math.abs(e.clientY - press.y) > 4) press.moved = true;
+  if (press.pan) { camera.panX += dx; camera.panY += dy; }
+  else {
+    camera.yaw -= dx * 0.01;
+    camera.pitch = Math.max(-1.55, Math.min(1.55, camera.pitch + dy * 0.01));
+  }
+  redraw();
+});
+canvas.addEventListener("pointerup", e => {
+  canvas.classList.remove("moving");
+  const wasClick = press && !press.moved;
+  press = null;
+  if (!wasClick || !model || !model.joints.length) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  let best = null, bestDistance = 16;
+  for (const j of model.joints)
+    for (const p of [j.origin, j.center]) {
+      const s = project(p, rect.width, rect.height);
+      const d = Math.hypot(s[0] - x, s[1] - y);
+      if (d < bestDistance) { best = j; bestDistance = d; }
+    }
+  if (best) pick(best);
+});
+canvas.addEventListener("dblclick", () => { fit(); redraw(); });
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  camera.zoom = Math.max(0.05, Math.min(200, camera.zoom * Math.exp(-e.deltaY * 0.0012)));
+  redraw();
+}, { passive: false });
+for (const id of ["showMesh", "showBoxes", "showGroups", "showBones", "showWeights", "showNames"])
+  document.getElementById(id).onchange = redraw;
+window.addEventListener("resize", redraw);
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readColors(); redraw(); });
+readColors();
+draw();
+</script>
+</body>
+</html>
