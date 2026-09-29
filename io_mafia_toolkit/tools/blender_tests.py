@@ -1753,6 +1753,43 @@ def run_regressions(models_dir, out_dir):
           f"said {checked_missing}, quiet with the animation "
           f"{quiet_with_animation}/{checked_quiet}")
 
+    # The other direction: a model full of movement saying it has none. The
+    # count was worked out inside the export's own suspension, with every
+    # action already taken off, so it always came to zero and the warning
+    # never fired - and the game only opens the .5ds beside a model when that
+    # count is above zero, so an animated model went out that would never
+    # animate. It is read before the animation comes off now.
+    fresh_scene()
+    bpy.ops.mesh.primitive_cube_add()
+    turning = bpy.context.object
+    turning.name = "turning"
+    turning.rotation_mode = "XYZ"
+    turning.keyframe_insert("rotation_euler", frame=0)
+    turning.rotation_euler = (0.0, 1.0, 0.0)
+    turning.keyframe_insert("rotation_euler", frame=20)
+    scene = bpy.context.scene
+    heard.clear()
+    report_module.Report.warn = _heard
+    try:
+        scene.ls3d_animated_object_count = 0
+        counted = export_op(os.path.join(out_dir, "says_none.4ds"))
+        said = [m for m in heard if "animated object(s)" in m
+                and "are animated" in m]
+        heard.clear()
+        scene.ls3d_animated_object_count = 1
+        export_op(os.path.join(out_dir, "says_one.4ds"))
+        quiet_when_right = not [m for m in heard if "are animated" in m]
+    finally:
+        report_module.Report.warn = original_warn
+        scene.ls3d_animated_object_count = 0
+    check("a model saying it has no animated objects while it has some is "
+          "warned about",
+          counted == {"FINISHED"} and len(said) == 1
+          and "but 1 of the things being exported are animated" in said[0]
+          and quiet_when_right,
+          f"exported {counted}, said {said}; quiet once the count is right "
+          f"{quiet_when_right}")
+
     # A geometry LOD counts its vertices in a uint16, but 0xFFFF is not a
     # count there - it says the LOD borrows LOD 0's vertices and carries only
     # UVs. Writing 65535 real vertices produced a file the game read as that
@@ -6984,6 +7021,218 @@ def run_regressions(models_dir, out_dir):
           f"became {after_press:g}, offered again={offered_right}; "
           f"{awkward} fps settled to {settled}")
 
+    # And nothing that carries timing is written from any other rate. An
+    # animation numbers its keys in frames and holds no rate of its own - the
+    # game spaces them 40 ms apart whatever Blender was set to - so a scene on
+    # another clock means one thing here and another in game, with nowhere to
+    # write the difference down. It used to be a warning, and a model keyed at
+    # 30 fps went out playing a fifth too fast.
+    fresh_scene()
+    rate_dir = os.path.join(out_dir, "frame_rate")
+    shutil.rmtree(rate_dir, ignore_errors=True)
+    os.makedirs(rate_dir)
+    bpy.context.scene.render.fps = 30
+    bpy.context.scene.render.fps_base = 1.0
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+    bpy.ops.mesh.primitive_cube_add()
+    ticking = bpy.context.object
+    ticking.name = "ticking"
+    ticking.rotation_mode = "XYZ"
+    ticking.keyframe_insert("rotation_euler", frame=0)
+    ticking.rotation_euler = (0.0, 1.0, 0.0)
+    ticking.keyframe_insert("rotation_euler", frame=20)
+    bpy.ops.object.empty_add()
+    travel = bpy.context.object
+    travel.name = "travel"
+    travel.ls3d_is_motion_track = True
+    travel.rotation_mode = "QUATERNION"
+    travel.keyframe_insert("location", frame=0)
+    travel.location = (2.0, 0.0, 0.0)
+    travel.keyframe_insert("location", frame=20)
+    ticking.parent = travel
+
+    def _at_30():
+        animation = os.path.join(rate_dir, "wrong.5ds")
+        model = os.path.join(rate_dir, "wrong.4ds")
+        track = os.path.join(rate_dir, "wrong.tck")
+        outcomes = {
+            "animation": getattr(bpy.ops.export_scene, "5ds")(
+                filepath=animation, write_motion=False),
+            "check": bpy.ops.ls3d.check_animation(),
+            "track": getattr(bpy.ops.export_scene, "tck")(filepath=track),
+            "model": getattr(bpy.ops.export_scene, "4ds")(
+                filepath=model, write_animation=True),
+        }
+        written = {name: os.path.isfile(path) for name, path in
+                   (("animation", animation), ("track", track),
+                    ("model", model))}
+        return outcomes, written
+
+    refused, left_unwritten = _at_30()
+    # The model is refused before a byte of it is written, not after: an
+    # animation that cannot be written must not leave a model beside it.
+    bpy.ops.ls3d.set_frame_rate()
+    allowed, _ = _at_30()
+    check("nothing with timing in it is written from a scene off 25 fps",
+          all(outcome == {"CANCELLED"} for outcome in refused.values())
+          and not any(left_unwritten.values())
+          and all(outcome == {"FINISHED"} for outcome in allowed.values()),
+          f"at 30 fps {refused}, files left behind "
+          f"{[n for n, yes in left_unwritten.items() if yes]}; "
+          f"at 25 fps {allowed}")
+
+    # An animated child keeps the offset Blender put under it. Parenting an
+    # object stores the inverse of the parent's place at that moment and
+    # multiplies it in beneath everything the object does, so the step from
+    # the parent - the whole of what a frame holds - is that offset and the
+    # object's own transform together. The model export had always worked it
+    # out; the animation export wrote the raw channel values instead, so every
+    # object parented with Ctrl+P played its animation in the wrong place, out
+    # by however far the parent stood from the world's origin.
+    fresh_scene()
+    from mathutils import Matrix as _PinMatrix
+    pin_dir = os.path.join(out_dir, "parent_inverse")
+    shutil.rmtree(pin_dir, ignore_errors=True)
+    os.makedirs(pin_dir)
+    bpy.context.scene.render.fps = 25
+    bpy.context.scene.render.fps_base = 1.0
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+
+    bpy.ops.mesh.primitive_cube_add(location=(0.0, 4.0, 3.0))
+    holder = bpy.context.object
+    holder.name = "holder"
+    holder.rotation_mode = "XYZ"
+    holder.rotation_euler = (0.0, 0.0, 0.7)       # turned, so the offset turns
+    bpy.context.view_layer.update()
+
+    bpy.ops.mesh.primitive_cube_add(size=0.5, location=(1.0, 0.0, 0.0))
+    child = bpy.context.object
+    child.name = "child"
+    child.parent = holder
+    # Exactly what Blender stores when you parent an object and keep it where
+    # it is, which is what Ctrl+P does.
+    child.matrix_parent_inverse = holder.matrix_world.inverted()
+    child.keyframe_insert("location", frame=0)
+    child.location = (1.0, 2.0, 0.5)
+    child.keyframe_insert("location", frame=20)
+    # Keyed the way the game plays: it walks straight from one key to the next,
+    # and Blender's own default is eased, which would show up here as a
+    # difference of its own and say nothing about the offset.
+    for fcurve in ls3d_module("5ds.io").channelbag(child).fcurves:
+        for point in fcurve.keyframe_points:
+            point.interpolation = "LINEAR"
+    bpy.context.scene.ls3d_animated_object_count = 1
+    bpy.context.scene.frame_set(0)
+    bpy.context.view_layer.update()
+
+    pin_model = os.path.join(pin_dir, "pinned.4ds")
+    pin_outcome = getattr(bpy.ops.export_scene, "4ds")(
+        filepath=pin_model, write_animation=True)
+    watch = [0, 5, 10, 15, 20]
+    stood = {}
+    for at in watch:
+        bpy.context.scene.frame_set(at)
+        bpy.context.view_layer.update()
+        stood[at] = bpy.data.objects["child"].matrix_world.translation.copy()
+    offset_carried = (stood[20] - stood[0]).length
+
+    fresh_scene()
+    getattr(bpy.ops.import_scene, "4ds")(filepath=pin_model,
+                                         load_animation=True)
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+    played = bpy.data.objects.get("child")
+    drift = None
+    if played is not None:
+        drift = 0.0
+        for at in watch:
+            bpy.context.scene.frame_set(at)
+            bpy.context.view_layer.update()
+            drift = max(drift, (played.matrix_world.translation
+                                - stood[at]).length)
+    came_back = (played is not None and played.animation_data is not None
+                 and played.animation_data.action is not None)
+    check("an animated child is written with the offset Blender put under it",
+          pin_outcome == {"FINISHED"} and came_back
+          and drift is not None and drift < 1e-4
+          and offset_carried > 1.0,
+          f"exported {pin_outcome}, came back animated={came_back}, "
+          f"furthest off {drift}; it travels {offset_carried:.2f} m")
+
+    # A model written with its animation writes the travel beside it too. The
+    # travel is a file of its own that the game opens beside the animation, and
+    # the model export used to write only the .5ds - so a model that came in
+    # with a .tck went back out without one and stood still, while the import
+    # had brought the travel in all along.
+    fresh_scene()
+    travel_dir = os.path.join(out_dir, "with_travel")
+    shutil.rmtree(travel_dir, ignore_errors=True)
+    os.makedirs(travel_dir)
+    bpy.context.scene.render.fps = 25
+    bpy.context.scene.render.fps_base = 1.0
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+    # Scene settings and the 3D cursor outlive fresh_scene, and both would
+    # move this one about.
+    bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+    bpy.context.scene.ls3d_motion_period = 20
+    bpy.ops.object.empty_add()
+    carrier = bpy.context.object
+    carrier.name = "carrier"
+    carrier.ls3d_is_motion_track = True
+    carrier.rotation_mode = "QUATERNION"
+    carrier.keyframe_insert("location", frame=0)
+    carrier.location = (3.0, 0.0, 0.0)
+    carrier.keyframe_insert("location", frame=20)
+    bpy.ops.mesh.primitive_cube_add(size=0.5)
+    riding = bpy.context.object
+    riding.name = "riding"
+    riding.parent = carrier
+    riding.rotation_mode = "XYZ"
+    riding.keyframe_insert("rotation_euler", frame=0)
+    riding.rotation_euler = (0.0, 0.8, 0.0)
+    riding.keyframe_insert("rotation_euler", frame=20)
+
+    # The game opens the .5ds beside a model only when the model says it is
+    # animated, and so does the import, so the count has to be set for the
+    # trip back.
+    bpy.context.scene.ls3d_animated_object_count = 1
+    travel_model = os.path.join(travel_dir, "goes.4ds")
+    with_travel = getattr(bpy.ops.export_scene, "4ds")(
+        filepath=travel_model, write_animation=True, write_motion=True)
+    made = {kind: os.path.isfile(os.path.join(travel_dir, "goes" + kind))
+            for kind in (".4ds", ".5ds", ".tck")}
+    # And off, nothing beside it but the animation.
+    plain_dir = os.path.join(out_dir, "no_travel")
+    shutil.rmtree(plain_dir, ignore_errors=True)
+    os.makedirs(plain_dir)
+    without = getattr(bpy.ops.export_scene, "4ds")(
+        filepath=os.path.join(plain_dir, "goes.4ds"),
+        write_animation=True, write_motion=False)
+    alone = {kind: os.path.isfile(os.path.join(plain_dir, "goes" + kind))
+             for kind in (".4ds", ".5ds", ".tck")}
+
+    # What came back travels the way it went out.
+    fresh_scene()
+    getattr(bpy.ops.import_scene, "4ds")(filepath=travel_model,
+                                         load_animation=True)
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+    carried = bpy.data.objects.get("riding")
+    # How far the travel carries it, not where it happens to start: the cube
+    # is added at the 3D cursor, wherever an earlier test left that.
+    moved = 0.0
+    if carried is not None:
+        bpy.context.scene.frame_set(0)
+        bpy.context.view_layer.update()
+        began = carried.matrix_world.translation.x
+        bpy.context.scene.frame_set(20)
+        bpy.context.view_layer.update()
+        moved = carried.matrix_world.translation.x - began
+    check("a model written with its animation writes the travel beside it",
+          with_travel == {"FINISHED"} and all(made.values())
+          and without == {"FINISHED"} and alone[".4ds"] and alone[".5ds"]
+          and not alone[".tck"] and abs(moved - 3.0) < 1e-3,
+          f"with the travel {made}, without it {alone}; the travel "
+          f"carries it {moved:.3f} m")
+
     # The sidebar is redrawn constantly - every hover redraws it - so a name
     # the draw only binds on one branch is an error repeating forever. Draw it
     # against everything it can be pointed at.
@@ -8672,6 +8921,182 @@ def run_regressions(models_dir, out_dir):
               f"{left_on}, bones still posed {posed[:3]}, blnd back within "
               f"{blnd_back:.1e}; written after {after_result}, differs "
               f"{once_unloaded[:3]}; animations kept {kept}")
+
+    # An object keyed by hand keeps where it stands. Its place is in the very
+    # channels the animation keys, and the export used to put those back to
+    # nothing - the place the Delta Transform holds for a model opened from a
+    # file - so every hand-animated part of a model came out standing at the
+    # world's origin. With nothing in the Delta Transform to rest in, it is
+    # written standing where the viewport shows it at the moment of the export.
+    #
+    # Taking each object to its own first key instead reads well on one object
+    # and falls apart on two: a child whose keys start later than its parent's
+    # would be written from both moments at once, in a pose that was never on
+    # screen. So a staggered pair is what this keys.
+    fresh_scene()
+    from mathutils import Vector as _PlaceVector
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+
+    def _hand_keyed(name, place, turn, first=0):
+        bpy.ops.mesh.primitive_cube_add(location=place)
+        cube = bpy.context.object
+        cube.name = name
+        cube.rotation_mode = "XYZ"
+        cube.keyframe_insert("location", frame=first)
+        cube.keyframe_insert("rotation_euler", frame=first)
+        cube.location = (place[0], place[1], place[2] + 3.0)
+        cube.rotation_euler = (0.0, turn, 0.0)
+        cube.keyframe_insert("location", frame=20)
+        cube.keyframe_insert("rotation_euler", frame=20)
+        return cube
+
+    by_hand = _hand_keyed("by_hand", (2.0, 0.0, 1.0), 1.0)
+    # Keyed from frame 10, under a parent keyed from frame 0.
+    rider = _hand_keyed("rider", (0.0, 0.0, 0.0), 0.4, first=10)
+    rider.parent = by_hand
+    # The other way round: the place kept in the Delta Transform, as a model
+    # opened from a file and animated has it. That one still rests there.
+    held = _hand_keyed("held", (0.0, 0.0, 0.0), 0.5)
+    ls3d_module("4ds.joint_space").set_delta(held, (5.0, 0.0, 0.0),
+                                             (1.0, 0.0, 0.0, 0.0),
+                                             (1.0, 1.0, 1.0))
+
+    bpy.context.scene.frame_set(11)             # somewhere mid-animation
+    bpy.context.view_layer.update()
+    watched = ("by_hand", "rider", "held")
+    standing = {name: bpy.data.objects[name].matrix_world.copy()
+                for name in watched}
+    keyed_path = os.path.join(out_dir, "hand_keyed.4ds")
+    keyed_outcome, keyed_lines = _report_of(lambda: export_op(keyed_path))
+    # And the export moved nothing in the scene doing it.
+    bpy.context.view_layer.update()
+    stayed = max((max(abs(a - b) for row_a, row_b in zip(
+        standing[name], bpy.data.objects[name].matrix_world)
+        for a, b in zip(row_a, row_b)) for name in watched), default=1.0)
+
+    fresh_scene()
+    import_op(keyed_path)
+    back = {name: bpy.data.objects[name].matrix_world.copy()
+            for name in watched if name in bpy.data.objects}
+    # Everything but the one resting in its Delta Transform comes back exactly
+    # where it stood at frame 11; that one comes back where its delta stands it.
+    landed = {}
+    for name in watched:
+        if name not in back:
+            landed[name] = None
+            continue
+        wanted = standing[name]
+        if name == "held":
+            landed[name] = (back[name].translation
+                            - _PlaceVector((5.0, 0.0, 0.0))).length
+        else:
+            landed[name] = max(abs(a - b) for row_a, row_b
+                               in zip(wanted, back[name])
+                               for a, b in zip(row_a, row_b))
+    check("an object keyed by hand is written where it stands at export time",
+          keyed_outcome == {"FINISHED"} and len(back) == 3
+          and all(gap is not None and gap < 1e-4 for gap in landed.values())
+          and stayed < 1e-6
+          and any("by_hand" in line and "stands at frame 11" in line
+                  for line in keyed_lines)
+          and any("rider" in line and "stands at frame 11" in line
+                  for line in keyed_lines)
+          and not any("held" in line and "stands at frame" in line
+                      for line in keyed_lines),
+          f"written {keyed_outcome}, {len(back)} frame(s) back, off by "
+          f"{ {n: None if g is None else round(g, 6) for n, g in landed.items()} }; "
+          f"the scene itself moved {stayed:.1e}; said of the hand-keyed ones "
+          f"{[l for l in keyed_lines if 'stands at frame' in l][:2]}")
+
+    # The same, for an object hung on a joint. A bone-parented child hangs
+    # from the bone's end rather than its start and is measured against the
+    # joint's scaled world, which is what the engine chains - the model export
+    # had always worked that out and the animation export had not, so the two
+    # would have placed the same frame differently. Both measure through the
+    # one anchor now, so every animated object is written the same way
+    # whatever it hangs from.
+    fresh_scene()
+    from mathutils import Matrix as _BoneMatrix
+    bone_dir = os.path.join(out_dir, "bone_parent")
+    shutil.rmtree(bone_dir, ignore_errors=True)
+    os.makedirs(bone_dir)
+    bpy.context.scene.render.fps = 25
+    bpy.context.scene.render.fps_base = 1.0
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+    bpy.ops.ls3d.add_character_skeleton()
+    rig = bpy.data.objects["base_Armature"]
+    # A skeleton needs the mesh it is for, and one with geometry in it.
+    bpy.ops.mesh.primitive_cube_add(size=0.6, location=(0.0, 0.0, 0.9))
+    body = bpy.context.object
+    bpy.data.objects.remove(bpy.data.objects["base"], do_unlink=True)         if "base" in bpy.data.objects else None
+    body.name = "base"
+    body.ls3d_frame_type = str(C.FRAME_VISUAL)
+    body.visual_type = str(C.VISUAL_SINGLEMESH)
+    body.modifiers.new("Armature", "ARMATURE").object = rig
+    body.parent = rig
+    body.matrix_parent_inverse = _BoneMatrix.Identity(4)
+    for bone in rig.data.bones:
+        body.vertex_groups.new(name=bone.name)
+    hips = body.vertex_groups[rig.data.bones[0].name]
+    hips.add(range(len(body.data.vertices)), 1.0, "REPLACE")
+    hung_on = "l_hand" if "l_hand" in rig.data.bones else rig.data.bones[0].name
+
+    bpy.ops.mesh.primitive_cube_add(size=0.1, location=(0.0, 0.0, 0.0))
+    held = bpy.context.object
+    held.name = "held"
+    held.parent = rig
+    held.parent_type = "BONE"
+    held.parent_bone = hung_on
+    bpy.context.view_layer.update()
+    held.matrix_parent_inverse = (
+        rig.matrix_world @ rig.data.bones[hung_on].matrix_local
+        @ _BoneMatrix.Translation(
+            (0.0, rig.data.bones[hung_on].length, 0.0))
+    ).inverted()
+    held.location = (0.05, 0.0, 0.0)
+    held.keyframe_insert("location", frame=0)
+    held.location = (0.05, 0.12, 0.03)
+    held.keyframe_insert("location", frame=20)
+    for fcurve in ls3d_module("5ds.io").channelbag(held).fcurves:
+        for point in fcurve.keyframe_points:
+            point.interpolation = "LINEAR"
+    bpy.context.scene.frame_set(0)
+    bpy.context.view_layer.update()
+
+    bone_model = os.path.join(bone_dir, "hung.4ds")
+    bone_outcome, bone_lines = _report_of(
+        lambda: getattr(bpy.ops.export_scene, "4ds")(
+            filepath=bone_model, write_animation=True))
+    bone_watch = [0, 5, 10, 15, 20]
+    bone_stood = {}
+    for at in bone_watch:
+        bpy.context.scene.frame_set(at)
+        bpy.context.view_layer.update()
+        bone_stood[at] = bpy.data.objects["held"].matrix_world.translation.copy()
+    bone_travel = (bone_stood[20] - bone_stood[0]).length
+
+    fresh_scene()
+    getattr(bpy.ops.import_scene, "4ds")(filepath=bone_model,
+                                         load_animation=True)
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+    bone_played = bpy.data.objects.get("held")
+    bone_drift = None
+    if bone_played is not None:
+        bone_drift = 0.0
+        for at in bone_watch:
+            bpy.context.scene.frame_set(at)
+            bpy.context.view_layer.update()
+            bone_drift = max(bone_drift, (bone_played.matrix_world.translation
+                                          - bone_stood[at]).length)
+    bone_animated = (bone_played is not None
+                     and bone_played.animation_data is not None
+                     and bone_played.animation_data.action is not None)
+    check("an animated object hung on a joint is written the same way",
+          bone_outcome == {"FINISHED"} and bone_animated
+          and bone_drift is not None and bone_drift < 1e-4
+          and bone_travel > 0.1,
+          f"exported {bone_outcome}, came back animated={bone_animated}, "
+          f"furthest off {bone_drift}; it travels {bone_travel:.3f} m")
 
     # Set Default Mesh Origin moves nothing in the world, whatever the
     # skeleton is like: a chain of bones connected to each other, built by

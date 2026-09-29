@@ -381,7 +381,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
 
   <nav class="nav">
     <div class="nav-brand">Mafia Toolkit</div>
-    <div class="nav-build">User Guide &middot; 1.0.0</div>
+    <div class="nav-build">User Guide &middot; 1.0.1</div>
 
     <h4>Start here</h4>
     <a href="#install">1 &middot; Installing</a>
@@ -409,7 +409,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       This is the way in: it starts at installing and walks through a prop, a car and a
       character, in the order you meet them. The <b>Field Manual</b> beside it is the reference
       to look single things up in, and the <b>README</b> is the record of what changed and why.</p>
-      <p>Everything here is written against <b>1.0.0</b>, on Blender 5.2 or newer.</p>
+      <p>Everything here is written against <b>1.0.1</b>, on Blender 5.2 or newer.</p>
     </header>
 
     <!-- ─────────────────────────────────────────────────── -->
@@ -417,7 +417,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       <h2><span class="num">01</span>Installing</h2>
 
       <p class="lead-in">Install the zip through <b>Edit &rsaquo; Preferences &rsaquo; Add-ons &rsaquo;
-      Install from Disk</b>, pick <code>mafia-toolkit-1.0.0.zip</code>, and switch it on. It asks for
+      Install from Disk</b>, pick <code>mafia-toolkit-1.0.1.zip</code>, and switch it on. It asks for
       Blender 5.2 or newer.</p>
 
       <figure class="shot" id="fig-g01">
@@ -504,7 +504,42 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
         between two keys, which the game would otherwise play the short way round.</li>
         <li><b>Write Its Animation</b> writes a <code>.5ds</code> beside the model from the scene&rsquo;s
         own actions.</li>
+        <li><b>Write Its Track</b> writes the <code>.tck</code> holding where the actor travels
+        while that animation plays, under the same name again. On by default, and available while
+        the animation is being written and an empty in the scene carries movement. The travel is a
+        file of its own that the game opens beside the animation, so without it a model that came
+        in with a <code>.tck</code> goes back out standing still.</li>
       </ul>
+
+      <h3 id="animated-place">Where an animated object sits in the model</h3>
+      <p>A <code>.4ds</code> holds one transform per frame, and an animation replaces it while it
+      plays. So for an object an animation moves, the add-on has to decide which moment goes in the
+      model, and there are two answers depending on how the object was set up.</p>
+      <ul>
+        <li><b>Its Delta Transform holds a place</b> &mdash; that is the model&rsquo;s. This is what a
+        model opened from a file has: the import puts the frame&rsquo;s own transform there and leaves
+        the location, rotation and scale free for the animation to key. <b>New Animation</b> sets
+        it up the same way. Loading an animation onto such a model changes nothing the model
+        writes, whatever frame the timeline is sitting on.</li>
+        <li><b>It holds nothing there</b> &mdash; then the object is written <b>standing exactly where
+        the viewport shows it at the moment you press Export</b>. An object you keyed yourself with
+        the <b>I</b> key has its place in the very channels the animation keys, and there is nowhere
+        else to read it from. The report names every object placed this way and the frame it took,
+        so it is never a surprise.</li>
+      </ul>
+      <p>The second case is the one to know about: move the timeline and the model you export
+      changes with it. To pin a place instead, put it in the object&rsquo;s <b>Delta Transform</b>
+      (<b>Object Properties &rsaquo; Transform &rsaquo; Delta Transform</b>) and let the animation key the
+      channels above it.</p>
+
+      <h3>Parenting, and what a frame really holds</h3>
+      <p>A frame holds the <b>whole step from the frame above it</b>, and in Blender that is more
+      than an object&rsquo;s own location, rotation and scale. Parenting with <b>Ctrl+P</b> keeps an
+      object where it stands by storing the inverse of its parent&rsquo;s place at that moment and
+      multiplying it in underneath everything the object does afterwards; an object hung on a bone
+      hangs from the bone&rsquo;s end rather than its start. Both are part of the step, and both the
+      model and the animation are written through the same one, so the two can never place a frame
+      differently. Nothing here is anything you have to set &mdash; parent things however you like.</p>
 
       <h3>The 4DS Object panel</h3>
       <p>In the <b>Properties editor</b>, on the <b>Object</b> tab, under <b>4DS Object Properties</b>.
@@ -639,6 +674,15 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
           <tr><td><b>Mirror has a view box with no width</b> (or height, or depth)</td>
           <td>Its view box is four numbers on the mirror. Give the flat axis a length, or press
           <b>Fit View Box</b>.</td></tr>
+
+          <tr><td><b>The scene runs at N frames per second</b></td>
+          <td>The game plays every animation at 25 &mdash; one frame every 40&nbsp;ms &mdash; and an
+          animation carries no rate of its own, so keys written from any other clock would land
+          somewhere else in time. Press <b>25 fps</b> in the 5DS Animation tab. Your keys stay on
+          the frames they are on, so what you see after it is what the game plays. Refused by the
+          animation export, the movement export, Check 5DS Animation, and a model exported with
+          <b>Write Its Animation</b> &mdash; that last one before a byte of the model is written, so
+          nothing is left half done.</td></tr>
 
           <tr><td><b>Armature has been moved as an object</b></td>
           <td>An armature's own location, rotation and scale are left for the body's movement and
@@ -944,18 +988,39 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       <ol>
         <li><b>New Animation</b> starts an action on the selected objects.</li>
         <li>Put the scene on the game's own rate: the tab's <b>25 fps</b> button, one frame every
-        40 ms. Key at any rate you like and the export resamples, but keying at the game's rate
-        means what you see is what plays.</li>
+        40 ms. This is not optional. An animation numbers its keys in frames and holds no rate of
+        its own, so the game plays every one of them at 25 and nothing in the file can say
+        otherwise &mdash; a scene on any other rate is refused, because its keys would land somewhere
+        else in time and the animation would play at a different speed in game than it does here.
+        Pressing the button leaves the keys on the frames they are on, so what you see after it is
+        what plays.</li>
         <li>Pose and key as you would anything in Blender. <b>Fit Scene Range</b> pulls the
         scene's start and end onto what is actually keyed.</li>
         <li><b>File &rsaquo; Export &rsaquo; 5DS Mafia Animation</b>, or tick <b>Write Its Animation</b>
-        when exporting the model and it is written beside it under the same name.</li>
+        when exporting the model and it is written beside it under the same name. Tick
+        <b>Write Its Track</b> as well &mdash; on by default &mdash; and the <code>.tck</code> holding
+        the travel goes beside it too.</li>
       </ol>
+
+      <div class="callout">
+        <span class="label">Twenty-five frames a second, and nothing else</span>
+        <p>An animation numbers its keys in
+        frames and carries no rate of its own: the game spaces them 40&nbsp;ms apart and there is
+        nowhere in the file to say otherwise. Measured rather than assumed &mdash; a <code>.tck</code>
+        states its length in milliseconds and covers the same animation as the <code>.5ds</code>
+        beside it, and in 272 of the game&rsquo;s 283 pairs the two come to exactly 40&nbsp;ms a frame.
+        So a scene keyed at 24 or 30 means one thing in Blender and another in game, and the export
+        refuses it rather than write an animation that runs at the wrong speed. The <b>25 fps</b>
+        button is the one-press fix, and it leaves your keys on the frames they are on.</p>
+      </div>
 
       <h3>What the export will tell you</h3>
       <ul>
-        <li><b>Eased keys.</b> The game plays straight lines between keys. Anything with easing is
-        resampled, and the report says how many.</li>
+        <li><b>Eased keys.</b> The game walks straight from one key to the next, and the format
+        keeps no easing to tell it otherwise, so anything eased plays as a straight line there.
+        The keys are written on the frames you put them on &mdash; nothing is resampled &mdash; and the
+        report says how many are eased. Set them to <b>Linear</b> to see in Blender what the game
+        will play.</li>
         <li><b>Long turns.</b> A rotation of more than half a circle between two keys plays the
         short way round in game. <b>Fix Long Rotation Turns</b> splits them.</li>
         <li><b>The animated object count.</b> A model carries a number saying how many of its
@@ -1108,7 +1173,7 @@ mbt --open "D:\models\tommy.4ds" --gui</code></pre>
 
     <hr>
     <footer>
-      <p>Written against Mafia Toolkit 1.0.0, on Blender 5.2. Behavior checked against what the
+      <p>Written against Mafia Toolkit 1.0.1, on Blender 5.2. Behavior checked against what the
       game actually does, and tested against every model shipped with Mafia.</p>
     </footer>
   </main>

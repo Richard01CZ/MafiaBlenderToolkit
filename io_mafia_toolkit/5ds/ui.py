@@ -238,9 +238,10 @@ class The5DSAnimationPanel(bpy.types.Panel):
             row.label(text=f"Scene range {context.scene.frame_start} to "
                            f"{context.scene.frame_end} - "
                            f"{length / anim.FRAMES_PER_SECOND:.2f} s in game")
-            if abs(rate - anim.FRAMES_PER_SECOND) > 1e-6:
+            if not anim_io.on_game_frame_rate(context.scene):
                 say(box, f"Scene runs at {rate:g} fps; the game plays at "
-                         f"{anim.FRAMES_PER_SECOND}", icon="ERROR")
+                         f"{anim.FRAMES_PER_SECOND}, and an animation cannot "
+                         f"be written from any other rate", icon="ERROR")
                 fix = box.row()
                 fix.scale_y = 1.2
                 fix.operator("ls3d.set_frame_rate", icon="TIME")

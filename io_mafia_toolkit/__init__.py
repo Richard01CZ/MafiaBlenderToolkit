@@ -89,6 +89,7 @@ _exporter = module("4ds.exporter")
 _importer = module("4ds.importer")
 anim_io = module("5ds.io")
 ops_anim = module("5ds.ops")
+ops_motion = module("tck.ops")
 ops_track = module("tck.ops")
 ops_shadow = module("6ds.ops")
 ui_4ds = module("4ds.ui")
@@ -114,7 +115,7 @@ bl_info = {
     # a label put here would ride along in the add-on list. There is no
     # warning key either - Blender draws an alert icon beside the name for
     # one, and there is nothing to warn about.
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     # What it has been proven on. The suite has never run against anything
     # older, so nothing older is claimed.
     "blender": (5, 2, 0),
@@ -427,6 +428,16 @@ class Export4DS(bpy.types.Operator, ExportHelper):
                      "would overwrite the animation sitting beside it"),
         default=False)
 
+    write_motion: BoolProperty(
+        name="Write Its Track",
+        description=("Also write the .tck holding where the actor travels "
+                     "while the animation plays, under the same name again. "
+                     "The travel is a file of its own that the game opens "
+                     "beside the animation, so without it a model written "
+                     "with its animation loses the travel it came in with. "
+                     "Available when an empty in the scene carries movement"),
+        default=True)
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
@@ -458,12 +469,20 @@ class Export4DS(bpy.types.Operator, ExportHelper):
         fix = box.column()
         fix.enabled = animated and self.write_animation
         fix.prop(self, "fix_long_turns")
+        holders = ops_motion.motion_holders(
+            context.scene,
+            list(context.selected_objects) if self.selection_only else None)
+        travel = box.column()
+        travel.enabled = animated and self.write_animation and bool(holders)
+        travel.prop(self, "write_motion")
         note = box.column()
         note.scale_y = 0.8
         if animated:
             stem = os.path.splitext(os.path.basename(self.filepath))[0]
-            note.label(text=f"Written as '{stem or 'model'}.5ds'.",
-                       icon="BLANK1")
+            wrote = f"Written as '{stem or 'model'}.5ds'"
+            if holders and self.write_animation and self.write_motion:
+                wrote += f" and '{stem or 'model'}.tck'"
+            note.label(text=wrote + ".", icon="BLANK1")
         else:
             note.label(text="Nothing in the scene is animated.",
                        icon="BLANK1")
@@ -479,6 +498,18 @@ class Export4DS(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         filename = os.path.basename(self.filepath)
         result = report_module.Report().begin(f"Exporting {filename}", "4DS")
+
+        # Asked for an animation beside the model, and the scene cannot give
+        # one that plays right: said before anything is written, so a refusal
+        # leaves the model alone rather than beside an animation that is not
+        # there.
+        if (self.write_animation
+                and ops_anim.scene_has_animation(context.scene)
+                and module("5ds.io").refuse_wrong_frame_rate(
+                    context.scene, result)):
+            result.finish(f"Export FAILED: {filename} (nothing was written)")
+            result.show()
+            return {"CANCELLED"}
 
         preferences = get_preferences()
         if self.selection_only:
@@ -514,6 +545,13 @@ class Export4DS(bpy.types.Operator, ExportHelper):
             if written:
                 result.info(f"Wrote the animation to "
                             f"'{os.path.basename(beside)}'")
+        # The travel is a file of its own beside the animation, so it goes
+        # with it: a model written with its animation and without its travel
+        # would come back standing still.
+        if written and self.write_motion:
+            ops_anim.write_motion_beside(context, beside, result,
+                                         objects=chosen,
+                                         selection_only=self.selection_only)
 
     def _run(self, objects, result, preferences, filename):
         try:

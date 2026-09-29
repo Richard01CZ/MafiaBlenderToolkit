@@ -381,7 +381,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
 
   <nav class="nav">
     <div class="nav-brand">LS3D 4DS</div>
-    <div class="nav-build">1.0.0 &middot; Blender 5.2+</div>
+    <div class="nav-build">1.0.1 &middot; Blender 5.2+</div>
 
     <h4>Getting started</h4>
     <a href="#install">Installation &amp; preferences</a>
@@ -1337,6 +1337,31 @@ mbt --open tommy.4ds --gui</code></pre>
       browser and draws its joints on the model: each joint's influence box, the picked joint's weights
       on its vertices, the skin boxes the game uses for the mesh's bounds, and every value the selected
       joint holds, with where it sits in the file.</p>
+
+      <h3>What a frame holds, and where an animated object sits</h3>
+      <p>A frame holds the <b>whole step from the frame above it</b>. In Blender that is more than an
+      object's own location, rotation and scale: parenting keeps an object where it stands by storing
+      the inverse of its parent's place at that moment and multiplying it in beneath everything the
+      object does, and an object hung on a bone hangs from the bone's end rather than its start,
+      measured against the joint's scaled world the engine chains. Both are part of the step. The
+      model and the animation are written through the same one, so neither can place a frame where
+      the other would not.</p>
+      <p>A 4DS holds one transform per frame and an animation replaces it while it plays, so for an
+      animated object the export has to pick a moment. Two rules, and which applies is decided by
+      the object:</p>
+      <ul>
+        <li>Its <b>Delta Transform</b> holds a place &rarr; that is the model's, whatever the timeline
+        is showing. A model opened from a file has it there: the import puts the frame's transform
+        in the delta and leaves the channels free for the animation, and New Animation does the
+        same. This is why loading an animation changes nothing a model writes.</li>
+        <li>It holds <b>nothing</b> there &rarr; the object is written standing where the viewport
+        shows it at the moment of the export. An object keyed by hand has its place in the very
+        channels the animation keys and there is nowhere else to read it from. Every object placed
+        this way is named in the report, with the frame it was taken at.</li>
+      </ul>
+      <p>An armature is never among the second kind &mdash; its place is its mesh frame, kept in its
+      Delta Transform &mdash; and neither is the empty carrying a movement track, which stands at the
+      origin because that is what it is.</p>
     </section>
 
     <!-- ─────────────────────────────────────────────────── -->

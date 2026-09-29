@@ -100,6 +100,8 @@ class Exporter(MaterialsMixin, FramesMixin, PayloadsMixin):
         self.rest = {}                      # armature -> {bone: (head, tail, roll)}
         self.posed = set()                  # the armatures written as posed
         self._posed_matrices = {}           # armature -> {bone: where posed}
+        self.animated_now = None            # tracks counted before the
+        #                                     animation was taken off
 
     # ── entry point ───────────────────────────────────────────────────────────
     def build(self):
@@ -226,8 +228,12 @@ class Exporter(MaterialsMixin, FramesMixin, PayloadsMixin):
 
         # Counted over what is being exported rather than the whole scene, so
         # a model written with Selected Objects Only is measured against the
-        # animation it would actually go out with.
-        animated = anim_io.count_animated_objects(scene, self.source_objects)
+        # animation it would actually go out with - and counted before the
+        # export took that animation off, or there would be nothing left to
+        # count and a model full of movement would go out saying it has none.
+        animated = (self.animated_now if self.animated_now is not None
+                    else anim_io.count_animated_objects(scene,
+                                                        self.source_objects))
         if not animated or animated == scene.ls3d_animated_object_count:
             return
         self.report.warn(
@@ -305,10 +311,20 @@ class neutralised_animation:
     A skeleton somebody has posed by hand, on bones the animation does not
     key, is left alone: that pose is the model, and its mesh has to come out
     bent the way the pose bends it.
+
+    An object that keeps no place in its Delta Transform has none to go back
+    to, and is written standing where the viewport shows it at the moment of
+    the export. That is said rather than done quietly: it is the one case
+    where what is written depends on where the timeline is sitting. Said only
+    of what is being exported, though it is done to the whole scene - a frame
+    left out of a selection still has to stand where it stands, since the ones
+    being written may hang from it.
     """
 
-    def __init__(self, objects):
+    def __init__(self, objects, report=None):
         self.objects = objects
+        self.report = report
+        self._written = {obj.name for obj in objects or ()}
         self._poses = {}
         self._taken = {}
 
@@ -316,10 +332,21 @@ class neutralised_animation:
         from ..packages import module
         anim_io = module("5ds.io")
         scene = bpy.context.scene
+        #: How many tracks the scene would write, read while the animation is
+        #: still on - once it is off there is nothing left to count.
+        self.animated = anim_io.count_animated_objects(scene, self.objects)
         for obj in scene.objects:
             kept = anim_io.take_off_animation(obj)
-            if kept is not None:
-                self._taken[obj] = kept
+            if kept is None:
+                continue
+            self._taken[obj] = kept
+            if (kept.get("stands_where_it_is") and self.report is not None
+                    and obj.name in self._written):
+                self.report.info(
+                    f"'{obj.name}' is animated on its own place, turn or size "
+                    f"and keeps none of it in its Delta Transform, so the "
+                    f"model takes it where it stands at frame "
+                    f"{scene.frame_current}.")
         for obj in scene.objects:
             if obj.type == "ARMATURE" and not is_posed(obj):
                 self._poses[obj] = obj.data.pose_position
@@ -353,7 +380,8 @@ def check_4ds(objects, report, fix_multi_influences=False,
                         fix_multi_influences=fix_multi_influences,
                         fix_non_parent_child=fix_non_parent_child)
     report.span(0, 100)
-    with neutralised_animation(objects):
+    with neutralised_animation(objects, report) as suspended:
+        exporter.animated_now = suspended.animated
         return exporter.build()
 
 
@@ -364,7 +392,8 @@ def export_4ds(filepath, objects, report,
                         fix_multi_influences=fix_multi_influences,
                         fix_non_parent_child=fix_non_parent_child)
     report.span(0, 85)
-    with neutralised_animation(objects):
+    with neutralised_animation(objects, report) as suspended:
+        exporter.animated_now = suspended.animated
         document = exporter.build()
 
     def on_truncate(context, original, kept):

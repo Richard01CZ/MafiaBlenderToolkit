@@ -540,6 +540,19 @@ def _object_track(obj, holder, name, rest, fix_long_turns=False):
     positions = anim_io.sampled(holder, "location", 3, (0.0, 0.0, 0.0))
     scales = anim_io.sampled(holder, "scale", 3, (1.0, 1.0, 1.0))
 
+    # What a frame holds is the whole step from the frame above it, which in
+    # Blender is more than an object's own transform: the offset parenting put
+    # beneath it, and the joint's end a bone-parented object hangs from. The
+    # model export measures through exactly the same anchor, so the two can
+    # never place a frame differently. Worked out frame by frame, since the
+    # anchor mixes the three channels. With no anchor the values go out
+    # exactly as they were keyed, which is what a model opened from a file has.
+    anchor = module("4ds.joint_space").frame_anchor(obj)
+    local = (anim_io.frame_locals(
+        obj, holder, rest, anchor,
+        set(rotations) | set(positions) | set(scales))
+        if anchor is not None else None)
+
     # Not normalized. What Blender hands back is a hair off unit because its
     # four components came out of the file as 32-bit floats, and scaling it
     # back to exactly one moves the rotation - which then swings the frame's
@@ -548,17 +561,23 @@ def _object_track(obj, holder, name, rest, fix_long_turns=False):
     # holds, the way the rest of the addon does.
     for frame, values in rotations.items():
         turn = Quaternion(values)
-        if rest is not None:
+        if local is not None:
+            turn = local[frame][1]
+        elif rest is not None:
             turn = anim_io.from_object_rotation(rest, turn)
         track.rotations.append((frame, anim_io.to_file_quaternion(turn)))
     for frame, values in positions.items():
         place = Vector(values)
-        if rest is not None:
+        if local is not None:
+            place = local[frame][0]
+        elif rest is not None:
             place = anim_io.from_object_location(rest, place)
         track.positions.append((frame, anim_io.to_file_vector(place)))
     for frame, values in scales.items():
         size = Vector(values)
-        if rest is not None:
+        if local is not None:
+            size = local[frame][2]
+        elif rest is not None:
             size = anim_io.from_object_scale(rest, size)
         track.scales.append((frame, anim_io.to_file_vector(size)))
     for frame, value in _notes_of(holder):
@@ -641,7 +660,7 @@ class Export5DS(bpy.types.Operator, ExportHelper):
         return list(context.selected_objects) if self.selection_only else None
 
     write_motion: BoolProperty(
-        name="Write Its Movement",
+        name="Write Its Track",
         description=("Also write the .tck holding where the actor travels. "
                      "Available when the model sits under a movement empty - "
                      "one arrives with an animation that has a track, and can "
@@ -710,49 +729,10 @@ class Export5DS(bpy.types.Operator, ExportHelper):
 
     def _write_motion(self, context, result):
         """Write the .tck beside the animation, if there is one to write."""
-        from ..tck.codec import validate_track, write_track_file
-
-        with result.as_format("TCK"):
-            self._write_motion_now(context, result, validate_track,
-                                   write_track_file)
-
-    def _write_motion_now(self, context, result, validate_track,
-                          write_track_file):
-
-        if not self.write_motion:
-            return
-        # Selected Objects Only applies here too: the travel is written only
-        # when the empty carrying it is part of what is being exported.
-        holders = motion_ops.motion_holders(context.scene,
-                                            self.chosen(context))
-        if not holders:
-            if self.selection_only and motion_ops.motion_holders(context.scene):
-                result.warn(
-                    "The movement track is not selected, so no .tck was "
-                    "written beside the animation.",
-                    fix="Select the movement empty as well, or turn off "
-                        "Selected Objects Only.")
-            return
-
-        period = holders[0].ls3d_motion_period or context.scene.ls3d_motion_period
-        track = motion_ops.build_motion_track(holders[0], context.scene, period, result)
-        if track is None:
-            return
-        refused = []
-        validate_track(track,
-                       lambda message, fix=None: (refused.append(message),
-                                                  result.error(message, fix)),
-                       result.warn)
-        if refused:
-            return
-        beside = os.path.splitext(self.filepath)[0] + ".tck"
-        try:
-            written = write_track_file(track, beside)
-        except OSError as problem:
-            result.warn(f"Could not write the movement: {problem}")
-            return
-        result.info(f"Wrote {written} bytes to "
-                    f"'{os.path.basename(beside)}'")
+        if self.write_motion:
+            write_motion_beside(context, self.filepath, result,
+                                objects=self.chosen(context),
+                                selection_only=self.selection_only)
 
     def execute(self, context):
         filename = os.path.basename(self.filepath)
@@ -831,14 +811,11 @@ def build_animation(context, result, use_scene_range=True,
                      f"the format holds up to {MAX_U16}.")
         return None
 
-    rate = anim_io.scene_frame_rate(context.scene)
-    if abs(rate - anim_io.FRAMES_PER_SECOND) > 1e-6:
-        result.warn(
-            f"The scene runs at {rate:g} fps but the game plays "
-            f"animations at {anim_io.FRAMES_PER_SECOND}, so this will play "
-            f"back at a different speed.",
-            fix=f"Set the scene frame rate to "
-                f"{anim_io.FRAMES_PER_SECOND} fps.")
+    # The one thing that cannot be written down: a scene on another clock says
+    # something different here than it would in game, and there is no rate in
+    # the file to carry the difference.
+    if anim_io.refuse_wrong_frame_rate(context.scene, result):
+        return None
     # Every check below looks at the objects the tracks came from, so an object
     # Selected Objects Only left out can neither warn nor refuse the export.
     _warn_about_easing(context.scene, result, objects)
@@ -878,6 +855,55 @@ def write_animation_beside(context, filepath, result, use_scene_range=True,
         result.error(f"Could not write the animation: {problem}")
         return False
     return True
+
+
+def write_motion_beside(context, filepath, result, objects=None,
+                        selection_only=False):
+    """Write the .tck holding the travel beside *filepath*.
+
+    True when one was written. The travel is a transform above the model
+    rather than a frame of it, so it is a file of its own that the game opens
+    beside the animation - and it is written from the one empty carrying it.
+
+    *objects* narrows it to a chosen set, the way Selected Objects Only does:
+    the travel goes out only when the empty carrying it is part of what is
+    being exported, and *selection_only* is what says so when it is not.
+    """
+    from ..tck.codec import validate_track, write_track_file
+
+    with result.as_format("TCK"):
+        holders = motion_ops.motion_holders(context.scene, objects)
+        if not holders:
+            if selection_only and motion_ops.motion_holders(context.scene):
+                result.warn(
+                    "The movement track is not selected, so no .tck was "
+                    "written beside the animation.",
+                    fix="Select the movement empty as well, or turn off "
+                        "Selected Objects Only.")
+            return False
+
+        period = (holders[0].ls3d_motion_period
+                  or context.scene.ls3d_motion_period)
+        track = motion_ops.build_motion_track(holders[0], context.scene,
+                                              period, result)
+        if track is None:
+            return False
+        refused = []
+        validate_track(track,
+                       lambda message, fix=None: (refused.append(message),
+                                                  result.error(message, fix)),
+                       result.warn)
+        if refused:
+            return False
+        beside = os.path.splitext(filepath)[0] + ".tck"
+        try:
+            written = write_track_file(track, beside)
+        except OSError as problem:
+            result.warn(f"Could not write the movement: {problem}")
+            return False
+        result.info(f"Wrote {written} bytes to "
+                    f"'{os.path.basename(beside)}'")
+        return True
 
 
 def menu_func_import(self, context):
@@ -921,14 +947,8 @@ class LS3D_OT_CheckAnimation(bpy.types.Operator):
                                result.error(message, fix)),
                            result.warn)
 
-        rate = anim_io.scene_frame_rate(context.scene)
-        if abs(rate - anim_io.FRAMES_PER_SECOND) > 1e-6:
-            result.warn(
-                f"The scene runs at {rate:g} fps but the game plays "
-                f"animations at {anim_io.FRAMES_PER_SECOND}, so this will play "
-                f"back at a different speed.",
-                fix=f"Set the scene frame rate to "
-                    f"{anim_io.FRAMES_PER_SECOND} fps.")
+        if anim_io.refuse_wrong_frame_rate(context.scene, result):
+            refused.append("the scene is not on the game's frame rate")
         _warn_about_easing(context.scene, result)
         # With the export's Fix Long Rotation Turns at its default - off - which
         # is what an export from the menu will do, so every long turn is named.
@@ -1265,8 +1285,7 @@ class LS3D_OT_SetFrameRate(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        rate = anim_io.scene_frame_rate(context.scene)
-        return abs(rate - anim_io.FRAMES_PER_SECOND) > 1e-6
+        return not anim_io.on_game_frame_rate(context.scene)
 
     def execute(self, context):
         before = anim_io.scene_frame_rate(context.scene)

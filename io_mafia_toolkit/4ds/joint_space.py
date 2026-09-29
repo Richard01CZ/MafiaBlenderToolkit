@@ -211,6 +211,23 @@ def own_channels_at_rest(obj):
 REST_TOLERANCE = 1.0e-6
 
 
+def delta_holds_place(obj):
+    """True where *obj*'s Delta Transform stands it somewhere.
+
+    That is where an animated object's place in the model is kept: beneath
+    the location, rotation and scale an animation keys, so the place survives
+    the animation keying them. A model opened from a file has it there, and so
+    does New Animation. Nothing there means no place is being held for the
+    object, and where it belongs has to be found some other way.
+    """
+    location, rotation, scale = delta_channels(obj)
+    turned = Quaternion(rotation).normalized().angle
+    turned = min(turned, 2.0 * math.pi - turned)
+    return not (Vector(location).length <= REST_TOLERANCE
+                and turned <= REST_TOLERANCE
+                and all(abs(v - 1.0) <= REST_TOLERANCE for v in scale))
+
+
 def share_group(obj, armature):
     """``(vertex group, inverted)`` holding *obj*'s own share, or ``None``.
 
@@ -599,6 +616,52 @@ def hung_frame(armature):
 def _is_identity(matrix):
     return all(matrix[row][column] == (1.0 if row == column else 0.0)
                for row in range(4) for column in range(4))
+
+
+def frame_anchor(obj):
+    """What takes *obj*'s own transform into the terms its frame is held in.
+
+    A frame holds the whole step from the frame above it, and in Blender that
+    step is more than an object's own location, rotation and scale. Parenting
+    one keeps it where it stands by storing the inverse of its parent's place
+    at that moment and multiplying it in beneath everything the object does;
+    a child hung on a joint hangs from the joint's end rather than its start,
+    and is measured against the joint's scaled world, which is what the file
+    chains. None of that is a channel anything keys, so all of it is constant,
+    and this is the whole of it: multiply an object's own transform by this and
+    the result is what the file holds.
+
+    ``None`` where there is nothing to multiply by and an object's own
+    transform is the frame's, which is every object of a model opened from a
+    file.
+    """
+    parent = getattr(obj, "parent", None)
+    if parent is None:
+        return None
+    kind = getattr(obj, "parent_type", "OBJECT")
+    inverse = obj.matrix_parent_inverse
+    if kind == "OBJECT":
+        return None if _is_identity(inverse) else inverse.copy()
+    if kind == "BONE" and obj.parent_bone:
+        bone = parent.data.bones.get(obj.parent_bone)
+        if bone is None:
+            return None if _is_identity(inverse) else inverse.copy()
+        tail = Matrix.Translation((0.0, bone.length, 0.0))
+        space = JointSpace(parent, skinned_mesh_of(
+            parent, list(bpy.context.scene.objects)))
+        world = space.worlds.get(obj.parent_bone)
+        if world is None:
+            return tail @ inverse
+        # Measured against the joint's scaled world - what the engine chains a
+        # child onto - rather than Blender's own unscaled bone, and from where
+        # the bone rests: an animation keying that joint is a track of its own,
+        # and this is the step from the frame it names, not from a pose of it.
+        joint = parent.matrix_world @ world
+        hangs = parent.matrix_world @ bone.matrix_local @ tail @ inverse
+        return joint.inverted() @ hangs
+    # Any other way of hanging one object on another: the frame holds where
+    # the object stands, as the model export writes it.
+    return obj.matrix_world @ obj.matrix_basis.inverted()
 
 
 #: How far from the default a character's origin may already stand and be

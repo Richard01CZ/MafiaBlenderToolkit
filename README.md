@@ -48,7 +48,7 @@
 
 ## 🚀 Quick Start
 
-1. **Download** — grab `mafia-toolkit-1.0.0.zip` from [Releases](https://github.com/Richard01CZ/MafiaBlenderToolkit/releases/latest).
+1. **Download** — grab `mafia-toolkit-1.0.1.zip` from [Releases](https://github.com/Richard01CZ/MafiaBlenderToolkit/releases/latest).
 2. **Install** — in Blender, `Edit ▸ Preferences ▸ Add-ons ▸ Install from Disk…`, pick the zip, and switch **Mafia Toolkit** on.
 3. **Set the texture folder** — in the add-on preferences, point **Texture Folder** at your Mafia `maps` folder, or imports come in grey.
 4. **Import** — `File ▸ Import ▸ 4DS Mafia Model` — and you're in.
@@ -104,7 +104,8 @@ Blender found. See [Command Line](https://github.com/Richard01CZ/MafiaBlenderToo
 |---|---|---|
 | Models, through Blender | 3,125 | round-trip identical |
 | Models, format layer only | 3,125 | 3,123 exact, 2 refused for their version |
-| Animations | 2,695 | all exact — 52,132 tracks, 13.7M keys |
+| Animations, format layer | 2,695 | all exact — 52,132 tracks, 13.7M keys |
+| Animations, through Blender | 2,690 | every key back within a 32-bit step |
 | Movement tracks | 293 | 283 exact, 10 refused for their version |
 | Shadows | 37 | all exact — 110 pieces, 3,935 triangles |
 

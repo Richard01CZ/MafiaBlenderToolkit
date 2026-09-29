@@ -23,11 +23,11 @@ between the two.
 import math
 
 import bpy
-from mathutils import Euler, Quaternion, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 from ..common import convert
 from ..packages import module
-from .codec import FRAMES_PER_SECOND
+from .codec import FRAME_MILLISECONDS, FRAMES_PER_SECOND
 
 #: Custom property the note track's event ids are keyframed onto.
 NOTE_PROPERTY = "ls3d_note_id"
@@ -93,14 +93,43 @@ def _as_quaternion(values, path, mode):
     return Euler(values, mode).to_quaternion()
 
 
+#: Whether a rotation's sign is the addon's to choose. Converting an Euler or
+#: an axis-angle key to a quaternion can hand back either of the pair, so
+#: those are put on one side and kept there. A quaternion curve's signs are
+#: not invented here and are left exactly as they are - see
+#: :func:`same_side_as`.
+def sign_is_ours(path):
+    """Whether the sign of a rotation on *path* is the addon's to decide."""
+    return path != "rotation_quaternion"
+
+
+def same_side_as(previous, turn):
+    """*turn* put on the same side of the double cover as *previous*.
+
+    A quaternion and its negative are the same rotation, and the game reads a
+    pair of them the same way whichever sign they carry: it measures the two
+    against each other and always turns the short way, taking the other side
+    when they sit on opposite ones. So the sign changes nothing it plays - with
+    one exception, a turn of exactly half a circle, where neither way round is
+    shorter and the sign is the only thing that says which one to take.
+
+    That is why a sign is only ever changed where the addon made it up in the
+    first place. One read out of a file is carried through untouched, so a
+    model that comes in turning one way goes back out turning that way, rather
+    than landing a rounding step the other side of the boundary and reversing.
+    """
+    if previous is None or turn.dot(previous) >= 0.0:
+        return turn
+    return Quaternion((-turn.w, -turn.x, -turn.y, -turn.z))
+
+
 def sampled_rotation(holder, owner, prefix=""):
     """Every keyed frame's rotation as ``{frame: (w, x, y, z)}``.
 
     The file stores quaternions and nothing else, so a rotation keyed in Euler
-    or axis-angle is converted rather than ignored. Consecutive keys are then
-    put on the same side of the double cover: a quaternion and its negative are
-    the same rotation but interpolate opposite ways round, and converting each
-    key on its own can hand back either one.
+    or axis-angle is converted rather than ignored - and those conversions are
+    then put on one side of the double cover, since each key converted on its
+    own can hand back either. A quaternion curve is left as it is.
     """
     path, count, rest = rotation_channel(owner)
     mode = getattr(owner, "rotation_mode", "QUATERNION")
@@ -110,8 +139,8 @@ def sampled_rotation(holder, owner, prefix=""):
     previous = None
     for frame in sorted(raw):
         turn = _as_quaternion(raw[frame], path, mode)
-        if previous is not None and turn.dot(previous) < 0.0:
-            turn = Quaternion((-turn.w, -turn.x, -turn.y, -turn.z))
+        if sign_is_ours(path):
+            turn = same_side_as(previous, turn)
         turns[frame] = (turn.w, turn.x, turn.y, turn.z)
         previous = turn
     return turns
@@ -222,8 +251,8 @@ def export_rotation_keys(holder, owner, prefix="", split=True):
     previous = None
     for frame in sorted(set(frames)):
         turn = _as_quaternion(value_at(frame), path, mode)
-        if previous is not None and turn.dot(previous) < 0.0:
-            turn = Quaternion((-turn.w, -turn.x, -turn.y, -turn.z))
+        if sign_is_ours(path):
+            turn = same_side_as(previous, turn)
         turns[frame] = (turn.w, turn.x, turn.y, turn.z)
         previous = turn
     added = len(turns) - len(keyed)
@@ -693,6 +722,87 @@ def apply_frame_rate(scene, report=None):
     return True
 
 
+def channel_at(holder, data_path, components, default, frame):
+    """One channel's whole value at *frame*, read off its curves."""
+    values = []
+    for index in range(components):
+        fcurve = curve(holder, data_path, index)
+        values.append(fcurve.evaluate(frame) if fcurve is not None
+                      else default[index])
+    return values
+
+
+def frame_locals(obj, holder, rest, anchor, frames):
+    """``{frame: (location, rotation, scale)}`` that *obj*'s frame holds.
+
+    *anchor* is what the object's own transform is measured through to give
+    the frame's - see :func:`.joint_space.frame_anchor`. All three channels
+    are read at every frame any of them is keyed on, because it mixes them: a
+    turn in it swings where a position lands, so a position cannot be carried
+    over on its own. It is applied as the matrix it is, over the object's own
+    transform - its Delta Transform and its channels, composed the way Blender
+    composes them.
+    """
+    path, count, unturned = rotation_channel(obj)
+    mode = getattr(obj, "rotation_mode", "QUATERNION")
+    if rest is None:
+        rest_location = Vector((0.0, 0.0, 0.0))
+        rest_rotation = Quaternion((1.0, 0.0, 0.0, 0.0))
+        rest_scale = Vector((1.0, 1.0, 1.0))
+    else:
+        rest_location = rest.to_translation()
+        rest_rotation = rest.to_quaternion()
+        rest_scale = rest.to_scale()
+    placed = {}
+    for frame in frames:
+        place = Vector(channel_at(holder, "location", 3, (0.0, 0.0, 0.0),
+                                  frame))
+        size = Vector(channel_at(holder, "scale", 3, (1.0, 1.0, 1.0), frame))
+        turn = _as_quaternion(channel_at(holder, path, count, unturned, frame),
+                              path, mode)
+        basis = Matrix.LocRotScale(
+            rest_location + place, rest_rotation @ turn,
+            Vector(tuple(a * b for a, b in zip(rest_scale, size))))
+        placed[frame] = (anchor @ basis).decompose()
+    return placed
+
+
+def on_game_frame_rate(scene):
+    """Whether *scene* runs at the one rate the game plays animations at."""
+    return abs(scene_frame_rate(scene) - FRAMES_PER_SECOND) <= 1e-6
+
+
+def refuse_wrong_frame_rate(scene, report):
+    """Refuse a scene that is not on the game's frame rate. True when refused.
+
+    An animation numbers its keys in frames and holds no rate of its own. The
+    game spaces them a fixed forty milliseconds apart and nothing in the file
+    can say otherwise, which the game's own files bear out: in 272 of the 283
+    animations with a movement track beside them - and a track says outright
+    how many milliseconds it runs for - the two come to exactly that.
+
+    So a scene keyed at any other rate means something different here than it
+    will in game: every key lands somewhere else in time, the animation plays
+    at another speed, and a movement track written beside it, measured in
+    milliseconds, does not agree with it either. There is nowhere to write the
+    rate down and nothing to convert, so rather than write an animation that
+    runs at the wrong speed, the export says so.
+    """
+    if on_game_frame_rate(scene):
+        return False
+    report.error(
+        f"The scene runs at {scene_frame_rate(scene):g} frames per second, "
+        f"and the game plays every animation at {FRAMES_PER_SECOND} - one "
+        f"frame every {FRAME_MILLISECONDS} milliseconds, with nothing in the "
+        f"file able to say otherwise. Written from this scene, the animation "
+        f"would play at a different speed in game than it does here.",
+        fix=f"Press {FRAMES_PER_SECOND} fps in the 5DS Animation tab, or set "
+            f"the scene's frame rate to {FRAMES_PER_SECOND}. The keys stay on "
+            f"the frames they are on, so what you see after it is what the "
+            f"game plays.")
+    return True
+
+
 def count_animated_objects(scene, objects=None):
     """How many tracks the scene would write, which is the 4DS's own count.
 
@@ -1031,6 +1141,42 @@ def _rest_pose_bone(pose_bone, kinds):
         pose_bone.scale = (1.0, 1.0, 1.0)
 
 
+def rest_object_channels(obj, own):
+    """Put what *obj*'s animation keys back where the model rests it.
+
+    An object's place in the model is its Delta Transform - Blender's own
+    offset beneath the location, rotation and scale an animation keys. A model
+    opened from a file keeps it there, and so does New Animation, so those
+    channels rest at nothing and the Delta Transform is the whole of the place.
+
+    An object holding nothing there has no place kept for it, and is left
+    standing exactly where it stands at the moment of the export - what the
+    viewport is showing. Its channels already hold that, the animation having
+    just been taken off them, so this leaves them alone.
+
+    Taking each such object to its own first key instead reads well on one
+    object and falls apart on two: a child keyed from frame 160 under a parent
+    keyed from frame 145 would be written from both moments at once, in a pose
+    that was never on screen. Where everything stands at one moment is a pose
+    that was, so that is the one written.
+
+    Two are not left where they stand, and rest at nothing however they are
+    keyed: an armature, whose place is the mesh frame it holds in its Delta
+    Transform, and the empty carrying a movement track, which stands at the
+    origin because that is what it is - the model's travel is the .tck beside
+    it.
+
+    Returns True where the place is the moment rather than the Delta Transform.
+    """
+    space = module("4ds.joint_space")
+    if (space.delta_holds_place(obj) or obj.type == "ARMATURE"
+            or module("tck.io").is_motion_track(obj)):
+        space.rest_own_channels(obj, "location" in own, "rotation" in own,
+                                "scale" in own)
+        return False
+    return bool(own)
+
+
 def take_off_animation(obj):
     """Take *obj*'s animation off and put what it keyed back at rest.
 
@@ -1039,8 +1185,7 @@ def take_off_animation(obj):
     whatever its influence says unless there is an NLA stack to blend into,
     so the only way to stop it is to take it away. What it keyed then holds
     whatever frame was showing, so that goes back to rest: a pose bone's rest
-    is its bone, and an object's own location, rotation and scale rest at
-    nothing - where it stands is its Delta Transform.
+    is its bone, and an object's is where :func:`rest_object_channels` puts it.
     """
     data = obj.animation_data
     if data is None or data.action is None:
@@ -1058,8 +1203,7 @@ def take_off_animation(obj):
         if pose_bone is not None:
             kept["bones"][name] = pose_bone.matrix_basis.copy()
     data.action = None
-    module("4ds.joint_space").rest_own_channels(
-        obj, "location" in own, "rotation" in own, "scale" in own)
+    kept["stands_where_it_is"] = rest_object_channels(obj, own)
     for name, kinds in bones.items():
         pose_bone = pose.bones.get(name) if pose is not None else None
         if pose_bone is not None:

@@ -134,6 +134,15 @@ class ExportTCK(bpy.types.Operator, ExportHelper):
             result.show()
             return {"CANCELLED"}
 
+        # A track's length and key spacing are milliseconds, worked out from
+        # the scene's clock, while the animation it belongs to is played at
+        # the game's. On any other clock the two would describe different
+        # journeys.
+        if anim_io.refuse_wrong_frame_rate(context.scene, result):
+            result.finish(f"Export FAILED: {filename}")
+            result.show()
+            return {"CANCELLED"}
+
         period = holders[0].ls3d_motion_period or context.scene.ls3d_motion_period
         track = build_motion_track(holders[0], context.scene, period, result)
         if track is None:
