@@ -276,6 +276,18 @@ PROJECTOR_FALLOFF_ITEMS = (
      "Nothing at either face, full strength at mid-depth"),
 )
 
+#: The two volume shapes, in the order the stored flag reads: set means the
+#: straight-through box, clear means the pyramid inside it.
+PROJECTOR_SHAPE_ITEMS = (
+    ("1", "Orthographic",
+     "A box the same width all the way through, so the projection is one size "
+     "however far it reaches. All five projectors the game makes for itself "
+     "are this shape"),
+    ("0", "Perspective",
+     "The pyramid inscribed in that box, spreading from the frame's own point "
+     "- so the projection grows with distance, as a lamp's does"),
+)
+
 #: The frame-buffer blend the projected triangles are drawn with, and which
 #: channel the falloff weight is written into. Both paths draw the material's
 #: diffuse texture modulated by the vertex color, with alpha testing on.

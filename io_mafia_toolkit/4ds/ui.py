@@ -713,7 +713,8 @@ class The4DSObjectPanel(bpy.types.Panel):
         # material's own go in a box of their own below. Drawn the other way
         # round, opening the material ran its rows and these together and the
         # falloff read as one of the material's.
-        box.prop(obj, "ls3d_projector_orthogonal", text="Straight On")
+        shape = box.row(align=True)
+        shape.prop(obj, "ls3d_projector_shape", expand=True)
         box.prop(obj, "ls3d_projector_falloff", text="Depth Falloff")
         box.prop(obj, "ls3d_projector_blend", text="Blend Mode")
         if _int_prop(obj, "ls3d_projector_mode") not in C.PROJECTOR_MODES:

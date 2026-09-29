@@ -908,11 +908,21 @@ def _register_special_object_properties():
                     "under them, and which channel the falloff weight drives")
 
     obj.ls3d_projector_orthogonal = BoolProperty(
-        name="Straight On", default=True, update=_viewport_changed,
+        name="Orthographic", default=True, update=_viewport_changed,
         description="Project straight ahead at one size all the way through, "
                     "rather than spreading out from the object's origin. All "
                     "five projectors the game makes for itself are set this "
                     "way")
+
+    # The panel offers the two shapes by name rather than a switch to tick:
+    # what the flag picks between is a box and a pyramid, and "on" says
+    # neither. The flag underneath is what the file keeps.
+    obj.ls3d_projector_shape = EnumProperty(
+        name="Shape", items=C.PROJECTOR_SHAPE_ITEMS,
+        get=lambda self: 0 if self.ls3d_projector_orthogonal else 1,
+        set=lambda self, value: setattr(self, "ls3d_projector_orthogonal",
+                                        value == 0),
+        description="The shape of the volume the projector paints through")
 
     obj.ls3d_projector_material = PointerProperty(
         name="Material", type=bpy.types.Material,
@@ -1350,6 +1360,7 @@ _OWNED = {
         "ls3d_projector_mode", "ls3d_projector_falloff",
         "ls3d_projector_blend", "ls3d_projector_orthogonal",
         "ls3d_projector_material", "ls3d_show_projector_material",
+        "ls3d_projector_shape",
         *(f"ls3d_dummy_face_{i}" for i in range(6)),
         *(f"ls3d_box_face_{i}" for i in range(6)),
         *(f"ls3d_box_move_{i}" for i in range(3)),

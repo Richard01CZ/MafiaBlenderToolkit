@@ -10467,7 +10467,7 @@ def run_regressions(models_dir, out_dir):
           # The projector's own settings come before the material's, which sit
           # in a box of their own at the end: drawn the other way round,
           # opening the material ran its rows and these together.
-          and props(settled) == ["ls3d_projector_orthogonal",
+          and props(settled) == ["ls3d_projector_shape",
                                  "ls3d_projector_falloff",
                                  "ls3d_projector_blend",
                                  "ls3d_projector_mode",

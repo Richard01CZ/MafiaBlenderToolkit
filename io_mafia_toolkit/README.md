@@ -1463,9 +1463,9 @@ files you author yourself; the format has always carried it.
 A projector has no mesh. Four bytes describe it, and the volume it covers is a
 fixed unit shape the frame's own transform carries, so it imports as an arrows
 empty — small, and labeled, so you can see which way local +Y points — and the
-viewport outlines the volume from the transform: a pyramid
-spreading from the object's origin, or a box the same width all the way through
-when *Straight On* is set. Either reaches one unit along local +Y and two
+viewport outlines the volume from the transform: set to *Perspective*, a
+pyramid spreading from the object's origin; set to *Orthographic*, a box the
+same width all the way through. Either reaches one unit along local +Y and two
 across, so the object's scale sizes it. Nothing about the shape is stored, on
 either side.
 
