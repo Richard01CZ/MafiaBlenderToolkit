@@ -381,7 +381,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
 
   <nav class="nav">
     <div class="nav-brand">LS3D 4DS</div>
-    <div class="nav-build">1.0.1 &middot; Blender 5.2+</div>
+    <div class="nav-build">1.0.2 &middot; Blender 5.2+</div>
 
     <h4>Getting started</h4>
     <a href="#install">Installation &amp; preferences</a>
@@ -406,6 +406,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
     <a href="#billboards">Billboards</a>
     <a href="#mirrors">Mirrors</a>
     <a href="#lensflares">Lens flares</a>
+    <a href="#projectors">Projectors</a>
 
     <h4>Skinning &amp; morphs</h4>
     <a href="#skinning">Armatures &amp; skinning</a>
@@ -1161,8 +1162,102 @@ mbt --open tommy.4ds --gui</code></pre>
     </section>
 
     <!-- ─────────────────────────────────────────────────── -->
+    <section id="projectors">
+      <h2><span class="num">17</span>Projectors</h2>
+
+      <p class="lead-in">A projector paints a texture onto whatever geometry falls inside its
+      volume &mdash; a headlight on the road, a lamp pool on a wall, a tyre track on the ground.
+      It carries <b>no mesh of its own</b>: the game works out as it draws which surfaces the
+      volume overlaps, maps the texture across it and paints them.</p>
+
+      <p>Four bytes and a transform is the whole of what a file keeps: whether the volume goes
+      straight through or spreads, one byte of mode, and the material number. Everything about
+      the shape follows from the frame's own transform.</p>
+
+      <h3>The volume</h3>
+      <p>Two units across and one unit deep along <b>local +Y</b>, carried by the frame's
+      transform &mdash; so the object's <b>scale is how big the projection is</b>. Nothing about
+      the volume itself is stored.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Straight On</th><th>The volume</th></tr></thead>
+          <tbody>
+            <tr><td class="name">On</td><td class="desc">A box, the same width all the way
+            through.</td></tr>
+            <tr><td class="name">Off</td><td class="desc">The pyramid inscribed in that box,
+            spreading from the frame's own point.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Depth Falloff and Blend Mode</h3>
+      <p>The mode byte carries both, and the six values it can hold are the six pairings of the
+      two. A byte outside those six is read as Alpha Blend with no depth term.</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Depth Falloff</th><th>Across the depth of the volume</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Constant</td><td class="desc">Full strength throughout. No
+            depth term at all.</td></tr>
+            <tr><td class="name">Linear</td><td class="desc">Full at the near face, fading to
+            nothing at the far one. A surface sitting exactly at the far face takes no paint at
+            all: that is the falloff reaching zero, not a fault.</td></tr>
+            <tr><td class="name">Triangular</td><td class="desc">Nothing at either face, full at
+            mid-depth.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Blend Mode</th><th>How the paint meets the surface</th></tr></thead>
+          <tbody>
+            <tr><td class="name">Additive</td><td class="desc">Adds to the surface, so it can
+            only brighten and black adds nothing. For light: headlights, lamp pools,
+            glows.</td></tr>
+            <tr><td class="name">Alpha Blend</td><td class="desc">Draws over the surface, hiding
+            it where the texture is opaque. For marks: tyre tracks, scratches, decals.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The material, and what reaches the paint</h3>
+      <p>A projector needs a material and paints its <b>diffuse texture and nothing else</b>.
+      The format keeps a material number and zero is not one &mdash; the game subtracts one and
+      reads whatever that lands on &mdash; so the export refuses a projector with no material,
+      and warns about one whose material writes no diffuse texture, since it would draw
+      nothing.</p>
+      <p>What the texture itself carries does reach the paint: the <b>transparency a material
+      keeps in a second image</b>, where it has one, and the <b>color key</b>, which cuts its own
+      color out. A color key, a truecolor texture carrying its own alpha, and an additive
+      material each settle transparency on their own, and the second image is left out &mdash;
+      the same three the material itself leaves it out for. An animated texture cycles as it
+      does anywhere else.</p>
+      <p>What does not reach it: the material's colors, its opacity, its environment map and its
+      switches. None of them touch a projector in game. The color a projector is tinted with is
+      its own, and the format has nowhere to keep it, so it is always full strength.</p>
+      <p>A projector has no mesh and so no material slot, and never appears in Blender's Material
+      tab. It is edited from <b>Material Settings</b> inside the projector's own panel, and the
+      <b>+</b> beside the picker makes one set up the way the game reads it.</p>
+
+      <h3>What the viewport shows</h3>
+      <p>The paint is drawn onto the surfaces the volume covers, with the volume shape, the
+      mapping, the falloff and the blend the mode asks for, stopping at the first thing in the
+      way. <b>Project Textures</b> in the <b>4DS Model</b> tab turns it off; it is drawing only,
+      and changes nothing that is written.</p>
+      <div class="callout">
+        <span class="label">What the viewport cannot do</span>
+        <p>Blender composites an overlay <i>over</i> the scene rather than adding into it, so an
+        <b>Additive</b> projector cannot brighten the surface it lands on. It is drawn with its
+        brightness carried in its opacity instead: black shows nothing, the brightest paint shows
+        fully, and the falloff fades it away rather than blackening it. The shape, the texture,
+        the falloff and where it stops are exact; only the brightening is not, which shows on a
+        light surface more than a dark one. <b>Alpha Blend</b> is exact.</p>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
     <section id="skinning">
-      <h2><span class="num">17</span>Armatures &amp; skinning</h2>
+      <h2><span class="num">18</span>Armatures &amp; skinning</h2>
       <figure class="shot" id="fig-10">
         <img src="guide-images/10-joint-boxes.png" alt="Influence boxes in green, with the handles on the joint being posed."
              onerror="this.closest('figure').classList.add('empty');this.remove();">
@@ -1366,7 +1461,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="morphs">
-      <h2><span class="num">18</span>Morphs</h2>
+      <h2><span class="num">19</span>Morphs</h2>
       <figure class="shot" id="fig-14">
         <img src="guide-images/14-morph-groups.png" alt="A morph group and its targets."
              onerror="this.closest('figure').classList.add('empty');this.remove();">
@@ -1412,7 +1507,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="checks">
-      <h2><span class="num">19</span>Checks &amp; messages</h2>
+      <h2><span class="num">20</span>Checks &amp; messages</h2>
       <p class="lead-in">Errors stop the export before anything is written. Warnings let it
       through and tell you what changed.</p>
       <figure class="shot" id="fig-15">
@@ -1469,7 +1564,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
 
     <section id="elsewhere" class="panel">
-      <h2><span class="num">20</span>The other references</h2>
+      <h2><span class="num">21</span>The other references</h2>
       <p class="lead-in">Several pages sit beside this one, each on a subject of
       its own. They are written from the game's own behavior and checked against
       every model it ships. The <b>User Guide</b> is the way in: this manual is
@@ -1499,7 +1594,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
 
     <section id="shots" class="panel">
-      <h2><span class="num">21</span>The pictures, and how to take them</h2>
+      <h2><span class="num">22</span>The pictures, and how to take them</h2>
       <p class="lead-in">Fifteen slots are set through the manual. Each shows
       its caption until the file appears beside it, so the page reads either
       way. Drop the files into a <code>guide-images</code> folder next to this

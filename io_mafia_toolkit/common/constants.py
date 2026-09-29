@@ -483,6 +483,9 @@ JOINT_BOX_PROP = "ls3d_joint_box"
 HAS_JOINT_BOX_PROP = "ls3d_has_joint_box"
 #: Scene switch: whether the joints' influence boxes are shown.
 SHOW_INFLUENCE_BOXES_PROP = "ls3d_show_influence_boxes"
+#: Scene switch: whether a projector paints its texture onto what it
+#: covers, the way the game does. Drawing only - nothing written.
+PROJECT_TEXTURES_PROP = "ls3d_project_textures"
 #: Scene switch: whether they are drawn over everything, the mesh included.
 INFLUENCE_BOXES_IN_FRONT_PROP = "ls3d_influence_boxes_in_front"
 #: Scene setting: which of the box's handles are on the active joint.

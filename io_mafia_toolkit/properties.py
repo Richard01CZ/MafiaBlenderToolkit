@@ -472,6 +472,14 @@ def _register_scene_properties():
                     "a time is easier to hit on a small box",
         update=_show_influence_boxes))
 
+    setattr(bpy.types.Scene, C.PROJECT_TEXTURES_PROP, BoolProperty(
+        name="Project Textures", default=True,
+        description="Paint each projector's texture onto the surfaces its "
+                    "volume covers, the way the game paints it - with the "
+                    "falloff and the blend its mode asks for. Drawing only: "
+                    "nothing about the model changes either way",
+        update=_show_influence_boxes))
+
     bpy.types.Scene.ls3d_animated_count_pinned = BoolProperty(
         name="Count Set By Hand", default=False,
         description=("Whether the animated object count was typed rather than "

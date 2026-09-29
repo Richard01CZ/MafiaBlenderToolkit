@@ -7233,6 +7233,169 @@ def run_regressions(models_dir, out_dir):
           f"with the travel {made}, without it {alone}; the travel "
           f"carries it {moved:.3f} m")
 
+    # A projector paints its texture onto whatever its volume covers, and the
+    # viewport draws that the way the game draws it. Rendered into an offscreen
+    # buffer looking straight down at a floor, so the footprint can be measured
+    # against the volume the format describes: two units across, one along the
+    # projection axis, straight through or spreading from the frame's point.
+    fresh_scene()
+    import gpu as _gpu
+    from gpu_extras.batch import batch_for_shader as _batch_for
+    from mathutils import Matrix as _PaintMatrix
+    paint_ready = True
+    if hasattr(_gpu, "init"):
+        try:
+            _gpu.init()
+        except Exception:
+            paint_ready = False
+    if not paint_ready:
+        SKIPPED.append("a projector paints what its volume covers")
+    else:
+        projection = ls3d_module("4ds.projection")
+        lit_image = bpy.data.images.new("FLAT.BMP", 8, 8)
+        lit_image.pixels = [1.0] * (8 * 8 * 4)
+        beam = bpy.data.materials.new("BEAM")
+        beam.ls3d_material_flags = C.MTL_DIFFUSE_ENABLE
+        beam.ls3d_diffuse_tex = lit_image
+        bpy.ops.object.empty_add(type="ARROWS")
+        beamer = bpy.context.object
+        beamer.name = "beamer"
+        beamer.ls3d_frame_type = str(C.FRAME_VISUAL)
+        beamer.visual_type = str(C.VISUAL_PROJECTOR)
+        beamer.ls3d_projector_material = beam
+
+        SPAN, EDGE = 200, 3.0        # a 6 m wide buffer, 200 px across
+
+        def painted(orthogonal, falloff, height, reach, wide=1.0):
+            """(lit pixels, mean brightness) on a floor under the projector."""
+            beamer.ls3d_projector_orthogonal = orthogonal
+            beamer.ls3d_projector_falloff = str(falloff)
+            beamer.ls3d_projector_blend = "0"
+            beamer.matrix_world = (
+                _PaintMatrix.Translation((0.0, 0.0, height))
+                @ _PaintMatrix.Rotation(-1.5707963, 4, "X")
+                @ _PaintMatrix.Diagonal((wide, reach, wide, 1.0)))
+            floor = [(-3.0, -3.0, 0.0), (3.0, -3.0, 0.0), (3.0, 3.0, 0.0),
+                     (-3.0, -3.0, 0.0), (3.0, 3.0, 0.0), (-3.0, 3.0, 0.0)]
+            drawn = projection.shader()
+            batch = _batch_for(drawn, "TRIS", {"pos": floor})
+            screen = _gpu.types.GPUOffScreen(SPAN, SPAN)
+            with screen.bind():
+                buffer = _gpu.state.active_framebuffer_get()
+                buffer.clear(color=(0.0, 0.0, 0.0, 1.0))
+                view = _PaintMatrix.Identity(4)
+                view[2][3] = -10.0
+                window = _PaintMatrix.OrthoProjection("XY", 4)
+                window[0][0] = window[1][1] = 1.0 / EDGE
+                window[2][2] = -0.05
+                with _gpu.matrix.push_pop():
+                    _gpu.matrix.load_matrix(view)
+                    _gpu.matrix.load_projection_matrix(window)
+                    drawn.bind()
+                    drawn.uniform_sampler(
+                        "paint", _gpu.texture.from_image(lit_image))
+                    # Held in a name: the settings block is read as the
+                    # draw runs, so letting it go early reads freed memory.
+                    block = projection.apply_paint(
+                        drawn, beamer, projection.paint_of(beamer))
+                    mode = projection.blend_for(beamer)
+                    drawn.uniform_float("to_projector",
+                                        beamer.matrix_world.inverted())
+                    _gpu.state.blend_set(mode)
+                    batch.draw(drawn)
+                    _gpu.state.blend_set("NONE")
+                pixels = buffer.read_color(0, 0, SPAN, SPAN, 4, 0, "FLOAT")
+                pixels.dimensions = SPAN * SPAN * 4
+            screen.free()
+            values = [pixels[at] for at in range(0, SPAN * SPAN * 4, 4)]
+            on = [v for v in values if v > 0.01]
+            return len(on), (sum(on) / len(on) if on else 0.0)
+
+        def metres(count):
+            return count * (2.0 * EDGE / SPAN) ** 2
+
+        # The projector finds its own paint: the material it names, and that
+        # material's diffuse texture, which is the only thing it draws.
+        found = projection.paint_of(beamer)
+        square, _b = painted(True, 0, height=2.0, reach=2.0)
+        wider, _b = painted(True, 0, height=2.0, reach=2.0, wide=2.0)
+        cone, _b = painted(False, 0, height=2.0, reach=2.0)
+        _n, far_linear = painted(True, 1, height=2.0, reach=2.0)
+        _n, far_triangle = painted(True, 2, height=2.0, reach=2.0)
+        _n, half_linear = painted(True, 1, height=2.0, reach=4.0)
+        _n, half_triangle = painted(True, 2, height=2.0, reach=4.0)
+        beyond, _b = painted(True, 0, height=8.0, reach=2.0)
+        within, _b = painted(True, 0, height=1.0, reach=2.0)
+
+        check("a projector paints what its volume covers, the way the game "
+              "shades it",
+              # Two units across, whatever the reach.
+              found is not None and found[0] is lit_image
+              and abs(metres(square) - 4.0) < 0.15
+              # Twice as wide is four times the area.
+              and abs(metres(wider) - 4.0 * metres(square)) < 0.6
+              # The pyramid is inscribed in the box, so it ends as wide.
+              and abs(cone - square) <= 2
+              # Full at the near face and gone at the far one; nothing at
+              # either face and full between.
+              and far_linear < 0.02 and far_triangle < 0.02
+              and abs(half_linear - 0.5) < 0.02 and half_triangle > 0.98
+              # And it stops: a floor past the reach takes no paint at all.
+              and beyond == 0 and abs(within - square) <= 2,
+              f"paint {found[0].name if found else None}; "
+              f"box {metres(square):.2f} m2, twice as wide "
+              f"{metres(wider):.2f} m2, pyramid {cone} px vs "
+              f"{square}; far face linear {far_linear:.3f} triangular "
+              f"{far_triangle:.3f}; half way linear {half_linear:.3f} "
+              f"triangular {half_triangle:.3f}; past the reach {beyond} px, "
+              f"within {within} px")
+
+    # A projector paints the texture its material builds, not the diffuse
+    # image on its own: where a material keeps its transparency in a second
+    # image, that is part of what is painted, and a color key or a truecolor
+    # texture or an additive material each settle the matter alone and leave
+    # the second image out. The same three the material itself leaves it out
+    # for.
+    fresh_scene()
+    mask_mat = bpy.data.materials.new("MASKED.BMP")
+    mask_mat.ls3d_material_flags = C.MTL_DIFFUSE_ENABLE
+    mask_mat.ls3d_diffuse_tex = bpy.data.images.new("DIFF.BMP", 4, 4)
+    mask_mat.ls3d_alpha_tex = bpy.data.images.new("MASK.BMP", 4, 4)
+    bpy.ops.object.empty_add(type="ARROWS")
+    masked = bpy.context.object
+    masked.ls3d_frame_type = str(C.FRAME_VISUAL)
+    masked.visual_type = str(C.VISUAL_PROJECTOR)
+    masked.ls3d_projector_material = mask_mat
+
+    projection = ls3d_module("4ds.projection")
+
+    def mask_of(extra_flags):
+        # Blender holds the flag word signed, so the top bit goes in negative.
+        word = C.MTL_DIFFUSE_ENABLE | extra_flags
+        mask_mat.ls3d_material_flags = (word - 0x100000000
+                                        if word >= 0x80000000 else word)
+        found = projection.paint_of(masked)
+        return None if found is None else found[1]
+
+    # Switched off, the second image is not part of what the material builds.
+    off = mask_of(0)
+    on = mask_of(C.MTL_ALPHATEX)
+    # And each of the three that settle transparency on their own leaves it out.
+    keyed = mask_of(C.MTL_ALPHATEX | C.MTL_ALPHA_COLORKEY)
+    truecolor = mask_of(C.MTL_ALPHATEX | C.MTL_ALPHA_IN_TEX)
+    added = mask_of(C.MTL_ALPHATEX | C.MTL_ALPHA_ADDITIVE)
+    mask_mat.ls3d_alpha_tex = None
+    none_set = mask_of(C.MTL_ALPHATEX)
+
+    check("a projector paints the transparency its material keeps elsewhere",
+          off is None and on is not None and on.name == "MASK.BMP"
+          and keyed is None and truecolor is None and added is None
+          and none_set is None,
+          f"off {off}, on {on.name if on else None}; vetoed by a color key "
+          f"{keyed is None}, by a truecolor texture {truecolor is None}, by "
+          f"an additive material {added is None}; with no second image "
+          f"{none_set is None}")
+
     # The sidebar is redrawn constantly - every hover redraws it - so a name
     # the draw only binds on one branch is an error repeating forever. Draw it
     # against everything it can be pointed at.
@@ -10300,12 +10463,15 @@ def run_regressions(models_dir, out_dir):
           and "no diffuse texture" not in said(settled)
           and "Mode 12" in said(odd_mode)
           and "Mode 12" not in said(settled)
-          # every control, and nothing that needs a paragraph to explain
-          and props(settled) == ["ls3d_show_projector_material",
-                                 "ls3d_projector_orthogonal",
+          # Every control, and nothing that needs a paragraph to explain.
+          # The projector's own settings come before the material's, which sit
+          # in a box of their own at the end: drawn the other way round,
+          # opening the material ran its rows and these together.
+          and props(settled) == ["ls3d_projector_orthogonal",
                                  "ls3d_projector_falloff",
                                  "ls3d_projector_blend",
-                                 "ls3d_projector_mode"]
+                                 "ls3d_projector_mode",
+                                 "ls3d_show_projector_material"]
           and any(kind == "template_ID" for kind, _t in settled)
           # a heading, the material, four controls, the folded material
           # disclosure and two notes. The paragraph this replaced ran to 28.

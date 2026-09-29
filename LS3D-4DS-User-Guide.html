@@ -381,7 +381,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
 
   <nav class="nav">
     <div class="nav-brand">Mafia Toolkit</div>
-    <div class="nav-build">User Guide &middot; 1.0.1</div>
+    <div class="nav-build">User Guide &middot; 1.0.2</div>
 
     <h4>Start here</h4>
     <a href="#install">1 &middot; Installing</a>
@@ -409,7 +409,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       This is the way in: it starts at installing and walks through a prop, a car and a
       character, in the order you meet them. The <b>Field Manual</b> beside it is the reference
       to look single things up in, and the <b>README</b> is the record of what changed and why.</p>
-      <p>Everything here is written against <b>1.0.1</b>, on Blender 5.2 or newer.</p>
+      <p>Everything here is written against <b>1.0.2</b>, on Blender 5.2 or newer.</p>
     </header>
 
     <!-- ─────────────────────────────────────────────────── -->
@@ -417,7 +417,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       <h2><span class="num">01</span>Installing</h2>
 
       <p class="lead-in">Install the zip through <b>Edit &rsaquo; Preferences &rsaquo; Add-ons &rsaquo;
-      Install from Disk</b>, pick <code>mafia-toolkit-1.0.1.zip</code>, and switch it on. It asks for
+      Install from Disk</b>, pick <code>mafia-toolkit-1.0.2.zip</code>, and switch it on. It asks for
       Blender 5.2 or newer.</p>
 
       <figure class="shot" id="fig-g01">
@@ -1092,12 +1092,46 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
           <tr><td><b>Lens flare</b></td><td>A stack of sprites drawn along a line from a light.
           Each element needs a material.</td></tr>
           <tr><td><b>Projector</b></td><td>A volume that paints a material onto whatever is inside
-          it &mdash; a headlight, a lamp on a wall. It projects along local +Y.</td></tr>
+          it &mdash; a headlight, a lamp on a wall. It projects along local +Y, and the viewport
+          paints it where the game would: see <a href="#projected">below</a>.</td></tr>
           <tr><td><b>Morph</b> and <b>Single Morph</b></td><td>A mesh that blends between shapes.
           Blender's shape keys are the targets; the <b>4DS Morph</b> tab groups them the way the
           format does.</td></tr>
         </tbody>
       </table>
+
+      <h3 id="projected">What a projector paints</h3>
+      <p>A projector carries no mesh. It is a volume and a material, and the game works out as it
+      draws which surfaces fall inside that volume, maps the material&rsquo;s texture across it and
+      paints them. Blender has nothing of the kind &mdash; its lights cannot paint a decal, and a
+      texture only reaches a surface through that surface&rsquo;s own material &mdash; so the add-on
+      draws it: the surfaces inside the volume, painted with the texture the way the frame&rsquo;s
+      transform maps it, stopping at the first thing in the way, as a projector does.</p>
+      <p>Everything the mode decides is drawn with it:</p>
+      <ul>
+        <li><b>The volume.</b> Two units across and one along the projection axis, carried by the
+        frame&rsquo;s own transform &mdash; so its scale is how big the projection is. <b>Straight On</b>
+        gives a box the same width all the way through; off gives the pyramid inscribed in that
+        box, spreading from the frame&rsquo;s own point.</li>
+        <li><b>Depth Falloff.</b> <b>Constant</b> is full strength throughout. <b>Linear</b> is full
+        at the near face and gone at the far one. <b>Triangular</b> is nothing at either face and
+        full at mid-depth &mdash; so a surface sitting exactly at the far face of a linear projector
+        takes no paint at all, which is worth knowing before you conclude it is broken.</li>
+        <li><b>Blend Mode.</b> <b>Additive</b> adds to the surface in game, so black parts of the
+        texture add nothing and only light is left. <b>Alpha Blend</b> draws over it, hiding what is
+        underneath where the texture is opaque &mdash; which is what a tyre track or a scratch wants.</li>
+        <li><b>What the viewport can and cannot show.</b> Blender composites an overlay over the
+        scene rather than adding into it, so an additive projector cannot brighten the surface it
+        lands on. It is drawn with its brightness carried in its opacity instead: black shows
+        nothing, the brightest paint shows fully, and the falloff fades it away. The shape, the
+        texture, the falloff and where it stops are exact; only the brightening is not, which shows
+        on a light surface more than a dark one. Alpha Blend is exact.</li>
+        <li><b>The color key</b>, where the material carries one, cuts its own color out of the
+        paint as it does anywhere else.</li>
+      </ul>
+      <p>A projector whose material writes no diffuse texture paints nothing, and the panel says so:
+      the texture is the only thing it draws. Turn the whole thing off with <b>Project Textures</b>
+      in the <b>4DS Model</b> tab &mdash; it is drawing only, and changes nothing that is written.</p>
 
       <h3>Morphs, in short</h3>
       <p>A morph is organised into <b>groups</b>, each holding an ordered list of targets that are
@@ -1173,7 +1207,7 @@ mbt --open "D:\models\tommy.4ds" --gui</code></pre>
 
     <hr>
     <footer>
-      <p>Written against Mafia Toolkit 1.0.1, on Blender 5.2. Behavior checked against what the
+      <p>Written against Mafia Toolkit 1.0.2, on Blender 5.2. Behavior checked against what the
       game actually does, and tested against every model shipped with Mafia.</p>
     </footer>
   </main>

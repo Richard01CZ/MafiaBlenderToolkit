@@ -698,25 +698,21 @@ class The4DSObjectPanel(bpy.types.Panel):
         box.label(text="Projector", icon="OUTLINER_OB_LIGHT")
 
         material = obj.ls3d_projector_material
-        box.template_ID(obj, "ls3d_projector_material", new="material.new")
+        picker = box.row(align=True)
+        picker.template_ID(obj, "ls3d_projector_material")
+        # Blender's own New makes a material this addon knows nothing about,
+        # so the button beside it makes one set up the way the game reads it.
+        picker.operator("ls3d.create_material", icon="ADD",
+                        text="").target = "projector"
         if material is None:
             box.label(text="No material - paints nothing.", icon="ERROR")
         elif not _has_diffuse(material):
             box.label(text="Material has no diffuse texture.", icon="ERROR")
 
-        # A projector has no mesh, so its material has no slot and never shows
-        # up in Blender's Material tab. Same problem the lens flare has, same
-        # answer: edit it here, folded away until asked for.
-        if material is not None:
-            row = box.row(align=True)
-            row.prop(obj, "ls3d_show_projector_material", text="", emboss=False,
-                     icon="TRIA_DOWN" if obj.ls3d_show_projector_material
-                          else "TRIA_RIGHT")
-            # Not the name - the picker one row up already carries it.
-            row.label(text="Material Settings", icon="MATERIAL")
-            if obj.ls3d_show_projector_material:
-                draw_material_body(box, material)
-
+        # The projector's own settings come before the material, and the
+        # material's own go in a box of their own below. Drawn the other way
+        # round, opening the material ran its rows and these together and the
+        # falloff read as one of the material's.
         box.prop(obj, "ls3d_projector_orthogonal", text="Straight On")
         box.prop(obj, "ls3d_projector_falloff", text="Depth Falloff")
         box.prop(obj, "ls3d_projector_blend", text="Blend Mode")
@@ -724,6 +720,31 @@ class The4DSObjectPanel(bpy.types.Panel):
             box.label(text=f"Mode {_int_prop(obj, 'ls3d_projector_mode')} is "
                            f"not one the game knows.", icon="ERROR")
         _raw_field(box, obj, "ls3d_projector_mode")
+
+        # A projector has no mesh, so its material has no slot and never shows
+        # up in Blender's Material tab. Same problem the lens flare has, same
+        # answer: edit it here, folded away until asked for.
+        if material is not None:
+            settings = box.box()
+            row = settings.row(align=True)
+            row.prop(obj, "ls3d_show_projector_material", text="",
+                     emboss=False,
+                     icon="TRIA_DOWN" if obj.ls3d_show_projector_material
+                          else "TRIA_RIGHT")
+            # Not the name - the picker one row up already carries it.
+            row.label(text="Material Settings", icon="MATERIAL")
+            if obj.ls3d_show_projector_material:
+                # The colors and the switches below belong to the material and
+                # reach anything it is put on - but a projector takes only the
+                # diffuse texture out of it. Said here because the panel
+                # otherwise offers a color that changes nothing.
+                say(settings,
+                    "A projector paints the diffuse texture and nothing else "
+                    "from this material: its colors and switches do not reach "
+                    "the paint. The color a projector is tinted with is its "
+                    "own, and the file has nowhere to keep it.",
+                    icon="INFO")
+                draw_material_body(settings, material)
 
         # The Visual Flags box sits directly below with a Projection on Diffuse
         # checkbox in it, which reads as this projector's and is not.
@@ -752,7 +773,10 @@ class The4DSObjectPanel(bpy.types.Panel):
         entry = obj.ls3d_glows[index] if 0 <= index < count else None
         if entry is not None:
             column = box.column(align=True)
-            column.template_ID(entry, "material", new="material.new")
+            picker = column.row(align=True)
+            picker.template_ID(entry, "material")
+            picker.operator("ls3d.create_material", icon="ADD",
+                            text="").target = "glow"
             sub_column = column.column()
             # A single-element flare is drawn at the object's own position, so
             # the offset has nothing to act on.
@@ -927,7 +951,9 @@ class The4DSMaterialPanel(bpy.types.Panel):
             column = row.column(align=True)
             column.operator("object.material_slot_add", icon="ADD", text="")
             column.operator("object.material_slot_remove", icon="REMOVE", text="")
-            layout.template_ID(obj, "active_material", new="material.new")
+            picker = layout.row(align=True)
+            picker.template_ID(obj, "active_material")
+            picker.operator("ls3d.create_material", icon="ADD", text="")
 
         layout.separator()
         layout.operator("ls3d.create_material", icon="MATERIAL")
@@ -1427,6 +1453,18 @@ class The4DSModelPanel(bpy.types.Panel):
         box.operator("ls3d.default_mesh_origin", icon="ARMATURE_DATA")
         box.operator("ls3d.weights_from_boxes", icon="MOD_VERTEX_WEIGHT")
         box.operator("ls3d.clear_weights", icon="X")
+
+        is_projector = module("4ds.viewport").is_projector
+        projectors = sum(1 for obj in scene.objects if is_projector(obj))
+        if projectors:
+            painted = layout.box()
+            painted.label(text="Projectors", icon="OUTLINER_OB_LIGHT")
+            painted.prop(scene, C.PROJECT_TEXTURES_PROP, toggle=True,
+                         icon="TEXTURE")
+            say(painted,
+                f"{projectors} projector(s). Painted onto what they cover, "
+                f"with the falloff and blend each one's mode asks for. "
+                f"Drawing only.")
         note = box.column()
         note.scale_y = 0.8
         if counted:

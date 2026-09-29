@@ -30,7 +30,8 @@
 - **Skinned characters** — the skeleton preset, influence boxes with draggable handles, weights painted by hand or made from the boxes
 - **Morph animations** — groups and targets in a panel of their own, regions worked out for you
 - **Level geometry** — sectors, portals and occluders, checked for the closed volumes the engine needs
-- **Special visuals** — billboards, mirrors with their view boxes, lens flares, projectors, lights, dummies and look-at targets
+- **Special visuals** — billboards, mirrors with their view boxes, lens flares, lights, dummies and look-at targets
+- **Projectors that project** — the texture painted onto whatever the volume covers, with the falloff and blend the mode asks for
 - **LODs** — the whole chain in one frame, by a naming rule and nothing else
 - **A color-coded viewport** — every frame type its own color, and the boxes and volumes Blender itself would never draw
 - **Checks that say what to do** — nothing exports silently broken; each refusal carries a suggested fix
@@ -48,7 +49,7 @@
 
 ## 🚀 Quick Start
 
-1. **Download** — grab `mafia-toolkit-1.0.1.zip` from [Releases](https://github.com/Richard01CZ/MafiaBlenderToolkit/releases/latest).
+1. **Download** — grab `mafia-toolkit-1.0.2.zip` from [Releases](https://github.com/Richard01CZ/MafiaBlenderToolkit/releases/latest).
 2. **Install** — in Blender, `Edit ▸ Preferences ▸ Add-ons ▸ Install from Disk…`, pick the zip, and switch **Mafia Toolkit** on.
 3. **Set the texture folder** — in the add-on preferences, point **Texture Folder** at your Mafia `maps` folder, or imports come in grey.
 4. **Import** — `File ▸ Import ▸ 4DS Mafia Model` — and you're in.

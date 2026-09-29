@@ -115,7 +115,7 @@ bl_info = {
     # a label put here would ride along in the add-on list. There is no
     # warning key either - Blender draws an alert icon beside the name for
     # one, and there is nothing to warn about.
-    "version": (1, 0, 1),
+    "version": (1, 0, 2),
     # What it has been proven on. The suite has never run against anything
     # older, so nothing older is claimed.
     "blender": (5, 2, 0),
@@ -706,6 +706,7 @@ def register():
     for cls in _CLASSES:
         bpy.utils.register_class(cls)
     properties.register_properties()
+    module("4ds.projection").register()
     viewport.register_handlers()
     for menu, entry in _menu_entries():
         _append_once(menu, entry)
@@ -721,6 +722,7 @@ def unregister():
         while entry in getattr(menu, "_dyn_ui_initialize", list)():
             menu.remove(entry)
     viewport.unregister_handlers()
+    module("4ds.projection").unregister()
     properties.unregister_properties()
     for cls in reversed(_CLASSES):
         bpy.utils.unregister_class(cls)

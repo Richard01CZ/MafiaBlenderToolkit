@@ -1030,27 +1030,58 @@ def sync_material_flags(mat):
     ops_texanim.on_flag_toggled(mat)
 
 
+def new_material(name="4ds_material"):
+    """A material set up the way the game reads one, ready to be pointed at.
+
+    Blender's own New button makes a material this addon knows nothing about:
+    no flags, and none of the graph that previews what the game draws. Every
+    place that offers to make one comes through here instead, so a material
+    made on a projector is the same thing as one made on a mesh.
+    """
+    material = bpy.data.materials.new(name=name)
+    material.ls3d_material_flags = (
+        C.MTL_DIFFUSE_ENABLE | C.MTL_DIFFUSE_MIPMAP | C.MTL_ENV_TILE_DEFAULT)
+    rebuild_material_nodes(material)
+    return material
+
+
 class LS3D_OT_CreateMaterial(bpy.types.Operator):
-    """Create a new 4DS material with the standard preview node graph"""
+    """Create a new 4DS material, set up the way the game reads one"""
 
     bl_idname = "ls3d.create_material"
     bl_label = "New 4DS Material"
     bl_options = {"REGISTER", "UNDO"}
 
+    #: Where the new material goes. Empty puts it in the mesh's next slot;
+    #: "projector" hands it to the projector on the object; "glow" hands it to
+    #: the lens flare element the list has picked.
+    target: bpy.props.StringProperty(default="", options={"HIDDEN"})
+
     @classmethod
     def poll(cls, context):
-        return context.object is not None and context.object.type == "MESH"
+        return context.object is not None
 
     def execute(self, context):
         obj = context.object
-        mat = bpy.data.materials.new(name="4ds_material")
-        mat.ls3d_material_flags = (
-            C.MTL_DIFFUSE_ENABLE | C.MTL_DIFFUSE_MIPMAP
-            | C.MTL_ENV_TILE_DEFAULT)
-        rebuild_material_nodes(mat)
-        obj.data.materials.append(mat)
-        obj.active_material_index = len(obj.data.materials) - 1
-        self.report({"INFO"}, f"Created '{mat.name}'")
+        if self.target == "projector":
+            obj.ls3d_projector_material = new_material()
+            made = obj.ls3d_projector_material
+        elif self.target == "glow":
+            index = obj.ls3d_glows_index
+            if not 0 <= index < len(obj.ls3d_glows):
+                self.report({"WARNING"}, "No lens flare element is picked.")
+                return {"CANCELLED"}
+            obj.ls3d_glows[index].material = new_material()
+            made = obj.ls3d_glows[index].material
+        else:
+            if obj.type != "MESH":
+                self.report({"WARNING"},
+                            "A material slot belongs to a mesh.")
+                return {"CANCELLED"}
+            made = new_material()
+            obj.data.materials.append(made)
+            obj.active_material_index = len(obj.data.materials) - 1
+        self.report({"INFO"}, f"Created '{made.name}'")
         return {"FINISHED"}
 
 
