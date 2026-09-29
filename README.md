@@ -152,7 +152,7 @@ with a `.blend` or a `.4ds` sample are the fastest to fix.
 **Richard01_CZ**
 
 Special thanks to *Asa, Oravin, kirill_mapper, FlashX, sadness_smile, huckleberrypie,
-jc* and *h0ns4* for research, testing and flag documentation.
+jc, h0ns4* and *Sevenisko* for research, testing and flag documentation.
 
 ## 📄 License
 
