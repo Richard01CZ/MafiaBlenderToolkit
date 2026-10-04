@@ -505,6 +505,110 @@ class LS3D_OT_AddLight(bpy.types.Operator):
         return {"FINISHED"}
 
 
+#: The slots a projector's material can keep an image in, and what each one
+#: is called where the panel shows it. A projector paints the picture the
+#: material builds, so any of them can be the one worth fitting to.
+PROJECTOR_IMAGE_SLOTS = (
+    ("ls3d_diffuse_tex", "Diffuse"),
+    ("ls3d_alpha_tex", "Transparency"),
+    ("ls3d_env_tex", "Environment"),
+)
+
+
+def projector_images(projector):
+    """``[(slot, label, image)]`` for every image a projector's material has."""
+    material = getattr(projector, "ls3d_projector_material", None)
+    if material is None:
+        return []
+    found = []
+    for slot, label in PROJECTOR_IMAGE_SLOTS:
+        image = getattr(material, slot, None)
+        if image is not None and image.size[0] and image.size[1]:
+            found.append((slot, label, image))
+    return found
+
+
+def _fit_items(self, context):
+    """The images the active projector's material carries, to choose from."""
+    obj = getattr(context, "object", None)
+    items = []
+    for slot, label, image in projector_images(obj) if obj else []:
+        items.append((slot, f"{label}: {image.name}",
+                      f"{image.size[0]} by {image.size[1]} pixels"))
+    return items or [("NONE", "No image", "The material carries none")]
+
+
+class LS3D_OT_FitProjectorToTexture(bpy.types.Operator):
+    """Set how wide the projector's volume is from the proportions of one of its material's pictures, so the picture is painted without being stretched. The volume keeps the height it has and the width follows from it; the reach along the projection axis is left alone. Only the frame's own scale is set, the way dragging it would be"""
+
+    bl_idname = "ls3d.fit_projector_to_texture"
+    bl_label = "Fit Size To Texture"
+    bl_options = {"REGISTER", "UNDO"}
+
+    texture: bpy.props.EnumProperty(
+        name="Picture", items=_fit_items,
+        description="Which of the material's pictures to take the "
+                    "proportions from")
+
+    @classmethod
+    def poll(cls, context):
+        from .viewport import is_projector
+        obj = getattr(context, "object", None)
+        if not is_projector(obj):
+            cls.poll_message_set("Select a projector.")
+            return False
+        if not getattr(obj, "ls3d_projector_material", None):
+            cls.poll_message_set("This projector names no material, so there "
+                                 "is no picture to measure.")
+            return False
+        if not projector_images(obj):
+            cls.poll_message_set("This projector's material carries no "
+                                 "picture to measure.")
+            return False
+        return True
+
+    def invoke(self, context, _event):
+        found = projector_images(context.object)
+        if len(found) == 1:
+            self.texture = found[0][0]
+            return self.execute(context)
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def execute(self, context):
+        obj = context.object
+        found = {slot: (label, image)
+                 for slot, label, image in projector_images(obj)}
+        chosen = found.get(self.texture)
+        if chosen is None:
+            self.report({"ERROR"},
+                        "That picture is not on this projector's material any "
+                        "more. Pick one that is.")
+            return {"CANCELLED"}
+        label, image = chosen
+        wide, tall = image.size[0], image.size[1]
+
+        # The picture goes across the volume: its width along the frame's own
+        # X and its height along Z, which is the way the paint is sampled. So
+        # the two have to stand in the picture's own proportions. The height
+        # is kept and the width follows, because keeping the height is the one
+        # that leaves a wall-mounted projector reaching as far down as it did.
+        held = obj.scale.z
+        if abs(held) < 1e-9:
+            self.report({"ERROR"},
+                        f"'{obj.name}' is scaled to nothing across its "
+                        f"volume, so there is no height to measure the width "
+                        f"against. Give it a size first, then fit it.")
+            return {"CANCELLED"}
+        was = obj.scale.x
+        obj.scale.x = held * (wide / tall)
+        context.view_layer.update()
+        self.report({"INFO"},
+                    f"'{obj.name}' is {wide} by {tall} across now, from "
+                    f"{label.lower()} '{image.name}': its width went from "
+                    f"{was:.4g} to {obj.scale.x:.4g}, keeping the height at "
+                    f"{held:.4g}. The reach is untouched.")
+        return {"FINISHED"}
+
 def fit_view_box(mirror):
     """Set *mirror*'s view box to a cube standing in front of its surface."""
     reach = _view_box_reach(mirror)
@@ -713,7 +817,28 @@ class LS3D_OT_WeightsFromBoxes(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(_box_weighted_rigs(context))
+        from .joint_space import is_posed
+        rigs = _box_weighted_rigs(context)
+        if not rigs:
+            return False
+        # Weights on a skeleton that is still posed cannot look right, however
+        # they are worked out: Blender's armature deform moves a vertex by the
+        # step from where its joint rests to where it is posed, so the mesh is
+        # pulled about by that step the moment anything is weighted. The boxes
+        # are worked out from where the joints rest as well, so they are
+        # measured in the wrong place on top of it. Both go away once the pose
+        # is the rest, so it is said here rather than after the damage.
+        posed = [armature.name for armature, _skin in rigs
+                 if is_posed(armature)]
+        if posed:
+            cls.poll_message_set(
+                "'%s' is posed, so weights made now would pull the mesh out "
+                "of shape by however far each joint was moved. Press Set Rest "
+                "From Pose first, above - or, if that is an animation rather "
+                "than a skeleton being fitted, go to a frame where nothing is "
+                "posed, or use Unload Animation." % posed[0])
+            return False
+        return True
 
     def execute(self, context):
         done, refused, idle = [], [], []
@@ -793,6 +918,183 @@ class LS3D_OT_ClearWeights(bpy.types.Operator):
                               f"{emptied} vertex group(s) in all. A joint with "
                               f"no weights is weighted from its influence box.")
         return {"FINISHED"}
+
+
+class LS3D_OT_RestFromPose(bpy.types.Operator):
+    """Make the pose the skeleton: every joint moved in Pose Mode becomes where that joint rests. A skeleton fitted to a character by posing it has to be told so before the mesh is weighted - until it is, the weights pull the mesh by the distance from each joint's resting place to where it was posed, and the influence boxes sit at the resting places rather than at the joints. Changes nothing a file keeps: a posed skeleton is already written as it is posed"""
+
+    bl_idname = "ls3d.rest_from_pose"
+    bl_label = "Set Rest From Pose"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        from .joint_space import is_posed
+        armature = character_armature(context)
+        if armature is None:
+            cls.poll_message_set("Select the skeleton, or the mesh bound to "
+                                 "it.")
+            return False
+        if context.mode not in ("OBJECT", "POSE"):
+            cls.poll_message_set("Go back to Object Mode or Pose Mode first.")
+            return False
+        if not armature.data.bones:
+            cls.poll_message_set("This skeleton has no joints.")
+            return False
+        if not is_posed(armature):
+            cls.poll_message_set("Nothing is posed: every joint already rests "
+                                 "where it stands.")
+            return False
+        return True
+
+    def execute(self, context):
+        from .joint_space import is_posed, settle_bones
+        from ..packages import module
+        armature = character_armature(context)
+        # Where a bone is posed is worked-out data, stale until the scene is
+        # brought up to date.
+        context.view_layer.update()
+        posed = sum(1 for bone in armature.pose.bones
+                    if not _at_rest_pose(bone))
+        aimed = sum(1 for bone in armature.pose.bones if bone.constraints)
+
+        previous_active = context.view_layer.objects.active
+        previous_mode = armature.mode
+        context.view_layer.objects.active = armature
+        # Only what somebody put there becomes the rest. A joint aimed at a
+        # target is moved by its link, not by anybody posing it - the add-on
+        # has never counted that as a pose, and Blender's own Apply Pose as
+        # Rest Pose would bake it in, which would turn the joint for good and
+        # leave the link aiming from somewhere new. Held off while the pose is
+        # taken, and put back after, so the link goes on working from where
+        # the joint now rests.
+        held = [(constraint, constraint.mute)
+                for bone in armature.pose.bones
+                for constraint in bone.constraints]
+        for constraint, _was in held:
+            constraint.mute = True
+        context.view_layer.update()
+        try:
+            bpy.ops.object.mode_set(mode="POSE")
+            bpy.ops.pose.armature_apply(selected=False)
+        except RuntimeError as problem:
+            self.report({"ERROR"},
+                        f"'{armature.name}' could not be told that its pose is "
+                        f"where its joints rest: {problem}. Make sure the "
+                        f"skeleton is visible and can be edited, then try "
+                        f"again.")
+            return {"CANCELLED"}
+        finally:
+            try:
+                bpy.ops.object.mode_set(
+                    mode="POSE" if previous_mode == "POSE" else "OBJECT")
+            except RuntimeError:
+                pass
+            for constraint, was in held:
+                constraint.mute = was
+            context.view_layer.objects.active = previous_active
+
+        # A bone is 32-bit, and a pose made the rest can land a rounding step
+        # from where the values the export writes would put it. Settled, so the
+        # next import rebuilds the same skeleton.
+        settled = settle_bones(armature)
+
+        # The joints' spaces are worked out from where they rest, so every one
+        # of them has just changed.
+        module("4ds.viewport").forget_joint_spaces()
+        context.view_layer.update()
+
+        still = is_posed(armature)
+        self.report(
+            {"INFO"},
+            f"{posed} joint(s) of '{armature.name}' now rest where they were "
+            f"posed"
+            + (f"; {settled} settled onto the values an export writes"
+               if settled else "")
+            + (f"; {aimed} aimed at a target, left aiming"
+               if aimed else "")
+            + (". Something is still posed, so it was not all of them."
+               if still else ". The mesh can be weighted now."))
+        return {"FINISHED"}
+
+
+def _at_rest_pose(pose_bone):
+    """True while *pose_bone* is where it rests, to the tolerance we use."""
+    from .joint_space import POSE_TOLERANCE
+    from mathutils import Matrix as _Matrix
+    rest = _Matrix.Identity(4)
+    return max(abs(a - b)
+               for row, rest_row in zip(pose_bone.matrix_basis, rest)
+               for a, b in zip(row, rest_row)) <= POSE_TOLERANCE
+
+
+class LS3D_OT_FixWeights(bpy.types.Operator):
+    """Put the selected meshes' weights under the three rules the game plays them by: at most two influences on a vertex, those two a joint and its own parent, and the two totalling one. Done in that order, because each step changes what the next has to work with. The joints keep what is painted on them and the mesh frame's share becomes whatever they leave; only where the joints alone come to more than one are they brought down"""
+
+    bl_idname = "ls3d.fix_weights"
+    bl_label = "Fix Weights"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if context.mode == "EDIT_MESH":
+            cls.poll_message_set("Leave Edit Mode first: the weights are set "
+                                 "on the mesh itself.")
+            return False
+        if not _weights_to_fix(context):
+            cls.poll_message_set("Select a skinned mesh with weights on it.")
+            return False
+        return True
+
+    def execute(self, context):
+        from .validation import repair_skin_weights
+        done = {"influences": 0, "pairs": 0, "totals": 0}
+        touched = 0
+        stopped = []
+        for obj, armature in _weights_to_fix(context):
+            counts, why_not = repair_skin_weights(obj, armature)
+            if why_not:
+                stopped.append(why_not)
+                continue
+            if any(counts.values()):
+                touched += 1
+            for step, count in counts.items():
+                done[step] += count
+        if stopped:
+            self.report({"ERROR"}, " ".join(stopped))
+            return {"CANCELLED"}
+        if not any(done.values()):
+            self.report({"INFO"},
+                        "Nothing to put right: every vertex is already under "
+                        "all three rules.")
+            return {"CANCELLED"}
+        said = []
+        if done["influences"]:
+            said.append(f"cut {done['influences']} vertex/vertices to their "
+                        f"two strongest")
+        if done["pairs"]:
+            said.append(f"resolved {done['pairs']} weighted to joints that "
+                        f"are not a pair")
+        if done["totals"]:
+            said.append(f"settled {done['totals']} so their weights total one")
+        self.report({"INFO"},
+                    f"Across {touched} mesh(es): " + ", ".join(said) + ".")
+        return {"FINISHED"}
+
+
+def _weights_to_fix(context):
+    """``(mesh, armature)`` for every selected skinned mesh carrying weights."""
+    found = []
+    for obj in getattr(context, "selected_objects", ()):
+        if obj.type != "MESH" or obj.data is None or not obj.vertex_groups:
+            continue
+        armature = find_armature(obj)
+        if armature is None:
+            continue
+        bones = set(armature.data.bones.keys())
+        if any(group.name in bones for group in obj.vertex_groups):
+            found.append((obj, armature))
+    return found
 
 
 def _weighted_meshes(context):
@@ -1215,10 +1517,12 @@ CLASSES = (LS3D_OT_AddSector, LS3D_OT_AddPortal, LS3D_OT_AddOccluder,
            LS3D_OT_AddDummy, LS3D_OT_AddTarget, LS3D_OT_AddJoint,
            LS3D_OT_AddInfluenceBox, LS3D_OT_AddInfluenceBoxes,
            LS3D_OT_RemoveInfluenceBox, LS3D_OT_WeightsFromBoxes,
-           LS3D_OT_ClearWeights,
+           LS3D_OT_ClearWeights, LS3D_OT_FixWeights,
            LS3D_OT_FitInfluenceBox,
            LS3D_OT_AddCharacterSkeleton, LS3D_OT_DefaultMeshOrigin,
+           LS3D_OT_RestFromPose,
            LS3D_OT_AddSunFlare,
            LS3D_OT_AddLensFlare, LS3D_OT_FitViewBox, LS3D_OT_AddMirror,
+           LS3D_OT_FitProjectorToTexture,
            LS3D_OT_AddBillboard, LS3D_OT_AddProjector, LS3D_OT_AddLight,
            LS3D_MT_AddMenu)

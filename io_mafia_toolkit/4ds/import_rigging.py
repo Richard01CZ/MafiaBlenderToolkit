@@ -15,7 +15,7 @@ from .import_util import joint_display
 from . import joint_math
 from . import influence
 from .joint_space import (JointSpace, edit_rest, set_mesh_frame,
-                          skinned_mesh_of)
+                          settle_bones, skinned_mesh_of)
 from .ops_morph import MORPH_VERTEX_GROUP_PREFIX
 
 
@@ -279,30 +279,7 @@ class RiggingMixin:
             self._settle(armature)
 
     def _settle(self, armature):
-        skin = skinned_mesh_of(armature, list(bpy.context.scene.objects))
-        for _pass in range(4):
-            rest = edit_rest(armature)
-            if rest is None:
-                return
-            space = JointSpace(armature, skin, rest)
-            moved = {}
-            for bone in space.joints():
-                head, tail, roll = joint_math.bone_rest(space.frames[bone.name])
-                placed = (tuple(head), tuple(tail), roll)
-                if placed != rest[bone.name]:
-                    moved[bone.name] = placed
-            if not moved:
-                return
-            previous_active = bpy.context.view_layer.objects.active
-            bpy.context.view_layer.objects.active = armature
-            try:
-                bpy.ops.object.mode_set(mode="EDIT")
-                for name, (head, tail, roll) in moved.items():
-                    bone = armature.data.edit_bones[name]
-                    bone.head, bone.tail, bone.roll = head, tail, roll
-            finally:
-                bpy.ops.object.mode_set(mode="OBJECT")
-                bpy.context.view_layer.objects.active = previous_active
+        settle_bones(armature)
 
     def _build_influence_boxes(self):
         """Give every joint its influence box: its own sixteen numbers.

@@ -155,6 +155,50 @@ def _joint_display_scale_changed(self, _context):
     redraw_3d_views()
 
 
+def _show_sector_faces(self, _context):
+    """Put every sector and portal back the way the toggles now ask for.
+
+    Unlike the boxes, which are drawn by a handler, a sector and a portal are
+    shown through the object's own display settings - so each one has to be
+    set again rather than merely redrawn.
+    """
+    update_viewport_display = module("4ds.viewport").update_viewport_display
+    # Asked of every object rather than sorted here first: a frame type is a
+    # registered property and not one of the object's own extra values, so
+    # ``obj.get`` does not see it at all, and the call already leaves alone
+    # anything that is not a sector.
+    for obj in bpy.data.objects:
+        try:
+            update_viewport_display(obj)
+        except (AttributeError, ReferenceError):
+            pass
+    scene = getattr(bpy.context, "scene", None)
+    if scene is not None and (getattr(scene, C.SOLID_SECTORS_PROP, False)
+                              or getattr(scene, C.SOLID_PORTALS_PROP, False)):
+        _color_by_object()
+    redraw_3d_views()
+
+
+def _color_by_object():
+    """Ask the viewports to color an object by its own color.
+
+    A sector is kept cyan and a portal purple, on the object itself - and a
+    viewport colors by material until it is told otherwise, so neither color
+    has ever been visible. Set here rather than left to be found, because a
+    filled sector that is not its own color is the same gray as everything
+    else. Left as it is afterwards: turning the faces off again is no reason
+    to undo something somebody may have wanted.
+    """
+    for window in getattr(bpy.context.window_manager, "windows", ()):
+        for area in window.screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            for space in area.spaces:
+                shading = getattr(space, "shading", None)
+                if shading is not None and shading.color_type != "OBJECT":
+                    shading.color_type = "OBJECT"
+
+
 def _show_influence_boxes(self, _context):
     """Show or hide the joints' influence boxes.
 
@@ -460,17 +504,103 @@ def _register_scene_properties():
                     "changes - nothing that is written",
         update=_show_influence_boxes))
 
-    setattr(bpy.types.Scene, C.INFLUENCE_HANDLES_PROP, EnumProperty(
-        name="Handles", default="ALL",
-        items=(
-            ("ALL", "All", "The faces, the arrows and the rings together"),
-            ("SIZE", "Resize", "Only the six handles on the box's faces"),
-            ("MOVE", "Move", "Only the three arrows that slide the box"),
-            ("TURN", "Turn", "Only the three rings that turn the box"),
-        ),
-        description="Which handles the joint being posed carries. One kind at "
-                    "a time is easier to hit on a small box",
-        update=_show_influence_boxes))
+    # Filled rather than outlined, a kind at a time: twelve edges read well on
+    # a crowded skeleton and badly when the shape itself is what is wanted.
+    for _prop, _what in ((C.SOLID_INFLUENCE_BOXES_PROP,
+                          "the joints' influence boxes"),
+                         (C.SOLID_MIRROR_BOX_PROP, "the mirrors' view boxes"),
+                         (C.SOLID_DUMMY_BOXES_PROP, "the dummy boxes"),
+                         (C.SOLID_PROJECTOR_VOLUMES_PROP,
+                          "the projectors' volumes"),
+                         (C.SOLID_LIGHTS_PROP,
+                          "the lights' ranges and cones")):
+        setattr(bpy.types.Scene, _prop, BoolProperty(
+            name="Solid", default=False,
+            description=(f"Draw {_what} as filled faces rather than as "
+                         f"outlines, which shows the shape itself. Only the "
+                         f"drawing changes - nothing that is written"),
+            update=_viewport_changed))
+
+    setattr(bpy.types.Scene, C.SHOW_JOINT_LINES_PROP, BoolProperty(
+        name="Skeleton", default=True,
+        description="Draw the skeleton: a line from each joint to the one it "
+                    "hangs from, and a dot on each joint's own middle. They "
+                    "are only there to be seen - hiding them changes nothing "
+                    "that is written",
+        update=_viewport_changed))
+
+    setattr(bpy.types.Scene, C.DUMMY_BOXES_IN_FRONT_PROP, BoolProperty(
+        name="In Front", default=False,
+        description="Draw the dummy boxes over everything, so a box inside "
+                    "the model can be seen whole. Only the drawing changes - "
+                    "nothing that is written",
+        update=_viewport_changed))
+
+    for _prop, _what in ((C.SOLID_SECTORS_PROP, "sectors"),
+                         (C.SOLID_PORTALS_PROP, "portals")):
+        setattr(bpy.types.Scene, _prop, BoolProperty(
+            name="Solid", default=False,
+            description=(f"Show the {_what}' own faces rather than their "
+                         f"wires. Their colors are shown by setting the "
+                         f"viewport to color objects by object, which is what "
+                         f"a sector's cyan and a portal's purple are kept on. "
+                         f"Only the drawing changes - nothing that is written"),
+            update=_show_sector_faces))
+
+    for _prop, _what in ((C.SECTORS_IN_FRONT_PROP, "sectors"),
+                         (C.PORTALS_IN_FRONT_PROP, "portals")):
+        setattr(bpy.types.Scene, _prop, BoolProperty(
+            name="In Front", default=False,
+            description=(f"Draw the {_what} over everything that stands in "
+                         f"front of them. A filled portal does not need this "
+                         f"to beat the wall it lies on - it is lifted clear "
+                         f"of it already. Only the drawing changes - nothing "
+                         f"that is written"),
+            update=_show_sector_faces))
+
+    setattr(bpy.types.Scene, C.JOINT_LINES_IN_FRONT_PROP, BoolProperty(
+        name="Joint Links In Front", default=False,
+        description="Draw the lines joining each joint to the one it hangs "
+                    "from over everything, so the skeleton can be followed "
+                    "through the mesh it moves. Only the drawing changes - "
+                    "nothing that is written",
+        update=_viewport_changed))
+
+    setattr(bpy.types.Scene, C.SHOW_MIRROR_REFLECTS_PROP, BoolProperty(
+        name="What It Reflects", default=False,
+        description="Outline what each mirror would reflect in game, by the "
+                    "same two tests the game makes: a reach against the view "
+                    "box, then the object's own bound against the box along "
+                    "every axis. Only the drawing changes - nothing that is "
+                    "written",
+        update=_viewport_changed))
+
+    setattr(bpy.types.Scene, C.MIRROR_BOX_IN_FRONT_PROP, BoolProperty(
+        name="View Box In Front", default=False,
+        description="Draw a mirror's view box over everything, so the box can "
+                    "be seen whole from outside the room it reaches into. "
+                    "Only the drawing changes - nothing that is written",
+        update=_viewport_changed))
+
+    # One toggle a kind rather than one choice between them, so any
+    # combination can be had - the arrows and the rings without the face
+    # handles was not a state a single choice could hold. Every one of them
+    # moves the joint's influence box; the joint itself is moved with
+    # Blender's own shortcuts.
+    for _prop, _label, _what in (
+            (C.INFLUENCE_RESIZE_HANDLES_PROP, "Resize",
+             "the six handles on the box's faces, which resize it"),
+            (C.INFLUENCE_MOVE_HANDLES_PROP, "Move",
+             "the three arrows that slide the box"),
+            (C.INFLUENCE_TURN_HANDLES_PROP, "Turn",
+             "the three rings that turn the box")):
+        setattr(bpy.types.Scene, _prop, BoolProperty(
+            name=_label, default=True,
+            description=(f"Show {_what}. They move the box, not the joint - "
+                         f"a joint is moved with Blender's own shortcuts. On a "
+                         f"box a few centimeters across, fewer handles are "
+                         f"easier to hit"),
+            update=_show_influence_boxes))
 
     setattr(bpy.types.Scene, C.PROJECT_TEXTURES_PROP, BoolProperty(
         name="Project Textures", default=True,
@@ -503,13 +633,39 @@ def _register_frame_properties():
                 "4ds.validation").face_sector_normals_inward
             face_sector_normals_inward(self)
         update_viewport_display(self)
+        # A sector-typed mesh is a portal by virtue of the sector it hangs
+        # off, so this object's own type decides what its children are too.
+        for child in self.children:
+            update_viewport_display(child)
+
+    def _on_visual_type_changed(self, context):
+        """Draw it again, and give a new mirror a view box it can use.
+
+        A mirror's view box is three axes and a center, and they start at
+        nothing - which is not a box anybody can work with: it is not drawn,
+        its six handles all land on the object's origin, and dragging one
+        moves nothing, because an axis with no length has no direction to be
+        moved along. So a mesh made a mirror is given the same box Add 4DS
+        Mirror gives one, which can then be dragged or typed over. A box that
+        already has a size is left exactly as it is, which is what keeps an
+        imported mirror's own numbers: the import sets the type first and the
+        box after it.
+        """
+        update_viewport_display(self)
+        viewport = module("4ds.viewport")
+        if not viewport.is_mirror(self):
+            return
+        _center, axes = viewport.mirror_view_box(self)
+        if any(axis.length for axis in axes):
+            return
+        module("4ds.ops_create").fit_view_box(self)
 
     obj.ls3d_frame_type = EnumProperty(
         name="Frame Type", items=frame_type_items, default=0,
         update=_on_frame_type_changed)
     obj.visual_type = EnumProperty(
         name="Visual Type", items=visual_type_items, default=0,
-        update=lambda self, ctx: update_viewport_display(self))
+        update=_on_visual_type_changed)
 
     # The file stores the SQUARE of the switch distance - it is compared
     # against a squared camera distance, with no square root taken. The values
@@ -1325,7 +1481,22 @@ _OWNED = {
     bpy.types.Scene: ["ls3d_animated_object_count",
                       C.SHOW_INFLUENCE_BOXES_PROP,
                       C.INFLUENCE_BOXES_IN_FRONT_PROP,
-                      C.INFLUENCE_HANDLES_PROP, C.JOINT_DISPLAY_SCALE_PROP,
+                      C.MIRROR_BOX_IN_FRONT_PROP,
+                      C.SHOW_MIRROR_REFLECTS_PROP,
+                      C.JOINT_LINES_IN_FRONT_PROP,
+                      C.SHOW_JOINT_LINES_PROP,
+                      C.SOLID_INFLUENCE_BOXES_PROP,
+                      C.SOLID_MIRROR_BOX_PROP,
+                      C.SOLID_DUMMY_BOXES_PROP,
+                      C.SOLID_PROJECTOR_VOLUMES_PROP,
+                      C.SOLID_LIGHTS_PROP,
+                      C.SOLID_SECTORS_PROP, C.SOLID_PORTALS_PROP,
+                      C.SECTORS_IN_FRONT_PROP, C.PORTALS_IN_FRONT_PROP,
+                      C.DUMMY_BOXES_IN_FRONT_PROP,
+                      C.INFLUENCE_RESIZE_HANDLES_PROP,
+                      C.INFLUENCE_MOVE_HANDLES_PROP,
+                      C.INFLUENCE_TURN_HANDLES_PROP,
+                      C.JOINT_DISPLAY_SCALE_PROP,
                       "ls3d_motion_period", "ls3d_action_index",
                       "ls3d_action_show_all", "ls3d_targets_ignored",
                       "ls3d_shadow_timestamp",

@@ -40,92 +40,112 @@ MESH_FRAME_DRIFT = 0.1
 CHARACTER_JOINTS = ("back1", "l_thigh", "r_thigh")
 
 
-def validate_skin_weights(obj, report, on_error,
-                          fix_multi_influences=False,
-                          fix_non_parent_child=False):
-    """Check (and optionally repair) the bone weights on a skinned mesh.
+#: What to do about any of the three weight rules, in one place: one button
+#: puts all three right, in the one order that works.
+FIX_WEIGHTS_FIX = (
+    "Press Fix Weights in the 4DS Model tab, which puts all three weight "
+    "rules right at once - it cuts a vertex to its two strongest influences, "
+    "resolves a pair that is not a joint and its own parent to the stronger "
+    "of the two, and makes the weights total one by giving the mesh frame's "
+    "share whatever the joints leave. Blender's own Normalize All cannot do "
+    "the last of those: the share is not a joint, so it does not count it.")
 
-    ``on_error(message, fix)`` is called for each violation that could not be
-    corrected; the caller decides whether that blocks the export.
 
-    Auto-fixes rewrite the object's vertex groups in place, so they must run
-    before the mesh is evaluated for export.
+class _WeightSetting:
+    """How one mesh's weights are laid out, for the rules and the repairs.
+
+    Both read the same thing, so it is read in one place: a rule that moved
+    and a repair that did not would be worse than either on its own.
+    """
+
+    __slots__ = ("armature", "share", "share_name", "share_index", "inverted",
+                 "mesh_frame", "parent_of", "bone_names", "group_name",
+                 "group_index")
+
+    def __init__(self, obj, armature):
+        self.armature = armature
+        # The mesh frame's own share counts as an influence too. The joints at
+        # the top of the skeleton hang from it, and a vertex blended between
+        # one of them and the mesh frame is exactly what the format's blend
+        # against its parent stores. Blender shows that share through the
+        # Armature modifier's Vertex Group, so that is where it is read from.
+        held = share_group(obj, armature)
+        self.share = held[0] if held is not None else None
+        self.share_name = held[0].name if held is not None else None
+        self.share_index = held[0].index if held is not None else None
+        self.inverted = held[1] if held is not None else True
+        self.mesh_frame = ({self.share_name} if self.share_name is not None
+                           else set())
+        # Every joint at the top of the skeleton hangs from the mesh frame.
+        self.parent_of = {b.name: (b.parent.name if b.parent
+                                   else self.share_name)
+                          for b in armature.data.bones}
+        self.bone_names = set(self.parent_of)
+        self.group_name = {vg.index: vg.name for vg in obj.vertex_groups}
+        # A share read the other way round - Invert off - cannot be set by
+        # weight directly, so the repairs leave it alone.
+        self.group_index = {vg.name: vg.index for vg in obj.vertex_groups
+                            if vg.index != self.share_index or self.inverted}
+
+    def influences_of(self, vertex):
+        """What is on one vertex: its joints, and the mesh frame's share."""
+        found = [(self.group_name[entry.group], entry.weight)
+                 for entry in vertex.groups
+                 if self.group_name.get(entry.group) in self.bone_names
+                 and entry.weight > EPSILON]
+        if not found:
+            return found        # the engine binds it to the mesh frame
+        if self.share_index is not None:
+            weight = next((entry.weight for entry in vertex.groups
+                           if entry.group == self.share_index), 0.0)
+            share = weight if self.inverted else 1.0 - weight
+            if share > EPSILON:
+                found.append((self.share_name, share))
+        return found
+
+
+def validate_skin_weights(obj, report, on_error):
+    """Check the bone weights on a skinned mesh, and only check them.
+
+    ``on_error(message, fix)`` is called for each violation; the caller
+    decides whether that blocks the export. Nothing here changes the mesh:
+    putting the weights right is :func:`repair_skin_weights`' job, run from
+    the panel, in the scene, where it can be seen and undone.
     """
     armature = find_armature(obj)
     if armature is None:
         return
 
-    # The mesh frame's own share counts as an influence too. The joints at the
-    # top of the skeleton hang from it, and a vertex blended between one of
-    # them and the mesh frame is exactly what the format's blend against its
-    # parent stores. Blender shows that share through the Armature modifier's
-    # Vertex Group, so that is where it is read from.
-    held = share_group(obj, armature)
-    share_name = held[0].name if held is not None else None
-    share_index = held[0].index if held is not None else None
-    inverted = held[1] if held is not None else True
-    mesh_frame = {share_name} if share_name is not None else set()
-    # Every joint at the top of the skeleton hangs from the mesh frame.
-    parent_of = {b.name: (b.parent.name if b.parent else share_name)
-                 for b in armature.data.bones}
-    bone_names = set(parent_of)
-
-    group_name = {vg.index: vg.name for vg in obj.vertex_groups}
-    # A share read the other way round - Invert off - cannot be set by weight
-    # directly, so the repairs leave it alone.
-    group_index = {vg.name: vg.index for vg in obj.vertex_groups
-                   if vg.index != share_index or inverted}
-
-    repaired_multi = 0
-    repaired_pair = 0
+    setting = _WeightSetting(obj, armature)
+    mesh_frame = setting.mesh_frame
+    parent_of = setting.parent_of
 
     for vertex_index, vertex in enumerate(obj.data.vertices):
-        influences = [
-            (group_name[entry.group], entry.weight)
-            for entry in vertex.groups
-            if group_name.get(entry.group) in bone_names and entry.weight > EPSILON
-        ]
+        influences = setting.influences_of(vertex)
         if not influences:
             continue        # unweighted: the engine binds it to the mesh frame
-        if share_index is not None:
-            weight = next((entry.weight for entry in vertex.groups
-                           if entry.group == share_index), 0.0)
-            share = weight if inverted else 1.0 - weight
-            if share > EPSILON:
-                influences.append((share_name, share))
 
         # ── at most two influences ────────────────────────────────────────────
         if len(influences) > MAX_INFLUENCES:
-            if not fix_multi_influences:
-                listing = ", ".join(f"'{n}' ({w:.4f})" for n, w in influences)
-                on_error(
-                    f"'{obj.name}', vertex {vertex_index}: {len(influences)} joint "
-                    f"influences, but the format allows {MAX_INFLUENCES}: {listing}.",
-                    "Enable 'Auto-fix >2 Joint Influences' in the addon "
-                    "preferences, or limit each vertex to two joints.")
-                continue
-            influences = _keep_strongest(obj, vertex_index, influences,
-                                         group_index, MAX_INFLUENCES)
-            repaired_multi += 1
+            listing = ", ".join(f"'{n}' ({w:.4f})" for n, w in influences)
+            on_error(
+                f"'{obj.name}', vertex {vertex_index}: {len(influences)} joint "
+                f"influences, but the format allows {MAX_INFLUENCES}: {listing}.",
+                FIX_WEIGHTS_FIX)
+            continue
 
         # ── a pair must be parent and child ───────────────────────────────────
         if len(influences) == MAX_INFLUENCES:
-            (name_a, weight_a), (name_b, weight_b) = influences
+            (name_a, _weight_a), (name_b, _weight_b) = influences
             related = (parent_of.get(name_a) == name_b
                        or parent_of.get(name_b) == name_a)
             if not related:
-                if not fix_non_parent_child:
-                    on_error(
-                        f"'{obj.name}', vertex {vertex_index}: weighted to "
-                        f"'{name_a}' and '{name_b}', which are not a direct "
-                        f"parent-child pair.",
-                        "Enable 'Auto-fix Non-Parent-Child Weights' in the addon "
-                        "preferences, or re-weight to a parent-child joint pair.")
-                    continue
-                keep = name_a if weight_a >= weight_b else name_b
-                influences = _keep_only(obj, vertex_index, influences,
-                                        group_index, keep)
-                repaired_pair += 1
+                on_error(
+                    f"'{obj.name}', vertex {vertex_index}: weighted to "
+                    f"'{name_a}' and '{name_b}', which are not a direct "
+                    f"parent-child pair.",
+                    FIX_WEIGHTS_FIX)
+                continue
 
         # ── weights must total 1.0 ────────────────────────────────────────────
         total = sum(weight for _, weight in influences)
@@ -146,10 +166,7 @@ def validate_skin_weights(obj, report, on_error,
                 f"{total:.6f}, not 1.0. Influences: {listing}. Blender scales "
                 f"them to add up; the game uses them as they are, and gives "
                 f"whatever is missing to the joint's parent.",
-                "In Weight Paint mode, use Weights > Limit Total set to 2, "
-                "then Weights > Normalize All. A vertex shared with the mesh "
-                "keeps the mesh's share in the vertex group the Armature "
-                "modifier names, with Invert on.")
+                FIX_WEIGHTS_FIX)
             continue
 
         if total < EPSILON:
@@ -157,12 +174,98 @@ def validate_skin_weights(obj, report, on_error,
                 f"'{obj.name}', vertex {vertex_index}: joint weights total zero; "
                 f"it will bind to the mesh frame.")
 
-    if repaired_multi:
-        report.warn(f"'{obj.name}': reduced {repaired_multi} vertex/vertices to "
-                    f"their {MAX_INFLUENCES} strongest joint influences.")
-    if repaired_pair:
-        report.warn(f"'{obj.name}': resolved {repaired_pair} vertex/vertices "
-                    f"weighted to unrelated joints by keeping the stronger one.")
+
+
+#: Below this a total counts as one, matching the rule's own reading, so what
+#: the repair leaves behind is what the check accepts.
+TOTAL_TOLERANCE = 1e-6
+
+
+def repair_skin_weights(obj, armature):
+    """Put *obj*'s weights under the three rules the game plays them by.
+
+    In the one order that works, because each step changes what the next has
+    to work with: a vertex is cut to its two strongest influences, then a pair
+    that is not a joint and its own parent is resolved to the stronger of the
+    two, and the totals are settled last. Settling the totals first would be
+    undone by either of the others, which is why this is one job and not
+    three buttons.
+
+    The joints keep what is painted on them wherever they can: the mesh
+    frame's share becomes whatever they leave. Only where the joints alone
+    come to more than one are they brought down, because then there is nothing
+    for the share to be.
+
+    ``(counts, what stopped it)`` - counts being how many vertices each step
+    had to change.
+    """
+    counts = {"influences": 0, "pairs": 0, "totals": 0}
+    setting = _WeightSetting(obj, armature)
+    if setting.share is not None and not setting.inverted:
+        return counts, (
+            f"'{obj.name}' holds its share of the mesh the other way round - "
+            f"the Armature modifier's Invert is off - and a weight cannot be "
+            f"set that way. Turn Invert on, which is how a share is normally "
+            f"kept, then try again.")
+
+    groups = obj.vertex_groups
+    for vertex_index, vertex in enumerate(obj.data.vertices):
+        influences = setting.influences_of(vertex)
+        if not influences:
+            continue        # nothing on it: the game binds it to the mesh frame
+
+        if len(influences) > MAX_INFLUENCES:
+            influences = _keep_strongest(obj, vertex_index, influences,
+                                         setting.group_index, MAX_INFLUENCES)
+            counts["influences"] += 1
+
+        if len(influences) == MAX_INFLUENCES:
+            (name_a, weight_a), (name_b, weight_b) = influences
+            related = (setting.parent_of.get(name_a) == name_b
+                       or setting.parent_of.get(name_b) == name_a)
+            if not related:
+                keep = name_a if weight_a >= weight_b else name_b
+                influences = _keep_only(obj, vertex_index, influences,
+                                        setting.group_index, keep)
+                counts["pairs"] += 1
+
+        # ── and the weights have to total one ──────────────────────────
+        on_joints = {name: weight for name, weight in influences
+                     if name not in setting.mesh_frame}
+        held_now = next((weight for name, weight in influences
+                         if name in setting.mesh_frame), 0.0)
+        if not on_joints:
+            continue        # the mesh frame's alone, which is whole
+        total = sum(on_joints.values())
+
+        if total > 1.0 + TOTAL_TOLERANCE:
+            # Nothing left for the mesh frame, so the joints come down.
+            for name, weight in on_joints.items():
+                index = setting.group_index.get(name)
+                if index is not None:
+                    groups[index].add([vertex_index], weight / total, "REPLACE")
+            if setting.share is not None and held_now > EPSILON:
+                setting.share.add([vertex_index], 0.0, "REPLACE")
+            counts["totals"] += 1
+            continue
+
+        want = 1.0 - total
+        if setting.share is None:
+            if want > TOTAL_TOLERANCE:
+                # No share to put the rest in, so the joints take all of it.
+                for name, weight in on_joints.items():
+                    index = setting.group_index.get(name)
+                    if index is not None:
+                        groups[index].add([vertex_index], weight / total,
+                                          "REPLACE")
+                counts["totals"] += 1
+            continue
+        if abs(held_now - want) > TOTAL_TOLERANCE:
+            setting.share.add([vertex_index], want, "REPLACE")
+            counts["totals"] += 1
+
+    obj.data.update()
+    return counts, ""
 
 
 def _keep_strongest(obj, vertex_index, influences, group_index, keep_count):

@@ -115,7 +115,7 @@ bl_info = {
     # a label put here would ride along in the add-on list. There is no
     # warning key either - Blender draws an alert icon beside the name for
     # one, and there is nothing to warn about.
-    "version": (1, 0, 2),
+    "version": (1, 1, 0),
     # What it has been proven on. The suite has never run against anything
     # older, so nothing older is claimed.
     "blender": (5, 2, 0),
@@ -400,20 +400,6 @@ class Export4DS(bpy.types.Operator, ExportHelper):
                      "you know the rest of the model is already in the file"),
         default=False)
 
-    fix_multi_influences: BoolProperty(
-        name="Fix >2 Joint Influences",
-        description=("Reduce any vertex with more than two joint influences "
-                     "to its two strongest and renormalize them. Off, such a "
-                     "vertex is a hard error naming the joints involved"),
-        default=False)
-
-    fix_non_parent_child: BoolProperty(
-        name="Fix Non-Parent-Child Weights",
-        description=("Resolve a vertex weighted to two joints that are not a "
-                     "direct parent-child pair by keeping the stronger one. "
-                     "Off, it is a hard error"),
-        default=False)
-
     fix_long_turns: BoolProperty(
         name="Fix Long Rotation Turns",
         description=ops_anim.FIX_LONG_TURNS_DESCRIPTION,
@@ -452,11 +438,6 @@ class Export4DS(bpy.types.Operator, ExportHelper):
             note.scale_y = 0.8
             note.label(text=f"{chosen} object(s) selected of "
                             f"{len(context.scene.objects)}.", icon="INFO")
-
-        box = layout.box()
-        box.label(text="Weight Corrections", icon="MOD_VERTEX_WEIGHT")
-        box.prop(self, "fix_multi_influences")
-        box.prop(self, "fix_non_parent_child")
 
         # The animation goes into a .5ds of its own, named after the model,
         # which is how the game finds the two together.
@@ -555,9 +536,7 @@ class Export4DS(bpy.types.Operator, ExportHelper):
 
     def _run(self, objects, result, preferences, filename):
         try:
-            export_4ds(self.filepath, objects, result,
-                       fix_multi_influences=self.fix_multi_influences,
-                       fix_non_parent_child=self.fix_non_parent_child)
+            export_4ds(self.filepath, objects, result)
         except ExportError as exc:
             result.info(str(exc))
             result.finish(f"Export FAILED: {filename} (nothing was written)")
@@ -599,12 +578,10 @@ class LS3D_OT_CheckScene(bpy.types.Operator):
         status = {"FINISHED"}
         try:
             with _ProgressBar(context, result):
-                # Nothing is corrected here on purpose: a check reports what
-                # is wrong, and the export dialog is where the weight fixes
-                # are switched on.
-                document = check_4ds(objects, result,
-                                     fix_multi_influences=False,
-                                     fix_non_parent_child=False)
+                # Nothing is corrected here, nor by the export: a check
+                # says what is wrong and Fix Weights puts it right, in the
+                # scene, where it can be seen and undone.
+                document = check_4ds(objects, result)
         except ExportError as exc:
             result.info(str(exc))
             result.finish("Check FAILED - this scene would not export")

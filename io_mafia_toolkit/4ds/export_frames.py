@@ -567,6 +567,30 @@ class FramesMixin:
         return _channels_if_same(own, self._local_transform(armature))
 
     # ── frame construction ────────────────────────────────────────────────────
+    def _warn_if_turned_inside_out(self, obj, scale):
+        """Say so where a frame's size turns the thing on it around.
+
+        A size with an odd number of negative numbers in it turns every face
+        around with it: what the faces say is their front becomes their back,
+        and the game goes by the faces. So the model lights from the wrong
+        side, is seen through from the wrong side, and takes a projector's
+        paint on the wrong side - and turning the faces over in Blender does
+        not help, because the size turns them straight back. The value is
+        written as it is set; this only says what it will do.
+        """
+        negatives = sum(1 for value in scale if value < 0.0)
+        if negatives % 2 == 0:
+            return
+        self.report.warn(
+            f"'{obj.name}' is sized by a negative number "
+            f"({scale[0]:.4g}, {scale[1]:.4g}, {scale[2]:.4g}), which turns "
+            f"every one of its faces around. In game it lights from the wrong "
+            f"side and takes a projector's paint on the wrong side, and "
+            f"flipping the faces in Blender will not help - the size turns "
+            f"them straight back. In Object Mode, Object > Apply > Scale "
+            f"puts the size into the mesh, then Mesh > Normals > Recalculate "
+            f"Outside in Edit Mode settles which way the faces look.")
+
     def _build_frame(self, obj):
         if isinstance(obj, tuple):
             return self._build_joint_frame(*obj)
@@ -578,6 +602,8 @@ class FramesMixin:
             location, rotation, scale = _IDENTITY_TRANSFORM
         else:
             location, rotation, scale = self._local_transform(obj)
+
+        self._warn_if_turned_inside_out(obj, scale)
 
         frame = Frame(
             frame_type=frame_type,
@@ -657,13 +683,10 @@ class FramesMixin:
                 obj, C.VISUAL_TYPE_NAMES.get(visual_type, "Skinned mesh"),
                 self.report.warn)
             validate_vertex_groups(obj, self._armature_of(obj), self.report.warn)
-            # Weight rules are checked before the mesh is evaluated, because the
-            # auto-fixes rewrite vertex groups in place.
+            # The weight rules are checked and nothing more: putting them
+            # right is Fix Weights' job, in the scene, where it can be seen.
             for lod_obj in chain:
-                validate_skin_weights(
-                    lod_obj, self.report, self.fail,
-                    fix_multi_influences=self.fix_multi_influences,
-                    fix_non_parent_child=self.fix_non_parent_child)
+                validate_skin_weights(lod_obj, self.report, self.fail)
 
         # Objects sharing a mesh datablock are the same geometry, and the format
         # can say so with an instance reference instead of a second copy. The

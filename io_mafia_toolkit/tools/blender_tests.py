@@ -857,6 +857,9 @@ def run_regressions(models_dir, out_dir):
         portal.ls3d_frame_type = str(C.FRAME_SECTOR)
         portal.parent = parent
 
+    # Making a mesh a mirror now fits it a box it can use, so a box that is
+    # missing something has to be emptied on purpose - which is still a state
+    # a person can type in, and still one the export has to refuse.
     def flat_view_box():
         mirror = cube("mirror01")
         mirror.ls3d_frame_type = str(C.FRAME_VISUAL)
@@ -864,12 +867,16 @@ def run_regressions(models_dir, out_dir):
         mirror.ls3d_mirror_box_center = (0.0, 1.0, 0.0)
         mirror.ls3d_mirror_box_x = (1.0, 0.0, 0.0)
         mirror.ls3d_mirror_box_y = (0.0, 1.0, 0.0)
+        mirror.ls3d_mirror_box_z = (0.0, 0.0, 0.0)
         # and no Z axis: nothing the game can look into
 
     def unset_view_box():
         mirror = cube("mirror02")
         mirror.ls3d_frame_type = str(C.FRAME_VISUAL)
         mirror.visual_type = str(C.VISUAL_MIRROR)
+        mirror.ls3d_mirror_box_center = (0.0, 0.0, 0.0)
+        for axis in "xyz":
+            setattr(mirror, f"ls3d_mirror_box_{axis}", (0.0, 0.0, 0.0))
 
     def crowded_skeleton():
         # One joint more than the game gathers below a skinned mesh.
@@ -1431,11 +1438,16 @@ def run_regressions(models_dir, out_dir):
     corners = _dummy_box_corners(offset)
     spans_x = (round(min(c.x for c in corners), 3),
                round(max(c.x for c in corners), 3))
-    check("the dummy box overlay covers exactly the boxes an empty cannot draw",
+    check("the dummy box overlay covers every dummy's box",
+          # Which of them an empty's own cube could have shown is still worth
+          # knowing - the object panel says so - but it no longer decides
+          # whether the box is drawn. One that is cubic and centered used to
+          # be left out, and that is a box nobody can get hold of: a dummy
+          # made from scratch is exactly that shape.
           dummy_box_is_drawable(cubic) and not dummy_box_is_drawable(slab)
           and not dummy_box_is_drawable(offset)
           and dummy_box_is_drawable(scratch)
-          and outlined == {"slab", "offset"}
+          and outlined == {"cubic", "slab", "offset", "scratch"}
           and spans_x == (-6.888, 19.668)
           and dummy_box(scratch) == ((-0.25, -0.25, -0.25), (0.25, 0.25, 0.25)),
           f"outlined {sorted(outlined)}, offset spans x {spans_x}")
@@ -1631,6 +1643,258 @@ def run_regressions(models_dir, out_dir):
     # sphere empty, which is what a lens flare looks like to the exporter, so a
     # linked one would be written out as a stray flare.
     joint_display = ls3d_module("4ds.joint_display")
+    # Twelve edges read well on a crowded skeleton and badly when the shape
+    # itself is what is wanted, so each kind of box can be drawn filled
+    # instead - one toggle a kind, so a solid mirror box can sit beside
+    # wireframe joints.
+    fresh_scene()
+    # Named apart from anything else here: an import inside this function
+    # binds its name for the whole of it, and a name already in use would be
+    # unbound everywhere above this point.
+    import gpu as _gpu_solid
+    from gpu_extras.batch import batch_for_shader as _batch_solid
+    from mathutils import Matrix as _matrix_solid
+    _solid = ls3d_module("4ds.viewport")
+    unit_corners = [_Vector(((1.0 if index & 1 else -1.0) * 0.5,
+                             (1.0 if index & 2 else -1.0) * 0.5,
+                             (1.0 if index & 4 else -1.0) * 0.5))
+                    for index in range(8)]
+    solid_tris = _solid.box_triangles(unit_corners)
+    twelve = len(solid_tris) == 36
+    # Filled faces carry a shade each, so the six of them can be told apart -
+    # a box is not in the scene and nothing lights it, so it carries its own.
+    shaded_points, shades = _solid.box_shaded_triangles(unit_corners)
+    flat_faces = all(shades[at] == shades[at + 1] == shades[at + 2]
+                     for at in range(0, len(shades), 3))
+    # Taken either way along the light, so opposite faces match and three
+    # brightnesses come out - which is all that is needed, since three faces
+    # are the most that can be in sight at once.
+    brightnesses = {round(shade, 4) for shade in shades}
+    in_range = (min(shades) >= _solid.FACE_SHADE_FLOOR - 1e-6
+                and max(shades) <= 1.0 + 1e-6)
+    same_shape = len(shaded_points) == len(solid_tris)
+    # Out of the box's own eight corners and nothing else, which is what keeps
+    # the filled box the same shape as the outline around it.
+    same_corners = ({tuple(round(v, 4) for v in p) for p in solid_tris}
+                    == {tuple(round(v, 4) for v in c) for c in unit_corners})
+
+    # And the faces really cover the box: rendered straight down, a box one
+    # unit across covers one square meter.
+    covered = 0.0
+    solid_ready = True
+    if hasattr(_gpu_solid, "init"):
+        try:
+            _gpu_solid.init()
+        except Exception:
+            solid_ready = False
+    if solid_ready:
+        SOLID_SPAN, SOLID_EDGE = 120, 1.5
+        flat = _gpu_solid.shader.from_builtin("UNIFORM_COLOR")
+        solid_batch = _batch_solid(flat, "TRIS",
+                                 {"pos": [tuple(p) for p in solid_tris]})
+        sheet = _gpu_solid.types.GPUOffScreen(SOLID_SPAN, SOLID_SPAN)
+        with sheet.bind():
+            canvas = _gpu_solid.state.active_framebuffer_get()
+            canvas.clear(color=(0.0, 0.0, 0.0, 1.0))
+            look = _matrix_solid.Identity(4)
+            look[2][3] = -5.0
+            pane = _matrix_solid.OrthoProjection("XY", 4)
+            pane[0][0] = pane[1][1] = 1.0 / SOLID_EDGE
+            pane[2][2] = -0.05
+            with _gpu_solid.matrix.push_pop():
+                _gpu_solid.matrix.load_matrix(look)
+                _gpu_solid.matrix.load_projection_matrix(pane)
+                flat.bind()
+                flat.uniform_float("color", (1.0, 1.0, 1.0, 1.0))
+                solid_batch.draw(flat)
+            got = canvas.read_color(0, 0, SOLID_SPAN, SOLID_SPAN, 4, 0, "FLOAT")
+            got.dimensions = SOLID_SPAN * SOLID_SPAN * 4
+        sheet.free()
+        filled = sum(1 for at in range(0, SOLID_SPAN * SOLID_SPAN * 4, 4)
+                     if got[at] > 0.5)
+        covered = filled * (2.0 * SOLID_EDGE / SOLID_SPAN) ** 2
+
+    # One toggle a kind, all off to begin with, and each on its own.
+    solid_props = (C.SOLID_INFLUENCE_BOXES_PROP, C.SOLID_MIRROR_BOX_PROP,
+                   C.SOLID_DUMMY_BOXES_PROP,
+                   C.SOLID_PROJECTOR_VOLUMES_PROP, C.SOLID_LIGHTS_PROP)
+    off_to_start = not any(getattr(bpy.context.scene, p) for p in solid_props)
+    one_at_a_time = True
+    for chosen in solid_props:
+        for prop in solid_props:
+            setattr(bpy.context.scene, prop, prop == chosen)
+        if [getattr(bpy.context.scene, p) for p in solid_props] != [
+                p == chosen for p in solid_props]:
+            one_at_a_time = False
+    for prop in solid_props:
+        setattr(bpy.context.scene, prop, False)
+
+    # The toggle for a dummy's box is offered where there is one to fill: an
+    # empty's own cube already shows a box that is cubic and centered, so only
+    # the odd one out is outlined by us, and only that one can be filled.
+    # Every kind has one, not only the boxes: a projector's volume is a box
+    # either way - the pyramid's near corners all sit on the frame's point -
+    # and a light is balls and cones, which are not boxes at all.
+    bpy.ops.ls3d.add_projector()
+    volume_beamer = bpy.context.object
+    volume_shapes = {}
+    for straight in (True, False):
+        volume_beamer.ls3d_projector_orthogonal = straight
+        bpy.context.view_layer.update()
+        volume = _solid.projector_volume_corners(volume_beamer)
+        # Counted rather than read off by index, so this does not depend on
+        # which corner is numbered what: a box stands on eight places and a
+        # pyramid on five, its four near corners all being the frame's point.
+        apart = {tuple(round(value, 4) for value in corner)
+                 for corner in volume}
+        volume_shapes[straight] = (len(volume), len(apart))
+    volumes_right = (volume_shapes[True] == (8, 8)
+                     and volume_shapes[False] == (8, 5))
+
+    bpy.ops.ls3d.add_light()
+    lamp = bpy.context.object
+    lit_shapes = {}
+    for label, kind in (("point", C.LIGHT_POINT), ("spot", C.LIGHT_SPOT),
+                        ("ambient", C.LIGHT_AMBIENT)):
+        lamp.ls3d_light_type_value = kind
+        bpy.context.view_layer.update()
+        lit_shapes[label] = len(_solid.light_faces(lamp)) // 3
+    # A ball and a cone each, and nothing at all for the kinds whose ranges
+    # are not distances from the light - the same nothing their outline draws.
+    lights_right = (lit_shapes["point"] > 0 and lit_shapes["spot"] > 0
+                    and lit_shapes["ambient"] == 0)
+
+    # A dummy's box is outlined, and so fillable, from the moment the dummy
+    # is made - whether or not the empty's own cube happens to stand where it
+    # stands. One that is cubic and centered used to be left out, and that is
+    # a box nobody can get hold of.
+    bpy.ops.ls3d.add_dummy()
+    plain_dummy = bpy.context.object
+    bpy.context.view_layer.update()
+    counted_plain = len(_solid._outlined_boxes(bpy.context))
+    cube_shows_it = _solid.dummy_box_is_drawable(plain_dummy)
+    plain_dummy.bbox_min = (-0.2, -0.5, -0.2)
+    plain_dummy.bbox_max = (0.2, 0.5, 0.2)
+    bpy.context.view_layer.update()
+    counted_odd = len(_solid._outlined_boxes(bpy.context))
+    cube_cannot = not _solid.dummy_box_is_drawable(plain_dummy)
+
+    check("each kind of box can be drawn filled instead of outlined",
+          twelve and same_corners and off_to_start and one_at_a_time
+          and (not solid_ready or abs(covered - 1.0) < 0.02)
+          and counted_plain == 1 and counted_odd == 1
+          and cube_shows_it and cube_cannot
+          and flat_faces and len(brightnesses) == 3 and in_range
+          and same_shape and len(solid_props) == 5 and volumes_right
+          and lights_right,
+          f"{len(solid_tris) // 3} triangle(s) from the box's own corners "
+          f"{same_corners}; they cover {covered:.3f} m2 of the 1.00 they "
+          f"should; all off to begin with {off_to_start}, each on its own "
+          f"{one_at_a_time}; a cubic centered dummy outlined by us "
+          f"{counted_plain}, an odd one {counted_odd} - both outlined; the faces "
+          f"shade to "
+          f"{sorted(brightnesses)}, flat across each one {flat_faces}, inside "
+          f"their range {in_range}; a projector's volume {volume_shapes}, a "
+          f"light's shapes {lit_shapes}")
+
+    # Which handles a joint carries used to be one choice out of All, Resize,
+    # Move and Turn, so the kinds could not be mixed - arrows and rings
+    # without the face handles was not a state it could hold. Three toggles
+    # now, one a kind, and All is gone: with three toggles it says nothing
+    # they do not already say.
+    fresh_scene()
+    _handles = ls3d_module("4ds.gizmo_influence")
+    handle_props = (C.INFLUENCE_RESIZE_HANDLES_PROP,
+                    C.INFLUENCE_MOVE_HANDLES_PROP,
+                    C.INFLUENCE_TURN_HANDLES_PROP)
+    all_three = _handles.wanted_handles(bpy.context.scene)
+
+    def with_toggles(faces, arrows, rings):
+        for prop, state in zip(handle_props, (faces, arrows, rings)):
+            setattr(bpy.context.scene, prop, state)
+        return _handles.wanted_handles(bpy.context.scene)
+
+    # Every one of the eight combinations comes back exactly as it was set,
+    # including the one the old choice could not hold and none at all.
+    every_one = True
+    for faces in (False, True):
+        for arrows in (False, True):
+            for rings in (False, True):
+                if with_toggles(faces, arrows, rings) != (faces, arrows, rings):
+                    every_one = False
+    mixable = with_toggles(False, True, True) == (False, True, True)
+    none_at_all = with_toggles(False, False, False) == (False, False, False)
+    with_toggles(True, True, True)
+    # And the old single choice is gone, not left behind beside them.
+    gone = not hasattr(bpy.context.scene, "ls3d_influence_handles")
+
+    check("each kind of box handle is toggled on its own, and All is gone",
+          all_three == (True, True, True) and every_one and mixable
+          and none_at_all and gone,
+          f"all three on to begin with {all_three}; every combination holds "
+          f"{every_one}; arrows and rings without the faces {mixable}; none "
+          f"at all {none_at_all}; the old single choice gone {gone}")
+
+    # A skeleton has to read as a skeleton. Every joint is drawn as the one
+    # shared sphere shape rather than as a bone, and the import leaves each
+    # bone unconnected from the one above it, so without this a character is a
+    # cloud of markers with nothing saying which hangs off which. A solid line
+    # down each link says it, in a light blue nothing else here uses, and a dot
+    # on each joint says where the joint itself is.
+    fresh_scene()
+    kept_joint_count = bpy.context.scene.ls3d_animated_object_count
+    bpy.ops.ls3d.add_character_skeleton()
+    bpy.context.scene.ls3d_animated_object_count = kept_joint_count
+    skel = bpy.data.objects["base_Armature"]
+    bpy.context.view_layer.update()
+
+    skel_lines, skel_dots = _v._skeleton_lines(bpy.context)
+    hanging = sum(1 for bone in skel.pose.bones if bone.parent is not None)
+    standing = {bone.name: _v.joint_place(skel, bone)
+                for bone in skel.pose.bones}
+    # Each line runs from a parent's place to its child's, two points to a
+    # line: solid, not the dashes a dummy's box gets to its empty.
+    runs_right = len(skel_lines) == hanging * 2
+    for at in range(0, len(skel_lines), 2):
+        start, end = skel_lines[at], skel_lines[at + 1]
+        named = [name for name, where in standing.items()
+                 if (where - end).length < 1e-6]
+        if not named:
+            runs_right = False
+            continue
+        above = skel.pose.bones[named[0]].parent
+        if above is None or (standing[above.name] - start).length > 1e-6:
+            runs_right = False
+    # Light blue, and nothing else here draws in it.
+    its_own = _v.JOINT_LINE_COLOR not in [
+        value for name, value in vars(_v).items()
+        if name.endswith("COLOR") and name != "JOINT_LINE_COLOR"]
+    blue = (_v.JOINT_LINE_COLOR[2] > _v.JOINT_LINE_COLOR[1]
+            > _v.JOINT_LINE_COLOR[0] and _v.JOINT_LINE_COLOR[0] > 0.3)
+    # And a line follows a joint moved in Pose Mode, which is how a skeleton
+    # is fitted to a character.
+    skel.pose.bones["neck"].location = (0.0, 0.0, 0.25)
+    bpy.context.view_layer.update()
+    moved_lines, _moved_dots = _v._skeleton_lines(bpy.context)
+    put = _v.joint_place(skel, skel.pose.bones["neck"])
+    follows = any((point - put).length < 1e-6 for point in moved_lines)
+    # And it can be put away: a toggle of its own, not tied to the boxes.
+    setattr(bpy.context.scene, C.SHOW_JOINT_LINES_PROP, False)
+    hidden_lines, hidden_dots = _v._skeleton_lines(bpy.context)
+    setattr(bpy.context.scene, C.SHOW_JOINT_LINES_PROP, True)
+    shown_again, _shown_dots = _v._skeleton_lines(bpy.context)
+    hides = bool(not hidden_lines and not hidden_dots and shown_again)
+
+    check("every joint is joined to the one it hangs off, and carries a dot",
+          runs_right and len(skel_dots) == len(skel.pose.bones)
+          and hanging == 15 and its_own and blue and follows and hides
+          and hasattr(bpy.context.scene, C.JOINT_LINES_IN_FRONT_PROP),
+          f"{len(skel.pose.bones)} joint(s), {hanging} hanging off another, "
+          f"{len(skel_lines) // 2} line(s) drawn and {len(skel_dots)} dot(s); "
+          f"every line parent to child {runs_right}; colour "
+          f"{_v.JOINT_LINE_COLOR} its own {its_own} and light blue {blue}; "
+          f"follows a posed joint {follows}; hides and comes back {hides}")
+
     fresh_scene()
     bpy.ops.ls3d.add_joint()
     armature = next((o for o in bpy.context.scene.objects
@@ -3052,6 +3316,152 @@ def run_regressions(models_dir, out_dir):
           f"new mirror carries {fresh_range:g}, wrote {written}; "
           f"zeroed said {[m[:48] for m in said] or 'nothing'}")
 
+    # What a mirror will actually reflect was guesswork: Blender drew the
+    # bound and the view box and nothing else. The game's own test is
+    # reproducible exactly - a reach against the box first, then the object's
+    # eight bound corners taken into the box's own terms and kept only where
+    # the bound overlaps the box along every axis - so it is made here and
+    # what it catches is outlined.
+    fresh_scene()
+    _reflect = ls3d_module("4ds.viewport")
+    bpy.ops.mesh.primitive_plane_add(size=2.0)
+    pane_mirror = bpy.context.object
+    pane_mirror.name = "glass"
+    pane_mirror.rotation_euler = (1.5707963, 0.0, 0.0)
+    pane_mirror.ls3d_frame_type = str(C.FRAME_VISUAL)
+    pane_mirror.visual_type = str(C.VISUAL_MIRROR)
+    pane_mirror.ls3d_mirror_box_center = (0.0, 1.0, 0.0)
+    pane_mirror.ls3d_mirror_box_x = (1.0, 0.0, 0.0)
+    pane_mirror.ls3d_mirror_box_y = (0.0, 1.0, 0.0)
+    pane_mirror.ls3d_mirror_box_z = (0.0, 0.0, 1.0)
+    bpy.context.view_layer.update()
+
+    clipped = _reflect.mirror_clip(pane_mirror)
+    # The reach is the distance from the box's middle to a corner, which for a
+    # cube two units across is the square root of three - the same figure the
+    # game works out, from the same matrix.
+    reach_right = clipped is not None and abs(clipped[2] - 3 ** 0.5) < 1e-5
+    # Where the box's middle lands, measured from the mirror's own place
+    # rather than from the world's: a plane is added at the 3D cursor, and an
+    # earlier check leaves that somewhere of its own.
+    middle_right = (clipped is not None and (
+        clipped[1] - (pane_mirror.matrix_world
+                      @ _Vector((0.0, 1.0, 0.0)))).length < 1e-5)
+
+    def reflect_cube(name, where, size=0.4):
+        bpy.ops.mesh.primitive_cube_add(size=size, location=where)
+        bpy.context.object.name = name
+        return bpy.context.object
+
+    box_middle = clipped[1]
+
+    def off_the_middle(offset):
+        return tuple(box_middle[axis] + offset[axis] for axis in range(3))
+
+    inside = reflect_cube("inside", off_the_middle((0.0, 0.0, 0.0)))
+    aside = reflect_cube("aside", off_the_middle((8.0, 0.0, 0.0)))
+    behind = reflect_cube("behind", off_the_middle((0.0, 0.0, -8.0)))
+    above = reflect_cube("above", off_the_middle((0.0, 8.0, 0.0)))
+    bpy.context.view_layer.update()
+    caught_names = {obj.name for obj in _reflect.reflected_by(
+        pane_mirror, list(bpy.context.scene.objects))}
+    right_ones = (caught_names == {"inside"})
+
+    # Walked out through the side: the box reaches one unit either way and a
+    # 0.2 cube reaches 0.1, so it has to stop between 1.05 and 1.2.
+    walker = reflect_cube("walker", off_the_middle((0.0, 0.0, 0.0)), size=0.2)
+    steps = {}
+    for step in (0.0, 0.9, 1.05, 1.2, 2.0):
+        walker.location = off_the_middle((step, 0.0, 0.0))
+        bpy.context.view_layer.update()
+        steps[step] = bool(_reflect.reflected_by(pane_mirror, [walker]))
+    stops_right = (steps[0.0] and steps[0.9] and steps[1.05]
+                   and not steps[1.2] and not steps[2.0])
+
+    # The outlines go on and off with their own toggle: off, nothing is
+    # gathered at all, however much the mirrors reach.
+    walker.location = off_the_middle((0.0, 0.0, 0.0))
+    bpy.context.view_layer.update()
+    setattr(bpy.context.scene, C.SHOW_MIRROR_REFLECTS_PROP, False)
+    outlines_off = _reflect._reflected_outlines(bpy.context)
+    setattr(bpy.context.scene, C.SHOW_MIRROR_REFLECTS_PROP, True)
+    outlines_on = _reflect._reflected_outlines(bpy.context)
+    setattr(bpy.context.scene, C.SHOW_MIRROR_REFLECTS_PROP, False)
+    # Eight corners to a box, which is what the edge table reads.
+    toggles = (not outlines_off and bool(outlines_on)
+               and all(len(box) == 8 for box in outlines_on))
+
+    # A box with no size reaches nothing, the way the game reads it.
+    for axis in "xyz":
+        setattr(pane_mirror, f"ls3d_mirror_box_{axis}", (0.0, 0.0, 0.0))
+    bpy.context.view_layer.update()
+    emptied = _reflect.reflected_by(pane_mirror,
+                                    list(bpy.context.scene.objects))
+
+    check("a mirror says what it would reflect, by the game's own test",
+          reach_right and middle_right and right_ones and stops_right
+          and not emptied and toggles,
+          f"the box's middle in the world right {middle_right} and its reach "
+          f"{clipped[2] if clipped else None:.4f} against the square root of "
+          f"three {3 ** 0.5:.4f}; caught {sorted(caught_names)}; walked out "
+          f"{steps}; an emptied box catches {len(emptied)}; the outlines "
+          f"go off to {len(outlines_off)} and on to {len(outlines_on)}")
+
+    # A mesh made a mirror through the frame type dropdown used to get nothing
+    # for a view box - three axes of no length, which is not a box anybody can
+    # work with: the overlay skipped it, all six handles landed on the
+    # object's own origin, and dragging one wrote nothing, because an axis
+    # with no direction has nowhere to be moved along. Only the Add menu fitted
+    # one. So a mesh made a mirror is given the same box the Add menu gives,
+    # and a box that already has a size is left alone - which is what keeps an
+    # imported mirror's own numbers, since the import sets the type first and
+    # the box after it.
+    fresh_scene()
+    _mirror_view = ls3d_module("4ds.viewport")
+    _mirror_handles = ls3d_module("4ds.gizmo_dummy")
+    bpy.ops.mesh.primitive_plane_add(size=2.0)
+    pane = bpy.context.object
+    pane.ls3d_frame_type = str(C.FRAME_VISUAL)
+    empty_before = not any(
+        _Vector(tuple(getattr(pane, f"ls3d_mirror_box_{a}"))).length
+        for a in "xyz")
+    pane.visual_type = str(C.VISUAL_MIRROR)
+    bpy.context.view_layer.update()
+    _center, fitted_axes = _mirror_view.mirror_view_box(pane)
+    fitted = all(axis.length > 1e-6 for axis in fitted_axes)
+    outlined = len(_mirror_view._mirror_view_boxes(bpy.context)) == 1
+    spots = [_mirror_handles.mirror_handle_matrix(pane, face).translation
+             for face in range(6)]
+    handles_apart = max((a - b).length for a in spots for b in spots)
+    was = _mirror_handles.mirror_face_offset(pane, 0)
+    _mirror_handles.set_mirror_face_offset(pane, 0, was + 0.5)
+    dragged = _mirror_handles.mirror_face_offset(pane, 0) - was
+
+    # A box with a size of its own is not touched, however often the type is
+    # set again - the thing that keeps a file's own numbers.
+    pane.ls3d_mirror_box_center = (0.1, 0.7, 0.2)
+    pane.ls3d_mirror_box_x = (0.6, 0.0, 0.0)
+    pane.ls3d_mirror_box_y = (0.0, 0.7, 0.0)
+    pane.ls3d_mirror_box_z = (0.0, 0.0, 0.4)
+    pane.visual_type = str(C.VISUAL_OBJECT)
+    pane.visual_type = str(C.VISUAL_MIRROR)
+    bpy.context.view_layer.update()
+    kept_center, kept_axes = _mirror_view.mirror_view_box(pane)
+    left_alone = (
+        tuple(round(v, 5) for v in kept_center) == (0.1, 0.7, 0.2)
+        and tuple(round(v, 5) for v in kept_axes[0]) == (0.6, 0.0, 0.0)
+        and tuple(round(v, 5) for v in kept_axes[1]) == (0.0, 0.7, 0.0)
+        and tuple(round(v, 5) for v in kept_axes[2]) == (0.0, 0.0, 0.4))
+
+    check("a mesh made a mirror gets a view box it can use",
+          empty_before and fitted and outlined and handles_apart > 0.1
+          and abs(dragged - 0.5) < 1e-5 and left_alone
+          and hasattr(bpy.context.scene, C.MIRROR_BOX_IN_FRONT_PROP),
+          f"empty to begin with {empty_before}, fitted {fitted}, outlined "
+          f"{outlined}; the furthest two handles {handles_apart:.3f} m apart, "
+          f"dragging one moved its face {dragged:.4f} m; a box with a size of "
+          f"its own left alone {left_alone}")
+
     # What a mirror carries has to come back through Blender unhurt. The view
     # box is four fields on the mirror - the file's own matrix, column by
     # column - so it comes back to the bit, rotated or not. Geometry is
@@ -4292,6 +4702,64 @@ def run_regressions(models_dir, out_dir):
           and any("no diffuse texture" in message for message in said),
           f"result={textureless}, said {said or 'nothing'}")
 
+    # A frame sized by a negative number turns every face on it around, and
+    # the game goes by the faces - so the model lights, culls and takes a
+    # projector's paint on the wrong side, and turning the faces over in
+    # Blender does not help because the size turns them back. The value is
+    # written as it is set; the export only says what it will do.
+    fresh_scene()
+    bpy.ops.mesh.primitive_plane_add(size=2.0)
+    flipped_plane = bpy.context.object
+    flipped_plane.name = "flipped"
+    flipped_plane.ls3d_frame_type = str(C.FRAME_VISUAL)
+    flipped_plane.visual_type = str(C.VISUAL_OBJECT)
+    flipped_plane.scale = (-2.0, 2.0, 2.0)
+    bpy.context.view_layer.update()
+
+    report_module = ls3d_module("common.report")
+    heard = []
+    original_warn = report_module.Report.warn
+
+    def _hear(self, message, fix=None):
+        heard.append(message)
+        return original_warn(self, message, fix)
+
+    report_module.Report.warn = _hear
+    try:
+        flipped_out = os.path.join(out_dir, "flipped.4ds")
+        flipped_result = getattr(bpy.ops.export_scene, "4ds")(
+            filepath=flipped_out)
+        # An even number of negatives turns nothing around, so it says nothing.
+        heard_about_flip = [m for m in heard if "turns every one" in m]
+        heard.clear()
+        flipped_plane.scale = (-2.0, -2.0, 2.0)
+        bpy.context.view_layer.update()
+        even_out = os.path.join(out_dir, "flipped_twice.4ds")
+        even_result = getattr(bpy.ops.export_scene, "4ds")(filepath=even_out)
+        heard_about_even = [m for m in heard if "turns every one" in m]
+    finally:
+        report_module.Report.warn = original_warn
+
+    written = -1.0
+    if os.path.isfile(flipped_out):
+        document = ls3d_module("4ds.codec.document")
+        with open(flipped_out, "rb") as handle:
+            read_back = document.read_document(handle.read())
+        for frame in read_back.frames:
+            name = frame.name
+            if isinstance(name, bytes):
+                name = name.decode("ascii", "replace")
+            if name == "flipped":
+                written = min(frame.scale)
+
+    check("a frame sized by a negative number is called out, and still written",
+          flipped_result == {"FINISHED"} and len(heard_about_flip) == 1
+          and "Apply > Scale" in heard_about_flip[0]
+          and abs(written + 2.0) < 1e-5
+          and even_result == {"FINISHED"} and not heard_about_even,
+          f"one negative: said {len(heard_about_flip)}, wrote {written:+.4g}; "
+          f"two negatives: said {len(heard_about_even)}")
+
     # The volume is rebuilt from the transform, so the outline has to follow the
     # object rather than anything remembered from the file.
     fresh_scene()
@@ -4389,9 +4857,83 @@ def run_regressions(models_dir, out_dir):
           and set(at_rest.values()) == {_viewport.PROJECTOR_COLOR}
           and picked.get(first) == active
           and picked.get(second) == selected
-          and _viewport.PROJECTOR_COLOR == (0.0, 0.0, 0.0, 1.0),
+          # Not black, which is what Blender draws an unselected object in -
+          # a projector's volume vanished among every other outline. The
+          # colour itself is a choice and not pinned here; that it is its own
+          # and visible is what matters.
+          and _viewport.PROJECTOR_COLOR[:3] != (0.0, 0.0, 0.0)
+          and max(_viewport.PROJECTOR_COLOR[:3]) > 0.5,
           f"at rest {sorted(set(at_rest.values()))}, active "
           f"{picked.get(first)}, selected {picked.get(second)}")
+
+    # A projector's volume is scaled by hand, so a picture whose proportions
+    # it does not share comes out stretched. Fit Size To Texture takes the
+    # proportions from one of the material's own pictures - the user says
+    # which, because a material can carry more than one - keeps the height
+    # and sets the width from it, and leaves the reach alone.
+    fresh_scene()
+    _fitting = ls3d_module("4ds.ops_create")
+    fit_wide = bpy.data.images.new("FITWIDE.BMP", 64, 32)
+    fit_tall = bpy.data.images.new("FITTALL.BMP", 16, 64)
+    fit_mat = bpy.data.materials.new("FITBEAM")
+    fit_mat.ls3d_material_flags = C.MTL_DIFFUSE_ENABLE
+    fit_mat.ls3d_diffuse_tex = fit_wide
+    fit_mat.ls3d_alpha_tex = fit_tall
+    bpy.ops.ls3d.add_projector()
+    fitted = bpy.context.object
+    fitted.ls3d_projector_material = fit_mat
+    fitted.scale = (0.7, 3.0, 0.7)
+    bpy.context.view_layer.update()
+
+    # Both pictures are offered, each with its own size to tell them apart.
+    offered = _fitting.projector_images(fitted)
+    both = [(label, image.size[0], image.size[1])
+            for _slot, label, image in offered]
+
+    to_diffuse = bpy.ops.ls3d.fit_projector_to_texture(
+        texture="ls3d_diffuse_tex")
+    wide_ratio = fitted.scale.x / fitted.scale.z
+    # A scale is held in 32 bits, and 0.7 has no exact place there, so these
+    # are "unchanged" to a 32-bit step rather than to the bit.
+    reach_kept = abs(fitted.scale.y - 3.0) < 1e-6
+    height_kept = abs(fitted.scale.z - 0.7) < 1e-6
+    # The same projector fitted to the other picture follows that one instead.
+    bpy.ops.ls3d.fit_projector_to_texture(texture="ls3d_alpha_tex")
+    tall_ratio = fitted.scale.x / fitted.scale.z
+
+    # And the volume the outline draws stands in the picture's proportions,
+    # which is what says the paint across it is not stretched.
+    bpy.ops.ls3d.fit_projector_to_texture(texture="ls3d_diffuse_tex")
+    bpy.context.view_layer.update()
+    drawn_volume = _viewport.projector_lines(fitted)
+    span_across = (max(p.x for p in drawn_volume)
+                   - min(p.x for p in drawn_volume))
+    span_up = max(p.z for p in drawn_volume) - min(p.z for p in drawn_volume)
+    span_along = (max(p.y for p in drawn_volume)
+                  - min(p.y for p in drawn_volume))
+
+    # A projector carrying no picture has nothing to measure, so it is not
+    # offered rather than offered and refused.
+    bpy.ops.ls3d.add_projector()
+    bare_offered = bpy.ops.ls3d.fit_projector_to_texture.poll()
+
+    check("a projector's size can be fitted to one of its material's pictures",
+          len(both) == 2 and ("Diffuse", 64, 32) in both
+          and ("Transparency", 16, 64) in both
+          and to_diffuse == {"FINISHED"}
+          and abs(wide_ratio - 64 / 32) < 1e-6
+          and abs(tall_ratio - 16 / 64) < 1e-6
+          and reach_kept and height_kept
+          and abs(span_across / span_up - 64 / 32) < 1e-6
+          and abs(span_along - 3.0) < 1e-6
+          and not bare_offered,
+          f"offered {both}; fitted to the wide one the volume is "
+          f"{wide_ratio:.4f} across to up against the picture's "
+          f"{64 / 32:.4f}, to the tall one {tall_ratio:.4f} against "
+          f"{16 / 64:.4f}; height kept {height_kept}, reach kept "
+          f"{reach_kept}; the drawn box is {span_across:.3f} by "
+          f"{span_up:.3f} by {span_along:.3f}; offered with no picture "
+          f"{bare_offered}")
 
     # A model built entirely from the Add > 4DS menu has to export clean on the
     # first try - that is the whole point of the operators. Every one of these
@@ -7242,6 +7784,7 @@ def run_regressions(models_dir, out_dir):
     import gpu as _gpu
     from gpu_extras.batch import batch_for_shader as _batch_for
     from mathutils import Matrix as _PaintMatrix
+    from mathutils import Vector as _PaintVector
     paint_ready = True
     if hasattr(_gpu, "init"):
         try:
@@ -7266,6 +7809,18 @@ def run_regressions(models_dir, out_dir):
 
         SPAN, EDGE = 200, 3.0        # a 6 m wide buffer, 200 px across
 
+        def facing_up(points):
+            """One slope per corner, out of each triangle's own winding.
+
+            The paint only lands on a surface the projector can face, so a
+            batch handed to it has to say which way its faces look.
+            """
+            slopes = []
+            for at in range(0, len(points), 3):
+                a, b, c = (_PaintVector(points[at + step]) for step in range(3))
+                slopes += [tuple((b - a).cross(c - a).normalized())] * 3
+            return slopes
+
         def painted(orthogonal, falloff, height, reach, wide=1.0):
             """(lit pixels, mean brightness) on a floor under the projector."""
             beamer.ls3d_projector_orthogonal = orthogonal
@@ -7278,7 +7833,8 @@ def run_regressions(models_dir, out_dir):
             floor = [(-3.0, -3.0, 0.0), (3.0, -3.0, 0.0), (3.0, 3.0, 0.0),
                      (-3.0, -3.0, 0.0), (3.0, 3.0, 0.0), (-3.0, 3.0, 0.0)]
             drawn = projection.shader()
-            batch = _batch_for(drawn, "TRIS", {"pos": floor})
+            batch = _batch_for(drawn, "TRIS",
+                               {"pos": floor, "nor": facing_up(floor)})
             screen = _gpu.types.GPUOffScreen(SPAN, SPAN)
             with screen.bind():
                 buffer = _gpu.state.active_framebuffer_get()
@@ -7349,6 +7905,186 @@ def run_regressions(models_dir, out_dir):
               f"{far_triangle:.3f}; half way linear {half_linear:.3f} "
               f"triangular {half_triangle:.3f}; past the reach {beyond} px, "
               f"within {within} px")
+
+        # And the picture goes on the right way up and the right way round. A
+        # flat image reads the same whichever way it is turned, so nothing
+        # above could have caught one painted upside down. This one is four
+        # different quadrants, checked where each should land: the game puts
+        # the picture's top edge toward the side the frame's own axes call up,
+        # and its left edge toward the side they call left.
+        corners = bpy.data.images.new("CORNERS.BMP", 8, 8)
+        quadrant_pixels = []
+        for row in range(8):            # row 0 is the image's own bottom row
+            for column in range(8):
+                if row >= 4:
+                    quadrant_pixels += ([1.0, 1.0, 1.0, 1.0] if column >= 4
+                                        else [0.0, 0.0, 1.0, 1.0])
+                else:
+                    quadrant_pixels += ([0.0, 1.0, 0.0, 1.0] if column >= 4
+                                        else [1.0, 0.0, 0.0, 1.0])
+        corners.pixels = quadrant_pixels
+        beam.ls3d_diffuse_tex = corners
+        beamer.ls3d_projector_orthogonal = True
+        beamer.ls3d_projector_falloff = "0"
+        # Drawn over the surface rather than added to it, so what comes back is
+        # the picture's own color and not a brightness carried in the opacity.
+        beamer.ls3d_projector_blend = "1"
+        beamer.matrix_world = (
+            _PaintMatrix.Translation((0.0, 0.0, 2.0))
+            @ _PaintMatrix.Rotation(-1.5707963, 4, "X")
+            @ _PaintMatrix.Diagonal((1.0, 2.0, 1.0, 1.0)))
+        slab = [(-3.0, -3.0, 0.0), (3.0, -3.0, 0.0), (3.0, 3.0, 0.0),
+                (-3.0, -3.0, 0.0), (3.0, 3.0, 0.0), (-3.0, 3.0, 0.0)]
+        drawn = projection.shader()
+        quadrant_batch = _batch_for(drawn, "TRIS",
+                                    {"pos": slab, "nor": facing_up(slab)})
+        screen = _gpu.types.GPUOffScreen(SPAN, SPAN)
+        with screen.bind():
+            buffer = _gpu.state.active_framebuffer_get()
+            buffer.clear(color=(0.0, 0.0, 0.0, 1.0))
+            view = _PaintMatrix.Identity(4)
+            view[2][3] = -10.0
+            window = _PaintMatrix.OrthoProjection("XY", 4)
+            window[0][0] = window[1][1] = 1.0 / EDGE
+            window[2][2] = -0.05
+            with _gpu.matrix.push_pop():
+                _gpu.matrix.load_matrix(view)
+                _gpu.matrix.load_projection_matrix(window)
+                drawn.bind()
+                drawn.uniform_sampler("paint",
+                                      _gpu.texture.from_image(corners))
+                block = projection.apply_paint(
+                    drawn, beamer, projection.paint_of(beamer))
+                drawn.uniform_float("to_projector",
+                                    beamer.matrix_world.inverted())
+                _gpu.state.blend_set(projection.blend_for(beamer))
+                quadrant_batch.draw(drawn)
+                _gpu.state.blend_set("NONE")
+            shot = buffer.read_color(0, 0, SPAN, SPAN, 4, 0, "FLOAT")
+            shot.dimensions = SPAN * SPAN * 4
+        screen.free()
+
+        def color_at(x, y):
+            """What was painted on the floor at a world place, rounded."""
+            column = int((x / (2.0 * EDGE) + 0.5) * SPAN)
+            row = int((y / (2.0 * EDGE) + 0.5) * SPAN)
+            at = (row * SPAN + column) * 4
+            return tuple(round(shot[at + band]) for band in range(3))
+
+        # The volume is two units across, so the paint covers -1 to 1 either
+        # way; sampled half way out in each quadrant.
+        painted_corners = {
+            "lower left": color_at(-0.5, -0.5),
+            "lower right": color_at(0.5, -0.5),
+            "upper left": color_at(-0.5, 0.5),
+            "upper right": color_at(0.5, 0.5),
+        }
+        wanted_corners = {
+            "lower left": (1, 0, 0),        # the picture's lower left, red
+            "lower right": (0, 1, 0),       # its lower right, green
+            "upper left": (0, 0, 1),        # its upper left, blue
+            "upper right": (1, 1, 1),       # its upper right, white
+        }
+        check("a projector paints its picture the right way up and round",
+              painted_corners == wanted_corners,
+              "; ".join(f"{where} {painted_corners[where]} wanted "
+                        f"{wanted_corners[where]}"
+                        for where in wanted_corners))
+
+        # And only a surface the projector can face takes any. The game
+        # decides that from the surface's own facing, not the viewer's, so the
+        # same two windings of one floor are rendered with culling off: the
+        # one wound toward the projector takes paint and the one wound away
+        # takes none. A surface facing away is still painted while it is more
+        # across the beam than along it, which puts the line at a slope turned
+        # 45 degrees off straight-away - the setting the game starts every
+        # projector with, and a file carries nothing that changes it.
+        import math as _facing_math
+
+        beamer.ls3d_projector_blend = "0"
+        beamer.ls3d_projector_falloff = "0"
+        beam.ls3d_diffuse_tex = lit_image
+        toward = [(-1.5, -1.5, 0.0), (1.5, -1.5, 0.0), (1.5, 1.5, 0.0),
+                  (-1.5, -1.5, 0.0), (1.5, 1.5, 0.0), (-1.5, 1.5, 0.0)]
+        away = (toward[0:3][::-1] + toward[3:6][::-1])
+
+        def facing_paint(points, both_sides=False, placed=None):
+            """Pixels of paint on one surface, with culling out of the way."""
+            beamer.matrix_world = (
+                _PaintMatrix.Translation((0.0, 0.0, 2.0))
+                @ _PaintMatrix.Rotation(-1.5707963, 4, "X")
+                @ _PaintMatrix.Diagonal((1.0, 4.0, 1.0, 1.0)))
+            drawn = projection.shader()
+            batch = _batch_for(drawn, "TRIS",
+                               {"pos": points, "nor": facing_up(points)})
+            screen = _gpu.types.GPUOffScreen(SPAN, SPAN)
+            with screen.bind():
+                buffer = _gpu.state.active_framebuffer_get()
+                buffer.clear(color=(0.0, 0.0, 0.0, 1.0))
+                view = _PaintMatrix.Identity(4)
+                view[2][3] = -10.0
+                window = _PaintMatrix.OrthoProjection("XY", 4)
+                window[0][0] = window[1][1] = 1.0 / EDGE
+                window[2][2] = -0.05
+                with _gpu.matrix.push_pop():
+                    _gpu.matrix.load_matrix(view)
+                    _gpu.matrix.load_projection_matrix(window)
+                    drawn.bind()
+                    drawn.uniform_sampler(
+                        "paint", _gpu.texture.from_image(lit_image))
+                    block = projection.settings_block(
+                        beamer, projection.paint_of(beamer),
+                        both_sides=both_sides)
+                    drawn.uniform_block("settings", block)
+                    stand = (placed if placed is not None
+                             else _PaintMatrix.Identity(4))
+                    drawn.uniform_float(
+                        "to_projector",
+                        beamer.matrix_world.inverted() @ stand)
+                    if placed is not None:
+                        _gpu.matrix.multiply_matrix(placed)
+                    _gpu.state.face_culling_set("NONE")
+                    _gpu.state.blend_set(projection.blend_for(beamer))
+                    batch.draw(drawn)
+                    _gpu.state.blend_set("NONE")
+                    _gpu.state.face_culling_set("NONE")
+                pixels = buffer.read_color(0, 0, SPAN, SPAN, 4, 0, "FLOAT")
+                pixels.dimensions = SPAN * SPAN * 4
+            screen.free()
+            return sum(1 for at in range(0, SPAN * SPAN * 4, 4)
+                       if pixels[at] > 0.01)
+
+        def turned(off):
+            """The same floor, its slope *off* degrees from straight-away."""
+            turn = _PaintMatrix.Rotation(
+                _facing_math.radians(180.0 - off), 4, "Y")
+            return [tuple(turn @ _PaintVector(point)) for point in toward]
+
+        lit_toward = facing_paint(toward)
+        lit_away = facing_paint(away)
+        # Either way round where the material is drawn from both sides.
+        lit_away_both = facing_paint(away, both_sides=True)
+        just_inside = facing_paint(turned(44.0))
+        just_outside = facing_paint(turned(46.0))
+        check("a projector paints only what it can face",
+              lit_toward > 0 and lit_away == 0 and lit_away_both > 0
+              and just_inside == 0 and just_outside > 0,
+              f"toward {lit_toward} px, away {lit_away} px, away with a "
+              f"two-sided material {lit_away_both} px; turned 44 degrees off "
+              f"straight-away {just_inside} px, turned 46 {just_outside} px")
+
+        # A frame sized by a negative number turns its faces around with it,
+        # and the game goes by the faces, so the viewport has to turn them too
+        # or the two disagree about which side the paint lands on. The reason
+        # turning the faces over in Blender does not help: the size turns them
+        # straight back.
+        flipped = _PaintMatrix.Diagonal((-1.0, 1.0, 1.0, 1.0))
+        flipped_away = facing_paint(away, placed=flipped)
+        flipped_toward = facing_paint(toward, placed=flipped)
+        check("a frame sized by a negative number paints the other side",
+              flipped_away > 0 and flipped_toward == 0,
+              f"wound away on a flipped frame {flipped_away} px, wound "
+              f"toward {flipped_toward} px")
 
     # A projector paints the texture its material builds, not the diffuse
     # image on its own: where a material keeps its transparency in a second
@@ -9186,6 +9922,200 @@ def run_regressions(models_dir, out_dir):
     bpy.context.scene.render.fps = 25
     bpy.context.scene.render.fps_base = 1.0
     bpy.context.scene.frame_start, bpy.context.scene.frame_end = 0, 20
+
+    # Making the pose the skeleton. A skeleton fitted to a character by moving
+    # its joints in Pose Mode is still resting somewhere else, and an Armature
+    # modifier deforms by the step between the two - so the mesh is pulled
+    # about the moment it is weighted, which reads as the weights breaking it.
+    # The joints' own spaces are worked out from where they rest too, so the
+    # influence boxes and the weights made from them are measured in the wrong
+    # place as well. One button settles all three.
+    fresh_scene()
+    from mathutils import Matrix as _PoseMatrix
+    from mathutils import Quaternion as _PoseQuaternion
+    from mathutils import Vector as _PoseVector
+    kept_count = bpy.context.scene.ls3d_animated_object_count
+    bpy.ops.ls3d.add_character_skeleton()
+    bpy.context.scene.ls3d_animated_object_count = kept_count
+    rig = bpy.data.objects["base_Armature"]
+    bpy.ops.mesh.primitive_cube_add(size=1.6, location=(0.0, 0.0, 1.0))
+    body = bpy.context.object
+    body.name = "base"
+    body.ls3d_frame_type = str(C.FRAME_VISUAL)
+    body.visual_type = str(C.VISUAL_SINGLEMESH)
+    body.parent = rig
+    body.matrix_parent_inverse = rig.matrix_world.inverted()
+    bound = body.modifiers.new("Armature", "ARMATURE")
+    bound.object = rig
+    bpy.context.view_layer.update()
+
+    # Fit the character to the mesh the way a person does: in Pose Mode.
+    rest_joint = rig.pose.bones["neck"]
+    rest_joint.location = (0.0, 0.0, 0.12)
+    rig.pose.bones["r_arm"].rotation_quaternion = (0.966, 0.0, 0.259, 0.0)
+    bpy.context.view_layer.update()
+    _joint_space = ls3d_module("4ds.joint_space")
+    posed_to_start = _joint_space.is_posed(rig)
+
+    def worlds_of(armature):
+        return {bone.name: (armature.matrix_world
+                            @ bone.matrix).translation.copy()
+                for bone in armature.pose.bones}
+
+    def how_far_the_boxes_are_off(armature):
+        """The furthest a joint's box is placed from the joint it belongs to.
+
+        Through the same call the viewport places a box with, which applies
+        the pose over the rest - so a box follows its joint while the skeleton
+        is posed, and a pose counted twice would show up here.
+        """
+        _viewport = ls3d_module("4ds.viewport")
+        _viewport.forget_joint_spaces()
+        worst = 0.0
+        for bone in armature.pose.bones:
+            placed = _viewport.joint_world_matrix(armature, bone.name)
+            if placed is None:
+                continue
+            standing = armature.matrix_world @ bone.matrix
+            worst = max(worst,
+                        (standing.translation - placed.translation).length)
+        return worst
+
+    def how_far_the_deform_pulls(obj):
+        graph = bpy.context.evaluated_depsgraph_get()
+        shown = obj.evaluated_get(graph).to_mesh()
+        try:
+            return max((_PoseVector(moved.co) - _PoseVector(plain.co)).length
+                       for plain, moved in zip(obj.data.vertices,
+                                               shown.vertices))
+        finally:
+            obj.evaluated_get(graph).to_mesh_clear()
+
+    def joint_values(path):
+        """Every frame's own position, rotation and scale, as written."""
+        _document = ls3d_module("4ds.codec.document")
+        with open(path, "rb") as handle:
+            read_back = _document.read_document(handle.read())
+        out = {}
+        for frame in read_back.frames:
+            name = frame.name
+            if isinstance(name, bytes):
+                name = name.decode("ascii", "replace")
+            out[name] = (tuple(frame.position), tuple(frame.rotation),
+                         tuple(frame.scale))
+        return out
+
+    bpy.context.view_layer.objects.active = rig
+    for other in bpy.context.view_layer.objects:
+        other.select_set(other is rig)
+    bpy.ops.ls3d.add_influence_boxes()
+    # Weighted by hand and wholly onto one posed joint, so what the deform
+    # does is exactly that joint's step from where it rests to where it was
+    # put, with nothing else mixed in. Onto the turned arm rather than the
+    # neck: the neck is aimed at a target, and a joint its link turns is
+    # always turned off its rest, so what hangs on it is always deformed -
+    # which is true of it before and after and has nothing to do with this.
+    for bone in rig.data.bones:
+        body.vertex_groups.new(name=bone.name)
+    body.vertex_groups["r_arm"].add(
+        [vertex.index for vertex in body.data.vertices], 1.0, "REPLACE")
+    bpy.context.view_layer.update()
+
+    boxes_off_before = how_far_the_boxes_are_off(rig)
+    # Weights made while the skeleton is posed cannot look right however they
+    # are worked out, because the deform pulls by the step the pose makes - so
+    # Make Weights From Boxes is held back until the pose is the rest.
+    weights_offered_posed = bpy.ops.ls3d.weights_from_boxes.poll()
+    pulled_before = how_far_the_deform_pulls(body)
+    before_file = os.path.join(out_dir, "pose_rest_before.4ds")
+    getattr(bpy.ops.export_scene, "4ds")(filepath=before_file)
+    standing_before = worlds_of(rig)
+
+    bpy.context.view_layer.objects.active = rig
+    for other in bpy.context.view_layer.objects:
+        other.select_set(other is rig)
+    pressed = bpy.ops.ls3d.rest_from_pose()
+    bpy.context.view_layer.update()
+
+    boxes_off_after = how_far_the_boxes_are_off(rig)
+    weights_offered_after = bpy.ops.ls3d.weights_from_boxes.poll()
+    pulled_after = how_far_the_deform_pulls(body)
+    after_file = os.path.join(out_dir, "pose_rest_after.4ds")
+    getattr(bpy.ops.export_scene, "4ds")(filepath=after_file)
+    standing_after = worlds_of(rig)
+    moved = max((standing_after[name] - standing_before[name]).length
+                for name in standing_before)
+
+    # The joints come out at the same values: nothing about where they are has
+    # changed, only which of the two places Blender thinks they rest at.
+    values_before = joint_values(before_file)
+    values_after = joint_values(after_file)
+
+    def same_skeleton(one, other):
+        """True while every frame is in the same place, to a 32-bit step.
+
+        A posed skeleton is read one way and an unposed one another, and the
+        two round the last bits differently, so the bytes are not the question.
+        Nor is a rotation's sign: a quaternion and its negative are the same
+        turn, and which of the two comes out is not ours to decide.
+        """
+        if set(one) != set(other):
+            return False
+        for name in one:
+            was_pos, was_rot, was_scale = one[name]
+            now_pos, now_rot, now_scale = other[name]
+            for a, b in list(zip(was_pos, now_pos)) + list(zip(was_scale,
+                                                               now_scale)):
+                if abs(a - b) > 1e-5 * max(1.0, abs(a), abs(b)):
+                    return False
+            turned = _PoseQuaternion(was_rot).rotation_difference(
+                _PoseQuaternion(now_rot)).angle
+            turned = min(turned, 2.0 * math.pi - turned)
+            if turned > 1e-4:
+                return False
+        return True
+
+    same_values = same_skeleton(values_before, values_after)
+    # And pressing it again has nothing to do.
+    again = bpy.ops.ls3d.rest_from_pose.poll()
+
+    # A joint aimed at a target is moved by its link, not by anybody posing
+    # it, and Blender's own Apply Pose as Rest Pose would bake that aiming
+    # into the joint for good - it turned the neck of this very skeleton by
+    # 7.55 degrees. The link is held off while the pose is taken and put back
+    # after, so the joint keeps the turn it had and goes on aiming.
+    aimed = [bone.name for bone in rig.pose.bones if bone.constraints]
+    still_aimed = [bone.name for bone in rig.pose.bones
+                   if bone.constraints and not bone.constraints[0].mute]
+    neck_turn = math.degrees(
+        _PoseQuaternion(values_before["neck"][1]).rotation_difference(
+            _PoseQuaternion(values_after["neck"][1])).angle)
+    neck_turn = min(neck_turn, 360.0 - neck_turn)
+
+    check("making the pose the skeleton stops the weights pulling the mesh",
+          posed_to_start and not _joint_space.is_posed(rig)
+          and pressed == {"FINISHED"}
+          and pulled_before > 0.01 and pulled_after < 1e-5
+          and boxes_off_before < 1e-5 and boxes_off_after < 1e-5
+          and moved < 1e-5 and same_values and not again
+          and aimed and still_aimed == aimed and neck_turn < 1e-3
+          and not weights_offered_posed and weights_offered_after,
+          f"the deform pulled {pulled_before:.4f} m before and "
+          f"{pulled_after:.2e} m after; the boxes sat "
+          f"{boxes_off_before:.2e} m off their joints before and "
+          f"{boxes_off_after:.2e} m after; they stand {moved:.2e} m from "
+          f"where they stood; the "
+          f"written values are "
+          + ("the same skeleton inside a 32-bit step" if same_values
+             else "different: "
+             + str([n for n in values_before
+                    if values_before[n] != values_after.get(n)][:4]))
+          + f"; offered again {again}; {len(aimed)} joint(s) aimed at a "
+          f"target, {len(still_aimed)} still aiming, the aimed one turned "
+          f"{neck_turn:.2e} deg; weights offered while posed "
+          f"{weights_offered_posed}, after {weights_offered_after}")
+
+    fresh_scene()
     bpy.ops.ls3d.add_character_skeleton()
     rig = bpy.data.objects["base_Armature"]
     # A skeleton needs the mesh it is for, and one with geometry in it.
@@ -9737,17 +10667,14 @@ def run_regressions(models_dir, out_dir):
         preset_weights["parent"] = bpy.ops.object.parent_set(type="ARMATURE_AUTO")
         character_out = os.path.join(out_dir, "preset_character.4ds")
         raw, raw_lines = _report_of(lambda: getattr(bpy.ops.export_scene, "4ds")(
-            filepath=character_out, fix_multi_influences=True,
-            fix_non_parent_child=True))
+            filepath=character_out))
         preset_weights["raw"] = (raw, any("not 1.0" in line for line in raw_lines))
         bpy.context.view_layer.objects.active = base
-        bpy.ops.object.vertex_group_limit_total(group_select_mode="BONE_DEFORM",
-                                                limit=2)
-        bpy.ops.object.vertex_group_normalize_all(group_select_mode="BONE_DEFORM",
-                                                  lock_active=False)
+        for other in bpy.context.view_layer.objects:
+            other.select_set(other is base)
+        preset_weights["fixed"] = bpy.ops.ls3d.fix_weights()
         preset_weights["cleaned"] = getattr(bpy.ops.export_scene, "4ds")(
-            filepath=character_out, fix_multi_influences=True,
-            fix_non_parent_child=True)
+            filepath=character_out)
         body.use_fake_user = False
         if preset_weights["cleaned"] == {"FINISHED"}:
             preset_character = character_out
@@ -9755,6 +10682,505 @@ def run_regressions(models_dir, out_dir):
           preset_character is not None
           and preset_weights["raw"] == ({"CANCELLED"}, True),
           f"{preset_weights}")
+
+    # A sector and a portal are shown through the object's own display rather
+    # than by a handler, so filling them switches that display. A portal lies
+    # flat on the wall of its sector, so with both filled the two surfaces are
+    # in the same place and fight over every pixel - the portal is put in
+    # front for that one case, which settles it outright.
+    fresh_scene()
+    _rooms = ls3d_module("4ds.viewport")
+    bpy.ops.ls3d.add_sector()
+    the_room = bpy.context.object
+    bpy.ops.ls3d.add_portal()
+    the_door = bpy.context.object
+    bpy.context.view_layer.update()
+    is_a_portal = _rooms.is_portal(the_door)
+
+    # Four switches, one each for filling a sector and a portal and one each
+    # for drawing them in front. A portal lies flat on its sector's wall, so
+    # two filled surfaces would be in the same place - and the way out is not
+    # to put the portal in front, because in front means in front of the whole
+    # model and not of the one wall it is fighting. A filled portal is drawn
+    # in the overlay instead and lifted a hair toward the inside of its
+    # sector, so it wins that wall and nothing else.
+    import itertools as _ways
+    room_props = (C.SOLID_SECTORS_PROP, C.SECTORS_IN_FRONT_PROP,
+                  C.SOLID_PORTALS_PROP, C.PORTALS_IN_FRONT_PROP)
+    all_four_there = all(hasattr(bpy.context.scene, p) for p in room_props)
+    start_off = not any(getattr(bpy.context.scene, p) for p in room_props)
+    forced = []
+    for setting in _ways.product((False, True), repeat=4):
+        for prop, state in zip(room_props, setting):
+            setattr(bpy.context.scene, prop, state)
+        # Never put in front unless its own switch says so, and never turned
+        # solid by the object's own display, whatever the sectors are doing.
+        if the_door.show_in_front != setting[3]:
+            forced.append(setting)
+        if the_door.display_type != "WIRE":
+            forced.append(setting)
+
+    # And the lift: toward the eye, whichever way the eye happens to be, and
+    # a share of the portal's own size so a doorway and a hangar door are
+    # both moved by as much as they need. Toward the eye rather than into the
+    # room, because a portal lies in a wall and has to win that wall from
+    # either side of it - a fixed direction can only manage one.
+    setattr(bpy.context.scene, C.SOLID_PORTALS_PROP, True)
+
+    def middle_of(obj):
+        at = [obj.matrix_world @ _Vector(corner) for corner in obj.bound_box]
+        out = _Vector((0.0, 0.0, 0.0))
+        for corner in at:
+            out += corner
+        return out / len(at)
+
+    reach = max((corner - middle_of(the_door)).length
+                for corner in [the_door.matrix_world @ _Vector(c)
+                               for c in the_door.bound_box])
+    the_door.data.calc_loop_triangles()
+    flat = [the_door.matrix_world @ the_door.data.vertices[corner].co
+            for triangle in the_door.data.loop_triangles
+            for corner in triangle.vertices]
+    lift_right = bool(flat)
+    for eye in (_Vector((0.0, 0.0, 1.0)), _Vector((0.0, 0.0, -1.0)),
+                _Vector((1.0, 2.0, -3.0)).normalized()):
+        moved = _rooms.portal_faces(the_door, eye)
+        if not moved or len(moved) != 2 * len(flat):
+            lift_right = False
+            break
+        step = moved[0] - flat[0]
+        if not (step.length > 0.0
+                and step.normalized().dot(eye) > 0.9999
+                and 0.0 < step.length / reach < 0.02):
+            lift_right = False
+            break
+
+    # Both windings, because a portal has no front: the game stores no faces
+    # for one at all, only the ring and the plane it lies in, and it walks the
+    # same portal from either side. One winding left it facing its own sector
+    # and culled away wherever the sector stood in between.
+    moved = _rooms.portal_faces(the_door, _Vector((0.0, 0.0, 1.0)))
+    both_ways = len(moved) >= 6
+    for first in range(0, len(moved), 6):
+        a, b, c, d, e, f = moved[first:first + 6]
+        if (a - d).length > 1e-9 or (b - f).length > 1e-9                 or (c - e).length > 1e-9:
+            both_ways = False
+    if both_ways:
+        front = (moved[1] - moved[0]).cross(moved[2] - moved[0])
+        back = (moved[4] - moved[3]).cross(moved[5] - moved[3])
+        both_ways = front.dot(back) < 0.0
+
+    # And the fact the whole arrangement rests on: in the game's own files a
+    # portal's ring winds toward the room that owns it.
+    rings_inward = rings_outward = 0
+    if os.path.isfile(model("prejimka.4ds")):
+        for frame in read_file(model("prejimka.4ds")).frames:
+            if frame.frame_type != C.FRAME_SECTOR or frame.sector is None:
+                continue
+            hull = [_Vector(v) for v in frame.sector.vertices]
+            room = sum(hull, _Vector((0.0, 0.0, 0.0))) / len(hull)
+            for portal in frame.sector.portals:
+                ring = [_Vector(v) for v in portal.vertices]
+                heart = sum(ring, _Vector((0.0, 0.0, 0.0))) / len(ring)
+                wound = _Vector((0.0, 0.0, 0.0))
+                for i, here in enumerate(ring):
+                    there = ring[(i + 1) % len(ring)]
+                    wound += _Vector((
+                        (here[1] - there[1]) * (here[2] + there[2]),
+                        (here[2] - there[2]) * (here[0] + there[0]),
+                        (here[0] - there[0]) * (here[1] + there[1])))
+                if wound.dot(room - heart) > 0.0:
+                    rings_inward += 1
+                else:
+                    rings_outward += 1
+
+    for prop in room_props:
+        setattr(bpy.context.scene, prop, False)
+    rooms_right = (all_four_there and start_off and not forced
+                   and lift_right and both_ways
+                   and (not rings_inward or not rings_outward))
+
+    # A dummy's box can be drawn over everything too, and a projector's
+    # outline is no longer black - which is what Blender draws an unselected
+    # object in, so its volume vanished among the other outlines.
+    in_front_too = hasattr(bpy.context.scene, C.DUMMY_BOXES_IN_FRONT_PROP)
+    not_black = _rooms.PROJECTOR_COLOR[:3] != (0.0, 0.0, 0.0)
+    its_own = _rooms.PROJECTOR_COLOR not in [
+        value for name, value in vars(_rooms).items()
+        if name.endswith(("_COLOR", "_COLOR_SELECTED"))
+        and name != "PROJECTOR_COLOR"]
+
+    check("a sector and its portal can be filled without fighting",
+          is_a_portal and rooms_right and in_front_too and not_black
+          and its_own,
+          f"all four switches there {all_four_there}, off to start "
+          f"{start_off}; of sixteen ways to set them, {len(forced)} put the "
+          f"portal in front or turned it solid by itself; a filled portal is "
+          f"{len(moved) // 6} triangle(s) moved {step.length:.5f} m toward "
+          f"the eye, {100.0 * step.length / reach:.2f}% of its own reach, "
+          f"and both ways round {both_ways}; of the game's own portals "
+          f"{rings_inward} wind toward the room that owns them and "
+          f"{rings_outward} away from it; "
+          f"a dummy box can go in front {in_front_too}; the projector draws in "
+          f"{tuple(round(c, 2) for c in _rooms.PROJECTOR_COLOR)}, its own "
+          f"{its_own}")
+
+    # And painted, from either side of the wall the portal lies in. Reported
+    # as portals not showing on top of their sectors, and there were two
+    # causes at once - each of which hides the other, so they are measured
+    # apart: the ring looked away from the eye and was culled, and the move
+    # off the wall went into the room and so away from an eye outside it.
+    fresh_scene()
+    import gpu as _gpu_rooms
+    from gpu_extras.batch import batch_for_shader as _batch_rooms
+    from mathutils import Matrix as _MatrixRooms
+    ROOM_SPAN = 120
+    PURPLE = tuple(C.COLOR_FRAME_PORTAL)[:3]
+    WALL_GRAY = (0.35, 0.35, 0.35)
+
+    walls = bpy.data.meshes.new("room")
+    walls.from_pydata(
+        [(-1.2, -1.2, 0), (1.2, -1.2, 0), (1.2, 1.2, 0), (-1.2, 1.2, 0),
+         (-1.2, -1.2, 4), (1.2, -1.2, 4), (1.2, 1.2, 4), (-1.2, 1.2, 4)], [],
+        [(0, 1, 2, 3), (4, 5, 6, 7)])
+    a_room = bpy.data.objects.new("room", walls)
+    bpy.context.collection.objects.link(a_room)
+    a_room.ls3d_frame_type = str(C.FRAME_SECTOR)
+    # The portal lies exactly in the wall at z = 0 and winds toward the inside
+    # of the room, which is where the game winds every one of its own.
+    leaf = bpy.data.meshes.new("room_portal1")
+    leaf.from_pydata([(-0.5, -0.5, 0.0), (0.5, -0.5, 0.0),
+                      (0.5, 0.5, 0.0), (-0.5, 0.5, 0.0)], [], [(0, 1, 2, 3)])
+    a_door = bpy.data.objects.new("room_portal1", leaf)
+    bpy.context.collection.objects.link(a_door)
+    a_door.ls3d_frame_type = str(C.FRAME_SECTOR)
+    a_door.parent = a_room
+    bpy.context.view_layer.update()
+    walls.calc_loop_triangles()
+    leaf.calc_loop_triangles()
+    # Only the wall the portal lies in is painted, so nothing else can be
+    # what hides it: the room's far wall stands between the eye and the
+    # portal when the room is looked at from inside, and would answer the
+    # question with its own geometry instead.
+    in_the_wall = [triangle for triangle in walls.loop_triangles
+                   if all(walls.vertices[corner].co.z == 0.0
+                          for corner in triangle.vertices)]
+    wall_points = [a_room.matrix_world @ walls.vertices[corner].co
+                   for triangle in in_the_wall
+                   for corner in triangle.vertices]
+    ring = [_Vector(leaf.vertices[c].co)
+            for c in leaf.loop_triangles[0].vertices]
+    winds_in = (ring[1] - ring[0]).cross(ring[2] - ring[0]).z > 0.0
+
+    def purple_pixels(points, turn, away=0.0, near=0.1, far=1000.0):
+        """The portal's own pixels, painted the way the overlay paints them.
+
+        With *away* set, through a perspective view from that far off, which
+        is where two surfaces in the same place are hardest to tell apart:
+        what a viewport holds per pixel gets coarser with the square of the
+        distance.
+        """
+        flat = _gpu_rooms.shader.from_builtin("UNIFORM_COLOR")
+        look = _MatrixRooms.Identity(4)
+        look[2][3] = -(away or 6.0)
+        if away:
+            top = near * 18.0 / 50.0              # half-sensor over the lens
+            pane = _MatrixRooms((
+                (near / top, 0.0, 0.0, 0.0),
+                (0.0, near / top, 0.0, 0.0),
+                (0.0, 0.0, -(far + near) / (far - near),
+                 -2.0 * far * near / (far - near)),
+                (0.0, 0.0, -1.0, 0.0)))
+        else:
+            pane = _MatrixRooms.OrthoProjection("XY", 4)
+            pane[0][0] = pane[1][1] = 1.0 / 1.5
+            pane[2][2] = -0.05
+        sheet = _gpu_rooms.types.GPUOffScreen(ROOM_SPAN, ROOM_SPAN)
+        with sheet.bind():
+            canvas = _gpu_rooms.state.active_framebuffer_get()
+            canvas.clear(color=(0.0, 0.0, 0.0, 1.0), depth=1.0)
+            _gpu_rooms.state.depth_test_set("LESS_EQUAL")
+            _gpu_rooms.state.depth_mask_set(True)
+            with _gpu_rooms.matrix.push_pop():
+                _gpu_rooms.matrix.load_matrix(look)
+                _gpu_rooms.matrix.load_projection_matrix(pane)
+                flat.bind()
+                # The sector's wall first, as Blender draws a solid object:
+                # every face of it, whichever way it looks.
+                _gpu_rooms.state.face_culling_set("NONE")
+                flat.uniform_float("color", WALL_GRAY + (1.0,))
+                _batch_rooms(flat, "TRIS", {"pos": [
+                    tuple(turn @ p) for p in wall_points]}).draw(flat)
+                _gpu_rooms.state.face_culling_set("BACK")
+                flat.uniform_float("color", PURPLE + (1.0,))
+                _batch_rooms(flat, "TRIS", {"pos": [
+                    tuple(turn @ p) for p in points]}).draw(flat)
+                _gpu_rooms.state.face_culling_set("NONE")
+            seen = canvas.read_color(0, 0, ROOM_SPAN, ROOM_SPAN, 4, 0, "FLOAT")
+            seen.dimensions = ROOM_SPAN * ROOM_SPAN * 4
+            _gpu_rooms.state.depth_mask_set(False)
+            _gpu_rooms.state.depth_test_set("NONE")
+        sheet.free()
+        return sum(1 for at in range(0, ROOM_SPAN * ROOM_SPAN * 4, 4)
+                   if all(abs(seen[at + i] - PURPLE[i]) < 0.02
+                          for i in range(3)))
+
+    painted = {}
+    if hasattr(_gpu_rooms, "init"):
+        try:
+            _gpu_rooms.init()
+        except Exception:                        # noqa: BLE001
+            pass
+    # One camera, straight down -Z; the other side of the wall is the same
+    # view with the geometry turned over.
+    for side, turn, toward in (
+            ("inside", _MatrixRooms.Identity(4), _Vector((0.0, 0.0, 1.0))),
+            ("outside", _MatrixRooms.Rotation(math.pi, 4, "X"),
+             _Vector((0.0, 0.0, -1.0)))):
+        painted[side] = purple_pixels(
+            _rooms.portal_faces(a_door, toward), turn)
+
+    # And from far enough off that a fixed move is nothing at all. The room
+    # is scaled up so the portal still covers pixels at 800 m; a move of a
+    # share of its own size comes to 34 mm there, where the view can only
+    # hold about a meter and a half apart.
+    a_room.scale = (12.0, 12.0, 12.0)
+    a_door.scale = (1.0, 1.0, 1.0)
+    bpy.context.view_layer.update()
+    big_wall = [a_room.matrix_world @ walls.vertices[corner].co
+                for triangle in in_the_wall
+                for corner in triangle.vertices]
+    wall_points, a_long_way = big_wall, 800.0
+    eye = _Vector((0.0, 0.0, a_long_way))
+    far_steps = {
+        "by what the view can hold": _rooms.portal_faces(
+            a_door, _Vector((0.0, 0.0, 1.0)), eye, 0.1, 1000.0),
+        "by its own size alone": _rooms.portal_faces(
+            a_door, _Vector((0.0, 0.0, 1.0))),
+    }
+    for how, points in far_steps.items():
+        painted[how] = purple_pixels(points, _MatrixRooms.Identity(4),
+                                     away=a_long_way)
+    alone = purple_pixels(far_steps["by what the view can hold"],
+                          _MatrixRooms.Identity(4), away=a_long_way)
+    wall_points = big_wall
+    held = _rooms.portal_step(a_door, _Vector((0.0, 0.0, 1.0)), eye,
+                              0.1, 1000.0).length
+    sized = _rooms.portal_step(a_door, _Vector((0.0, 0.0, 1.0))).length
+    check("a filled portal is painted from either side of its wall",
+          winds_in and painted.get("inside", 0) > 0
+          and painted.get("outside", 0) > 0
+          and abs(painted["inside"] - painted["outside"]) <= 1
+          and painted["by what the view can hold"] > 0
+          and alone > 0 and held > sized,
+          f"its ring winds into the room {winds_in}; of "
+          f"{ROOM_SPAN * ROOM_SPAN} pixels the portal paints "
+          f"{painted.get('inside', 0)} seen from inside the room and "
+          f"{painted.get('outside', 0)} from outside it, through the wall it "
+          f"lies in; {a_long_way:.0f} m off it keeps "
+          f"{painted['by what the view can hold']} of its "
+          f"{alone} pixels moved by what the view can hold apart "
+          f"({held:.3f} m) and {painted['by its own size alone']} moved by a "
+          f"share of its own size ({sized:.3f} m)")
+
+    # Whether a sector-typed mesh is a portal is not a setting anybody picks:
+    # it follows from the name and from what the mesh hangs off. Both can be
+    # changed at any time with no callback of their own, and a file can be
+    # opened having been saved before a switch existed - so what a sector
+    # shows is put back from the scene on every update and on every open,
+    # rather than being set once and left.
+    fresh_scene()
+    bpy.ops.ls3d.add_sector()
+    a_room = bpy.context.object
+    for prop in room_props:
+        setattr(bpy.context.scene, prop, True)
+
+    def shown_as_asked():
+        """Every sector-typed mesh showing exactly what the scene asks of it."""
+        out = []
+        for obj in bpy.context.scene.objects:
+            if obj.type != "MESH" or int(obj.ls3d_frame_type) != C.FRAME_SECTOR:
+                continue
+            for field, value in _rooms.sector_display(obj).items():
+                if field == "color":
+                    if any(abs(was - now) > 1e-6
+                           for was, now in zip(obj.color, value)):
+                        out.append((obj.name, field))
+                elif getattr(obj, field) != value:
+                    out.append((obj.name, field))
+        return out
+
+    door = bpy.data.objects.new(
+        f"{a_room.name}_portal1",
+        bpy.data.meshes.new(f"{a_room.name}_portal1"))
+    door.data.from_pydata([(0, 0, 0), (1, 0, 0), (1, 0, 1)], [], [(0, 1, 2)])
+    bpy.context.collection.objects.link(door)
+    door.ls3d_frame_type = str(C.FRAME_SECTOR)
+    bpy.context.view_layer.update()
+    named_only = (not _rooms.is_portal(door), shown_as_asked())
+
+    door.parent = a_room                        # now it is a portal
+    bpy.context.view_layer.update()
+    parented = (_rooms.is_portal(door), shown_as_asked())
+
+    kept = door.name
+    door.name = kept + ".001"                   # the way Blender names a copy
+    bpy.context.view_layer.update()
+    copy_named = (not _rooms.is_portal(door), shown_as_asked())
+    door.name = kept
+    bpy.context.view_layer.update()
+    named_back = (_rooms.is_portal(door), shown_as_asked())
+
+    a_room.ls3d_frame_type = str(C.FRAME_VISUAL)    # nothing to hang off now
+    bpy.context.view_layer.update()
+    orphaned = (not _rooms.is_portal(door), shown_as_asked())
+    a_room.ls3d_frame_type = str(C.FRAME_SECTOR)
+    bpy.context.view_layer.update()
+
+    # And the sweep an open does: knocked out of step the way a file saved
+    # before the switches existed comes back, then put right.
+    for obj in (a_room, door):
+        obj.display_type = "TEXTURED"
+        obj.show_in_front = False
+        obj.show_wire = False
+    out_of_step = len(shown_as_asked())
+    _rooms.follow_sector_settings(None)
+    swept = shown_as_asked()
+
+    # Writing from the update handler has to settle at once, or the scene
+    # would never stop updating itself.
+    rounds = {"n": 0}
+    settled = _rooms.follow_sector_settings
+
+    def counted(depsgraph=None):
+        rounds["n"] += 1
+        return settled(depsgraph)
+
+    _rooms.follow_sector_settings = counted
+    try:
+        door.location.x += 0.5
+        bpy.context.view_layer.update()
+        moved = rounds["n"]
+        rounds["n"] = 0
+        for _ in range(5):
+            bpy.context.view_layer.update()
+        quiet = rounds["n"]
+    finally:
+        _rooms.follow_sector_settings = settled
+    for prop in room_props:
+        setattr(bpy.context.scene, prop, False)
+
+    stages = {"named only": named_only, "parented": parented,
+              "named like a copy": copy_named, "named back": named_back,
+              "its sector gone": orphaned}
+    wrong = [name for name, (told, off) in stages.items() if not told or off]
+    check("a sector follows the scene when what it is changes, and on opening",
+          not wrong and out_of_step and not swept and moved and not quiet,
+          f"of {len(stages)} ways to change what a mesh is, {len(wrong)} left "
+          f"it showing something else{': ' + ', '.join(wrong) if wrong else ''}"
+          f"; a file out of step came in with {out_of_step} setting(s) wrong "
+          f"and was swept to {len(swept)}; moving one portal ran the sweep "
+          f"{moved} time(s) and five quiet updates ran it {quiet}")
+
+    # Every weight refusal's suggested fix, tried against a model that trips
+    # it. The one for a total that is not one used to name a menu path that
+    # could not work - the mesh frame's share is not a joint, so Normalize All
+    # does not count it - and the other two named switches by the wrong name
+    # and in the wrong place. So each fix is checked here against the thing it
+    # names, and the model it is offered for is made to trip it.
+    fresh_scene()
+    kept_count = bpy.context.scene.ls3d_animated_object_count
+    bpy.ops.ls3d.add_character_skeleton()
+    bpy.context.scene.ls3d_animated_object_count = kept_count
+    fix_rig = bpy.data.objects["base_Armature"]
+    bpy.ops.mesh.primitive_cube_add(size=0.8, location=(0.0, 0.0, 1.0))
+    fix_body = bpy.context.object
+    fix_body.name = "base"
+    fix_body.ls3d_frame_type = str(C.FRAME_VISUAL)
+    fix_body.visual_type = str(C.VISUAL_SINGLEMESH)
+    fix_body.parent = fix_rig
+    fix_body.matrix_parent_inverse = fix_rig.matrix_world.inverted()
+    fix_bound = fix_body.modifiers.new("Armature", "ARMATURE")
+    fix_bound.object = fix_rig
+    for bone in fix_rig.data.bones:
+        fix_body.vertex_groups.new(name=bone.name)
+    # The mesh frame's own share, held back the way the import sets it up.
+    fix_share = fix_body.vertex_groups.new(name="held")
+    fix_bound.vertex_group = "held"
+    fix_bound.invert_vertex_group = True
+
+    everything = [vertex.index for vertex in fix_body.data.vertices]
+    fix_body.vertex_groups["back1"].add(everything, 1.0, "REPLACE")
+    # One vertex on three joints, one on two that are not a pair, and one
+    # whose joint and share together come to more than one.
+    fix_body.vertex_groups["back2"].add([0], 0.5, "REPLACE")
+    fix_body.vertex_groups["back3"].add([0], 0.3, "REPLACE")
+    fix_body.vertex_groups["back1"].add([1], 0.0, "REPLACE")
+    fix_body.vertex_groups["l_hand"].add([1], 0.6, "REPLACE")
+    fix_body.vertex_groups["r_hand"].add([1], 0.4, "REPLACE")
+    fix_share.add([2], 0.3, "REPLACE")
+    bpy.context.view_layer.update()
+
+    fix_out = os.path.join(out_dir, "weight_fixes.4ds")
+    refused, refused_lines = _report_of(
+        lambda: getattr(bpy.ops.export_scene, "4ds")(filepath=fix_out))
+    said = " ".join(refused_lines)
+
+    # The suggested fixes are carried beside the messages rather than printed
+    # with them, so they are read where they are written.
+    _weight_checks = ls3d_module("4ds.validation")
+    _report = ls3d_module("common.report")
+    offered = []
+    _weight_checks.validate_skin_weights(
+        fix_body, _report.Report("MBT/TEST"),
+        lambda message, fix=None: offered.append((message, fix or "")))
+    fixes = " ".join(fix for _message, fix in offered)
+
+    # Each fix has to name a thing that is really there, by the name it really
+    # has - which is read off the switch and the button themselves, so this
+    # fails if either is ever renamed without the message following.
+    # Every fix has to name a thing that is really there, by the name it
+    # really has - read off the button itself, so a rename that leaves a
+    # message behind fails here.
+    one_button = bpy.ops.ls3d.fix_weights.get_rna_type().name
+    named = {
+        "three joints": one_button in fixes,
+        "an unrelated pair": one_button in fixes,
+        "a total that is not one": one_button in fixes,
+    }
+    tripped = {
+        "three joints": "joint influences, but the format allows" in said,
+        "an unrelated pair": "not a direct parent-child pair" in said,
+        "a total that is not one": "not 1.0" in said,
+    }
+
+    # Now take each fix the messages offer, and see whether it works.
+    bpy.context.view_layer.objects.active = fix_body
+    for other in bpy.context.view_layer.objects:
+        other.select_set(other is fix_body)
+    pressed = bpy.ops.ls3d.fix_weights()
+    totals_left = 0
+    bones_of = set(fix_rig.data.bones.keys())
+    named_groups = {g.index: g.name for g in fix_body.vertex_groups}
+    for vertex in fix_body.data.vertices:
+        on_joints = sum(entry.weight for entry in vertex.groups
+                        if named_groups[entry.group] in bones_of)
+        if not on_joints:
+            continue
+        on_joints += sum(entry.weight for entry in vertex.groups
+                         if named_groups[entry.group] == "held")
+        if abs(on_joints - 1.0) > 1e-6:
+            totals_left += 1
+    after_the_button = getattr(bpy.ops.export_scene, "4ds")(
+        filepath=fix_out)
+
+    check("every weight refusal's suggested fix works on a model that trips it",
+          refused == {"CANCELLED"} and all(tripped.values())
+          and all(named.values()) and pressed == {"FINISHED"}
+          and totals_left == 0 and after_the_button == {"FINISHED"},
+          f"refused {refused}; raised {tripped}; {len(offered)} fix(es) "
+          f"offered, every one naming {one_button!r} {named}; the button left "
+          f"{totals_left} off total; the export after it {after_the_button}")
 
     anims_dir = os.path.join(os.path.dirname(models_dir), "anims")
     playback = {}
@@ -9861,6 +11287,7 @@ def run_regressions(models_dir, out_dir):
     # no difference to where anything is. Either exports, and imports back
     # with every joint where it was.
     homemade = {}
+    homemade_fixed = {}
     for with_frame_bone in (False, True):
         fresh_scene()
         bpy.ops.object.armature_add(enter_editmode=True, location=(0.0, 0.0, 0.0))
@@ -9918,9 +11345,16 @@ def run_regressions(models_dir, out_dir):
 
         label = ("mesh frame at the hips, origin elsewhere" if with_frame_bone
                  else "plain")
+        # Blender's automatic weights break all three rules the game plays
+        # them by, so they are put right before the export rather than by it.
+        body_mesh = bpy.data.objects["base"]
+        bpy.context.view_layer.objects.active = body_mesh
+        for other in bpy.context.view_layer.objects:
+            other.select_set(other is body_mesh)
+        homemade_fixed[label] = bpy.ops.ls3d.fix_weights()
         path = os.path.join(out_dir, f"homemade_{with_frame_bone}.4ds")
         written = getattr(bpy.ops.export_scene, "4ds")(
-            filepath=path, fix_multi_influences=True, fix_non_parent_child=True)
+            filepath=path)
         if written != {"FINISHED"}:
             homemade[label] = f"parent {parented}, export {written}"
             continue
@@ -9956,9 +11390,10 @@ def run_regressions(models_dir, out_dir):
     check("a character made the traditional way exports, comes back in place, "
           "and exports the same again",
           len(homemade) == 2 and all(isinstance(v, tuple) and v[0] < 1e-6 and v[1]
-                                     and v[2] for v in homemade.values()),
+                                     and v[2] for v in homemade.values())
+          and all(v == {"FINISHED"} for v in homemade_fixed.values()),
           f"worst joint distance mm, skin weights present, same again, changed, "
-          f"box step: {homemade}")
+          f"box step: {homemade}; Fix Weights {homemade_fixed}")
 
     # The game walks from one key to the next in a straight line, with no
     # easing at either end. Blender inserts Bezier keys by default, which slow

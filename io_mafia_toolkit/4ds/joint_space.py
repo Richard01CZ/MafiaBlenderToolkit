@@ -601,6 +601,50 @@ class JointSpace:
         self.worlds[bone.name] = Matrix(frame.matrix())
 
 
+def settle_bones(armature, skin=None, passes=4):
+    """Move each bone to where the values the export writes would put it.
+
+    A bone is 32-bit, and a bone placed by hand - or by a pose made the rest -
+    can sit a rounding step from anywhere those values can place one exactly.
+    The export writes the values nearest the bone, so the next import would
+    rebuild the bone a step away and everything hung on it would move by that
+    step, once. Settled here instead, the bone is where every later import
+    puts it and the values written are the same either way.
+
+    Comes back as how many bones had to be moved on the first pass, which is
+    how many were not already where their own values put them.
+    """
+    if skin is None:
+        skin = skinned_mesh_of(armature, list(bpy.context.scene.objects))
+    first = 0
+    for attempt in range(passes):
+        rest = edit_rest(armature)
+        if rest is None:
+            return first
+        space = JointSpace(armature, skin, rest)
+        moved = {}
+        for bone in space.joints():
+            head, tail, roll = joint_math.bone_rest(space.frames[bone.name])
+            placed = (tuple(head), tuple(tail), roll)
+            if placed != rest[bone.name]:
+                moved[bone.name] = placed
+        if not attempt:
+            first = len(moved)
+        if not moved:
+            return first
+        previous_active = bpy.context.view_layer.objects.active
+        bpy.context.view_layer.objects.active = armature
+        try:
+            bpy.ops.object.mode_set(mode="EDIT")
+            for name, (head, tail, roll) in moved.items():
+                bone = armature.data.edit_bones[name]
+                bone.head, bone.tail, bone.roll = head, tail, roll
+        finally:
+            bpy.ops.object.mode_set(mode="OBJECT")
+            bpy.context.view_layer.objects.active = previous_active
+    return first
+
+
 def hung_frame(armature):
     """The joint *armature* is hung on, in the model's terms, or nothing."""
     parent = armature.parent

@@ -54,6 +54,12 @@ DEPTH_BIAS = 2.0e-5
 #: game's textures are paletted, so a keyed pixel is the key exactly; this is
 #: room for the conversion into Blender's own float pixels.
 COLOR_KEY_SLACK = 0.02
+#: How far a surface may turn away from the projector and still be painted.
+#: A surface facing the projector always is. One facing away is painted only
+#: while it is more across the beam than along it, which is the setting the
+#: game starts every projector with - a file carries nothing that changes it.
+#: Nothing at all would paint none of them; everything would paint all.
+AWAY_FACING_SHARE = 0.5
 
 #: What the shader reads its settings out of. Four slots of sixteen bytes, so
 #: every field lands where the layout rules put it without padding of its own.
@@ -63,6 +69,7 @@ struct ProjectorPaint {
   vec4 tint;        /* the key color, and the depth bias in the fourth */
   ivec4 modes;      /* falloff, blended rather than added, straight on, keyed */
   ivec4 flags;      /* transparency kept in a second image */
+  vec4 stretch;     /* the frame's own size, and how far a surface may turn */
 };
 """
 
@@ -72,6 +79,14 @@ void main()
     /* The object's own place is already in both matrices, so the position
        arrives in the terms each of them wants. */
     local = (to_projector * vec4(pos, 1.0)).xyz;
+    /* A slope does not travel the way a place does: it goes through the
+       inverse turned on its side, or a squashed volume would tilt it. The
+       sign goes with it, because a frame scaled by a negative number turns
+       its faces around - the game reads the facing off the faces themselves,
+       so a model built that way faces the other way in game and has to here
+       too. */
+    mat3 carry = mat3(to_projector);
+    slope = transpose(inverse(carry)) * nor * sign(determinant(carry));
     gl_Position = ModelViewProjectionMatrix * vec4(pos, 1.0);
     /* The same surface drawn a second time lands on the same depth, and two
        equal depths are a coin toss - which speckles the paint with whatever
@@ -95,8 +110,30 @@ void main()
     vec2 across = local.xz / (settings.shape.y * spread);
     if (abs(across.x) > 1.0 || abs(across.y) > 1.0) { discard; }
 
-    vec2 uv = across * 0.5 + 0.5;
-    vec2 at = vec2(uv.x, 1.0 - uv.y);
+    /* Only a surface the projector can face is painted - which is the
+       surface's own facing, not the viewer's, so it holds however the model
+       is being looked at. The frame's own size is taken back out of the slope
+       first, or a volume dragged longer than it is wide would tilt the
+       answer. A surface facing the projector is always painted; one facing
+       away only while it is more across the beam than along it. */
+    vec3 facing = slope / settings.stretch.xyz;
+    float along = facing.y;
+    if (along > 0.0) {
+        float share = settings.stretch.w;
+        if (share <= 0.0) { discard; }
+        if (share < 1.0
+            && dot(facing.xz, facing.xz) * share
+               < along * along * (1.0 - share)) {
+            discard;
+        }
+    }
+
+    /* The picture goes on the way the game puts it: its top edge toward the
+       side the frame's own axes call up. An image handed to the viewport
+       starts at its bottom row, which runs that same way, so the coordinate
+       is used as it comes - turning it over here is what painted the picture
+       upside down. */
+    vec2 at = across * 0.5 + 0.5;
     vec4 paint_color = texture(paint, at);
     /* Where the material keeps its transparency in a second image, that is
        where the paint's own transparency comes from. */
@@ -145,6 +182,9 @@ def shader():
         return _shader
     interface = gpu.types.GPUStageInterfaceInfo("ls3d_projection")
     interface.smooth("VEC3", "local")
+    # One slope for the whole triangle, which is what the game measures: it
+    # decides a face at a time, not a corner at a time.
+    interface.flat("VEC3", "slope")
 
     info = gpu.types.GPUShaderCreateInfo()
     info.push_constant("MAT4", "ModelViewProjectionMatrix")
@@ -157,6 +197,7 @@ def shader():
     info.sampler(0, "FLOAT_2D", "paint")
     info.sampler(1, "FLOAT_2D", "mask")
     info.vertex_in(0, "VEC3", "pos")
+    info.vertex_in(1, "VEC3", "nor")
     info.vertex_out(interface)
     info.fragment_out(0, "VEC4", "fragColor")
     info.vertex_source(_VERTEX_SOURCE)
@@ -191,6 +232,15 @@ def _triangles_of(obj, depsgraph):
     Read from the object as the scene evaluates it, so a mesh the modifiers
     change is painted the way it is seen. Kept in the object's own terms with
     its place handed to the shader, so moving it does not rebuild anything.
+
+    Each triangle brings its own slope, and a slope belongs to a face rather
+    than to a corner: a corner where several faces meet has no single one. So
+    the corners are listed out one triangle at a time instead of being shared,
+    which is what lets each carry the slope of the face it belongs to.
+
+    Comes back as one batch for the triangles whose material is painted on one
+    side and another for those painted on both, because which of the two a
+    triangle is depends on its own material and a mesh can carry several.
     """
     found = _batches.get(obj.name)
     if found is not None:
@@ -206,17 +256,45 @@ def _triangles_of(obj, depsgraph):
         mesh.calc_loop_triangles()
         if not mesh.loop_triangles:
             return None
-        places = [tuple(vertex.co) for vertex in mesh.vertices]
-        corners = [corner for triangle in mesh.loop_triangles
-                   for corner in triangle.vertices]
-        batch = batch_for_shader(shader(), "TRIS", {"pos": places},
-                                 indices=[tuple(corners[at:at + 3])
-                                          for at in range(0, len(corners), 3)])
-        count = len(mesh.loop_triangles)
+        both_sides = _both_sided_slots(obj)
+        vertices = mesh.vertices
+        sorted_out = {False: ([], []), True: ([], [])}
+        for triangle in mesh.loop_triangles:
+            places, slopes = sorted_out[
+                both_sides.get(triangle.material_index, False)]
+            slope = tuple(triangle.normal)
+            for corner in triangle.vertices:
+                places.append(tuple(vertices[corner].co))
+                slopes.append(slope)
+        built = []
+        for sided, (places, slopes) in sorted_out.items():
+            if not places:
+                continue
+            built.append((batch_for_shader(shader(), "TRIS",
+                                           {"pos": places, "nor": slopes}),
+                          len(places) // 3, sided))
     finally:
         evaluated.to_mesh_clear()
-    _batches[obj.name] = (batch, count)
+    if not built:
+        return None
+    _batches[obj.name] = tuple(built)
     return _batches[obj.name]
+
+
+def _both_sided_slots(obj):
+    """``{material slot: painted on both sides}`` for *obj*.
+
+    The game leaves out the question of which way a surface faces where its
+    material is drawn from both sides, and paints it either way round. Which
+    material that is belongs to the triangle, not to the object.
+    """
+    sided = {}
+    for index, slot in enumerate(obj.material_slots):
+        material = slot.material
+        flags = 0 if material is None else getattr(
+            material, "ls3d_material_flags", 0)
+        sided[index] = bool(int(flags) & C.MTL_DIFFUSE_DOUBLESIDED)
+    return sided
 
 
 def _world_bounds(corners):
@@ -297,23 +375,35 @@ def blend_for(_projector):
     return "ALPHA"
 
 
-def settings_block(projector, paint):
-    """A projector's settings packed the way the shader's block reads them."""
+def settings_block(projector, paint, both_sides=False):
+    """A projector's settings packed the way the shader's block reads them.
+
+    With *both_sides*, which way a surface faces is left out of it entirely -
+    for the triangles whose material is drawn from both sides, which the game
+    paints either way round.
+    """
     _image, mask, keyed, key = paint
     falloff = int(getattr(projector, "ls3d_projector_falloff", "0"))
     alpha = int(getattr(projector, "ls3d_projector_blend", "0"))
     orthogonal = bool(getattr(projector, "ls3d_projector_orthogonal", False))
+    # The frame's own size, so the slope of a surface can be read in the
+    # volume's terms whatever shape the volume has been dragged into. An axis
+    # with no size at all would leave nothing to divide by.
+    size = projector.matrix_world.to_scale()
+    stretch = tuple(value if abs(value) > 1e-6 else 1e-6 for value in size)
     packed = struct.pack(
-        "<4f4f4i4i",
+        "<4f4f4i4i4f",
         C.PROJECTOR_REACH, C.PROJECTOR_HALF_WIDTH, ALPHA_CUTOFF,
         COLOR_KEY_SLACK,
         key[0], key[1], key[2], DEPTH_BIAS,
         falloff, 1 if alpha else 0, 1 if orthogonal else 0, 1 if keyed else 0,
-        1 if mask is not None else 0, 0, 0, 0)
+        1 if mask is not None else 0, 0, 0, 0,
+        stretch[0], stretch[1], stretch[2],
+        1.0 if both_sides else AWAY_FACING_SHARE)
     return gpu.types.GPUUniformBuf(packed)
 
 
-def apply_paint(drawn, projector, paint):
+def apply_paint(drawn, projector, paint, both_sides=False):
     """Put everything about *projector* on the shader.
 
     The one place that turns a projector's settings into what is drawn, so the
@@ -321,7 +411,7 @@ def apply_paint(drawn, projector, paint):
     means. The block is handed back as well as bound: it has to outlive the
     draw, and nothing else keeps hold of it.
     """
-    block = settings_block(projector, paint)
+    block = settings_block(projector, paint, both_sides)
     drawn.uniform_block("settings", block)
     return block
 
@@ -379,26 +469,36 @@ def _draw():
             drawn.bind()
             drawn.uniform_sampler("paint", texture)
             drawn.uniform_sampler("mask", mask_texture)
-            # Kept in hand until the last batch is drawn: the block is read as
-            # the draw runs, not as it is bound.
-            block = apply_paint(drawn, projector, paint)
+            # Both kept in hand until the last batch is drawn: a block is
+            # read as the draw runs, not as it is bound. One leaves out which
+            # way a surface faces, for the materials drawn from both sides.
+            blocks = {
+                False: apply_paint(drawn, projector, paint),
+                True: settings_block(projector, paint, both_sides=True),
+            }
 
             for obj in _painted_by(projector, objects):
                 built = _triangles_of(obj, depsgraph)
                 if built is None:
                     continue
-                batch, count = built
-                if painted_triangles + count > PAINTED_TRIANGLE_LIMIT:
+                over = False
+                for batch, count, both_sides in built:
+                    if painted_triangles + count > PAINTED_TRIANGLE_LIMIT:
+                        over = True
+                        break
+                    painted_triangles += count
+                    # The object's own place rides in both matrices:
+                    # Blender's own, which the viewport matrix stack carries,
+                    # and the one that takes a point into the projector's
+                    # terms.
+                    with gpu.matrix.push_pop():
+                        gpu.matrix.multiply_matrix(obj.matrix_world)
+                        drawn.uniform_block("settings", blocks[both_sides])
+                        drawn.uniform_float(
+                            "to_projector", to_projector @ obj.matrix_world)
+                        batch.draw(drawn)
+                if over:
                     break
-                painted_triangles += count
-                # The object's own place rides in both matrices: Blender's
-                # own, which the viewport matrix stack carries, and the one
-                # that takes a point into the projector's terms.
-                with gpu.matrix.push_pop():
-                    gpu.matrix.multiply_matrix(obj.matrix_world)
-                    drawn.uniform_float(
-                        "to_projector", to_projector @ obj.matrix_world)
-                    batch.draw(drawn)
     finally:
         gpu.state.blend_set("NONE")
         gpu.state.depth_mask_set(True)

@@ -4,7 +4,7 @@ rem Blender is needed: it brings its own Python, and this finds Blender.
 rem
 rem   mbt --install
 rem   mbt --install --textures "D:\Hry\Mafia Editovani\maps"
-rem   mbt --install "D:\downloads\mafia-toolkit-1.0.2.zip" --open "D:\models\tommy.4ds"
+rem   mbt --install "D:\downloads\mafia-toolkit-1.1.0.zip" --open "D:\models\tommy.4ds"
 rem   mbt --textures "D:\Hry\Mafia Editovani\maps" --open "D:\models\Tommy.4ds" --check
 rem   mbt --open "D:\models\tommy.4ds" --export "D:\out\tommy.4ds"
 rem   mbt --open "D:\models\tommy.4ds" --gui

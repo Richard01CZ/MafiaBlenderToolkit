@@ -381,7 +381,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
 
   <nav class="nav">
     <div class="nav-brand">Mafia Toolkit</div>
-    <div class="nav-build">User Guide &middot; 1.0.2</div>
+    <div class="nav-build">User Guide &middot; 1.1.0</div>
 
     <h4>Start here</h4>
     <a href="#install">1 &middot; Installing</a>
@@ -409,7 +409,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       This is the way in: it starts at installing and walks through a prop, a car and a
       character, in the order you meet them. The <b>Field Manual</b> beside it is the reference
       to look single things up in, and the <b>README</b> is the record of what changed and why.</p>
-      <p>Everything here is written against <b>1.0.2</b>, on Blender 5.2 or newer.</p>
+      <p>Everything here is written against <b>1.1.0</b>, on Blender 5.2 or newer.</p>
     </header>
 
     <!-- ─────────────────────────────────────────────────── -->
@@ -417,7 +417,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       <h2><span class="num">01</span>Installing</h2>
 
       <p class="lead-in">Install the zip through <b>Edit &rsaquo; Preferences &rsaquo; Add-ons &rsaquo;
-      Install from Disk</b>, pick <code>mafia-toolkit-1.0.2.zip</code>, and switch it on. It asks for
+      Install from Disk</b>, pick <code>mafia-toolkit-1.1.0.zip</code>, and switch it on. It asks for
       Blender 5.2 or newer.</p>
 
       <figure class="shot" id="fig-g01">
@@ -671,9 +671,31 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
           <td>A projector paints a material, and the format keeps a material number where zero is
           not allowed. Point it at one in its panel.</td></tr>
 
+          <tr><td><b>Joint weights total N, not 1.0</b>, <b>N joint influences, but the format
+          allows 2</b>, or <b>weighted to two joints that are not a direct parent-child
+          pair</b></td>
+          <td>All three are the weight rules, and all three are put right by <b>Fix Weights</b>
+          under <i>Fixes</i> in the 4DS Model tab. Blender&rsquo;s own <b>Normalize All</b> cannot
+          do the totals &mdash; the mesh frame&rsquo;s share is not a joint, so it is not counted.
+          Or weight the vertex yourself to a joint and that joint&rsquo;s own parent, adding up to
+          one.</td></tr>
+
+          <tr><td><b>Sized by a negative number, which turns every one of its faces
+          around</b></td>
+          <td>The value is written as it is set &mdash; this is a warning, not a refusal &mdash;
+          but in game the object lights from the wrong side, is seen through from the wrong side
+          and takes a projector&rsquo;s paint on the wrong side. Turning the faces over in Blender
+          will not help, because the size turns them straight back. In Object Mode,
+          <b>Object &rsaquo; Apply &rsaquo; Scale</b> puts the size into the mesh, then
+          <b>Mesh &rsaquo; Normals &rsaquo; Recalculate Outside</b> in Edit Mode settles which way
+          the faces look. An even number of negative numbers cancels out and is not
+          mentioned.</td></tr>
+
           <tr><td><b>Mirror has a view box with no width</b> (or height, or depth)</td>
-          <td>Its view box is four numbers on the mirror. Give the flat axis a length, or press
-          <b>Fit View Box</b>.</td></tr>
+          <td>Its view box is four numbers on the mirror, and an axis of no length is a box the
+          game cannot look into. Give that axis a length, or press <b>Fit View Box</b>. You will
+          only see this on a mirror whose box was emptied by hand or read that way from a file:
+          making a mesh a mirror fits one.</td></tr>
 
           <tr><td><b>The scene runs at N frames per second</b></td>
           <td>The game plays every animation at 25 &mdash; one frame every 40&nbsp;ms &mdash; and an
@@ -912,11 +934,116 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       above the point midway between its <code>l_thigh</code> and <code>r_thigh</code> joints &mdash;
       so a character of another size stands at its own hip height, not Tommy's.</p>
 
+      <h3>What a mirror will reflect</h3>
+      <p>A mirror's <b>view box</b> is what it is allowed to reflect, and whether a given object
+      falls inside it is not something you can judge by eye. <b>What It Reflects</b>, in the
+      <b>Mirrors</b> box of the 4DS Model tab, outlines everything each mirror would catch, and
+      the panel says how many that is.</p>
+      <p>It makes the game's own two tests, in the same order. The first is cheap: an object whose
+      bound sphere is further off than the mirror's reach and its own put together cannot touch the
+      box. The second is exact: the object's eight bound corners are taken into the box's own
+      terms, and it is kept only where its bound overlaps the box along every axis &mdash; that is,
+      where it is not wholly outside any of the six sides. A mirror whose box has been emptied
+      reaches nothing, which is what the game does with it too. Drawing only.</p>
+
+      <h3>Outlines, or solid faces</h3>
+      <p>What the add-on draws for a frame is an outline &mdash; twelve edges and a dot at the
+      middle for a box, rings and spokes for a light &mdash; which reads well on a crowded
+      skeleton and badly when the shape itself is what you want to see. Every kind can be drawn
+      <b>Solid</b> instead, with its own toggle, so a solid mirror box can sit beside wireframe
+      joint boxes. Solid means opaque: the outline colours are a little see-through, which suits a
+      line laid over the model, and the faces take the colour without the transparency so the
+      shape reads as a shape. A filled box therefore hides what is behind it &mdash; turn
+      <b>In Front</b> on for that kind if you want to see through it. There are five: the joints&rsquo; influence boxes, the dummy boxes (and a
+      mirror&rsquo;s bound, drawn with them), the mirrors&rsquo; view boxes, the projectors&rsquo;
+      volumes, and the lights. <b>Sectors and portals</b> have their own pair
+      each &mdash; filled and in front &mdash; in the <b>Sectors</b> box, and those work
+      differently: a sector and a portal are meshes, so the toggle switches the object&rsquo;s own
+      display between wire and solid rather than drawing anything extra. Filling either also asks
+      the viewport to colour objects by their own colour, which is where a sector&rsquo;s cyan and
+      a portal&rsquo;s purple are kept &mdash; without that they are the same grey as everything
+      else.</p>
+      <p>A portal lies flat on the wall of its sector, so filled they would be two surfaces in the
+      same place. A filled portal is therefore drawn by the add-on rather than by the object, and
+      <b>lifted a hair off its wall</b> &mdash; toward the inside of its sector, by a fraction of
+      its own size &mdash; so it wins that wall and nothing else. <b>In Front</b> is left to mean
+      what it says: over everything. A filled portal does not need it. A projector&rsquo;s volume fills as the box or the pyramid it is; a
+      point light&rsquo;s two ranges fill as balls and a spot&rsquo;s two cones as cones. The
+      kinds of light that set a sector&rsquo;s atmosphere draw nothing either way, because their
+      ranges are not distances from the light. The faces are <b>shaded</b>, each by how square it stands to a light the box carries
+      itself: a box is not in the scene and nothing in the scene lights it, so without that the
+      six faces would be one flat colour and the shape unreadable. A filled box also hides what
+      is behind it &mdash; its own far edges, the line down to its joint, the skeleton&rsquo;s
+      lines &mdash; which otherwise showed through and read as something inside it. Turn <b>In
+      Front</b> on for that kind alone if you want to see through it again. The joints' is in the <b>Joints</b> box, a mirror's view box in <b>Mirrors</b>, and a
+      dummy's in <b>Dummy Boxes</b>, which appears when there is one to fill. Drawing only.</p>
+      <p>Every dummy's box is outlined from the moment the dummy is made, even where the
+      empty's own cube happens to stand exactly where the box stands &mdash; the two are then
+      drawn over each other. That is on purpose: a dummy made from scratch is exactly that shape,
+      and leaving it out meant its box could not be seen, dragged or filled until its numbers had
+      been changed some other way.</p>
+
+      <h3>Reading the skeleton</h3>
+      <p>A joint is drawn as a small sphere, not as a bone, and the joints come in unconnected
+      from one another &mdash; so on its own a character is a cloud of markers with nothing saying
+      which joint hangs off which. The add-on draws that: a <b>solid light blue line</b> from each
+      joint to the one above it, and a <b>dot on each joint&rsquo;s own middle</b>, which is where
+      the joint actually is rather than wherever its marker happens to reach.</p>
+      <p>Two toggles in the 4DS Model tab control it. <b>Skeleton</b> shows or hides the lines
+      and the dots together. <b>Joint Links In Front</b> draws them over everything, which is
+      what you want nearly always, since a skeleton sits inside the mesh it moves. Both are
+      separate from the influence boxes &mdash; from their own In Front toggle and from whether
+      the boxes are shown at all &mdash; because the skeleton is what tells you which joint hangs
+      off which, and that is worth having with the boxes out of the way. Drawing only &mdash;
+      none of it changes what is written.</p>
+
+      <h3>Fitting the skeleton to your own character</h3>
+      <p>The preset is Tommy&rsquo;s skeleton, and a character of another build needs its joints
+      moved. The natural way to do that is in <b>Pose Mode</b> &mdash; and on its own that is a
+      trap, because a joint moved in Pose Mode is still <i>resting</i> where it was. Blender&rsquo;s
+      armature deform moves a vertex by the step from where its joint rests to where it is posed,
+      so the moment you weight the mesh it is pulled about by exactly the distance you moved each
+      joint. It reads as the weights breaking the mesh, and it is not: the skeleton was posed and
+      never told so. <b>Make Weights From Boxes will not run while the
+      skeleton is posed</b>, and says why &mdash; no weights it could make would look right until
+      the pose is the rest.</p>
+      <p><b>Press Set Rest From Pose</b> in the 4DS Model tab when the skeleton fits. Every joint
+      then rests where you put it and the deform has nothing left to do. Nothing moves on
+      screen and nothing a file keeps changes &mdash; a posed skeleton was already written as it is
+      posed. Do it <b>before</b> weighting, and the question never comes up.</p>
+      <p>Two things it leaves alone. A joint <b>aimed at a target</b> is turned by its link rather
+      than by you, so the link is held off while the pose is taken and put back afterwards &mdash;
+      otherwise the aiming would be baked into the joint for good. And because that link goes on
+      turning the joint, anything weighted to an aimed joint is always deformed a little, before
+      and after; that is what the link is for.</p>
+
       <h3>3. Weights, or boxes</h3>
-      <p>The game plays vertex weights, and it plays them under two rules: <b>at most two joints
-      per vertex</b>, and those two have to be <b>a joint and its own parent</b>. The export can
-      correct both for you &mdash; the two <b>Fix</b> switches in the export dialog &mdash; and says
-      what it changed.</p>
+      <p>The game plays vertex weights, and it plays them under three rules: <b>at most two
+      influences per vertex</b>, those two have to be <b>a joint and its own parent</b>, and they
+      have to <b>total one</b>. <b>Fix Weights</b>, under <i>Fixes</i> in the 4DS Model tab, puts
+      all three right at once and says what it changed. The export only checks them: it will not
+      quietly rewrite your weights as it writes the file, so what goes out is what you can see.</p>
+
+      <div class="callout">
+        <span class="label">Totalling one, and why Normalize All cannot do it</span>
+        <p>The game uses a vertex's weights exactly as they are and gives whatever they do not
+        add up to to the joint's parent, so a vertex totalling more or less than one moves
+        differently in game from the way it looks in Blender &mdash; Blender scales them before it
+        draws. One of the two influences a vertex may have can be <b>the mesh frame's own
+        share</b>, which is the vertex group the Armature modifier names with <b>Invert</b> on;
+        the joints at the top of the skeleton hang from that frame, so a joint blended against it
+        is exactly what the format stores.</p>
+        <p>That is why Blender&rsquo;s <b>Normalize All</b> cannot settle it: the share is not a
+        joint, so it is not counted &mdash; and with the joints already totalling one on their own
+        there is nothing left for it to scale. <b>Fix Weights</b> does it instead. The joints keep
+        what is painted on them and the share becomes whatever they leave; only where the joints
+        alone come to more than one are they brought down.</p>
+        <p>The three repairs run in one order, because each changes what the next has to work
+        with: a vertex is cut to its two strongest, then a pair that is not a joint and its parent
+        is resolved to the stronger of the two, and the totals are settled last. Settling the
+        totals first would be undone by either of the others &mdash; which is why it is one button
+        and not three.</p>
+      </div>
 
       <p>You have two ways to get there:</p>
       <ul>
@@ -939,7 +1066,12 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
         <li>In <b>Pose Mode</b>, the selected joint's box carries handles: six grey ones on its
         faces to resize it, three arrows to slide it, three rings to turn it. Each kind keeps its
         own distance on screen, so a box a few centimeters across is still easy to hit, and
-        <b>Handles</b> in the 4DS Model tab narrows them to one kind at a time.</li>
+        <b>Handles</b> in the 4DS Model tab has a toggle for each kind &mdash; <b>Resize</b>,
+        <b>Move</b> and <b>Turn</b> &mdash; so you can show any combination of them, or none.</li>
+        <li><b>Every one of those handles moves the box, not the joint.</b> It is the easiest
+        thing to misread, because they appear on the joint you have selected. To move the joint
+        itself, use Blender's own shortcuts in Pose Mode &mdash; G, R and S. The panel says so
+        under the toggles.</li>
         <li><b>Fit Influence Box</b> builds one the way the game's own sit: on the joint, aimed
         at the joint below it, reaching a fifth of the way there, and as wide as the mesh around
         it.</li>
@@ -1088,7 +1220,11 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
           around one axis. The Add menu builds the upright kind, which is what most of the
           game's do.</td></tr>
           <tr><td><b>Mirror</b></td><td>A surface that reflects, with an authored bound and a view
-          box saying what it is allowed to reflect. <b>Fit View Box</b> sizes it.</td></tr>
+          box saying what it is allowed to reflect. Making a mesh a mirror fits that box for you
+          &mdash; a cube standing in front of the surface, sized from the mesh &mdash; which you can
+          then drag by its six face handles or type over in the panel. <b>Fit View Box</b> puts it
+          back to that cube. A box that already has a size is never refitted, so a mirror read from
+          a file keeps its own numbers exactly.</td></tr>
           <tr><td><b>Lens flare</b></td><td>A stack of sprites drawn along a line from a light.
           Each element needs a material.</td></tr>
           <tr><td><b>Projector</b></td><td>A volume that paints a material onto whatever is inside
@@ -1107,6 +1243,21 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
       texture only reaches a surface through that surface&rsquo;s own material &mdash; so the add-on
       draws it: the surfaces inside the volume, painted with the texture the way the frame&rsquo;s
       transform maps it, stopping at the first thing in the way, as a projector does.</p>
+      <p><b>Only a surface the projector can face is painted.</b> That is the surface&rsquo;s own
+      facing, not yours, so it does not change as you orbit the model. A surface turned away takes
+      nothing &mdash; which is why a projector standing inside a solid object paints neither its far
+      wall nor its outside. A surface turned away is still painted while it is more across the beam
+      than along it, so a wall the beam grazes is lit and one it has gone past is not. Where the
+      surface&rsquo;s material is drawn from both sides, the question is left out and it is painted
+      either way round.</p>
+      <p>The volume's size <b>is</b> the size of the projection, so a picture whose proportions
+      it does not share comes out stretched. <b>Fit Size To Texture</b> in the projector's panel
+      takes the proportions from one of the material's own pictures &mdash; you choose which, since
+      a material can carry a diffuse, a transparency and an environment image, and only you know
+      which one the shape should follow. The volume keeps the height it has and the width follows
+      from it; the <b>reach along the projection axis is left alone</b>. It sets the frame's own
+      scale, exactly as dragging it would, so it is undoable and changes nothing else.</p>
+
       <p>Everything the mode decides is drawn with it:</p>
       <ul>
         <li><b>The volume.</b> Two units across and one along the projection axis, carried by the
@@ -1207,7 +1358,7 @@ mbt --open "D:\models\tommy.4ds" --gui</code></pre>
 
     <hr>
     <footer>
-      <p>Written against Mafia Toolkit 1.0.2, on Blender 5.2. Behavior checked against what the
+      <p>Written against Mafia Toolkit 1.1.0, on Blender 5.2. Behavior checked against what the
       game actually does, and tested against every model shipped with Mafia.</p>
     </footer>
   </main>

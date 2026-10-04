@@ -466,6 +466,19 @@ class LS3D_GT_BoxRing(bpy.types.Gizmo):
             push_undo("Turn influence box")
 
 
+def wanted_handles(scene):
+    """``(faces, arrows, rings)`` - which kinds of handle to show.
+
+    One toggle a kind rather than one choice between them, so any combination
+    can be had: the arrows and the rings without the face handles was not a
+    state a single choice could hold. All three move the joint's influence
+    box; the joint itself is moved with Blender's own shortcuts.
+    """
+    return (bool(getattr(scene, C.INFLUENCE_RESIZE_HANDLES_PROP, True)),
+            bool(getattr(scene, C.INFLUENCE_MOVE_HANDLES_PROP, True)),
+            bool(getattr(scene, C.INFLUENCE_TURN_HANDLES_PROP, True)))
+
+
 class LS3D_GGT_InfluenceBox(bpy.types.GizmoGroup):
     """Handles for the active joint's influence box."""
 
@@ -530,7 +543,7 @@ class LS3D_GGT_InfluenceBox(bpy.types.GizmoGroup):
             return
         armature, bone_name = found
         highlight = highlight_color(context)
-        wanted = getattr(context.scene, C.INFLUENCE_HANDLES_PROP, "ALL")
+        show_faces, show_arrows, show_rings = wanted_handles(context.scene)
         rv3d = getattr(context, "region_data", None)
         toward = (rv3d.view_rotation @ Vector((0.0, 0.0, -1.0))
                   if rv3d is not None else None)
@@ -545,7 +558,7 @@ class LS3D_GGT_InfluenceBox(bpy.types.GizmoGroup):
             gizmo.target_set_prop("offset", armature, FACE_PROPERTIES[index])
             gizmo.matrix_basis = face_handle_matrix(armature, bone_name, index,
                                                     context)
-            gizmo.hide = (wanted not in ("ALL", "SIZE")
+            gizmo.hide = (not show_faces
                           or points_at_camera(toward, middle,
                                              gizmo.matrix_basis.translation))
             gizmo.color_highlight = highlight
@@ -553,7 +566,7 @@ class LS3D_GGT_InfluenceBox(bpy.types.GizmoGroup):
             gizmo.target_set_prop("offset", armature, MOVE_PROPERTIES[index])
             gizmo.matrix_basis = move_handle_matrix(armature, bone_name, index,
                                                     context)
-            gizmo.hide = (wanted not in ("ALL", "MOVE")
+            gizmo.hide = (not show_arrows
                           or points_at_camera(toward, middle,
                                              gizmo.matrix_basis.translation))
             gizmo.color_highlight = highlight
@@ -562,7 +575,7 @@ class LS3D_GGT_InfluenceBox(bpy.types.GizmoGroup):
             gizmo.bone_name = bone_name
             gizmo.matrix_basis = ring_matrix(armature, bone_name, index,
                                              context)
-            gizmo.hide = (wanted not in ("ALL", "TURN")
+            gizmo.hide = (not show_rings
                           or stands_edge_on(toward, gizmo.matrix_basis))
             gizmo.color_highlight = highlight
 

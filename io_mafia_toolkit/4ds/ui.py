@@ -715,6 +715,9 @@ class The4DSObjectPanel(bpy.types.Panel):
         # falloff read as one of the material's.
         shape = box.row(align=True)
         shape.prop(obj, "ls3d_projector_shape", expand=True)
+        # The frame's own scale is the size of the projection, so a picture
+        # whose proportions it does not share comes out stretched.
+        box.operator("ls3d.fit_projector_to_texture", icon="FULLSCREEN_ENTER")
         box.prop(obj, "ls3d_projector_falloff", text="Depth Falloff")
         box.prop(obj, "ls3d_projector_blend", text="Blend Mode")
         if _int_prop(obj, "ls3d_projector_mode") not in C.PROJECTOR_MODES:
@@ -869,9 +872,15 @@ class The4DSObjectPanel(bpy.types.Panel):
         column.separator()
         size = tuple(obj.bbox_max[axis] - obj.bbox_min[axis] for axis in range(3))
         box.label(text="Size  X %.3f   Y %.3f   Z %.3f" % size)
-        if not dummy_box_is_drawable(obj):
-            say(box, "Outlined in the viewport - the empty's own cube "
-                     "cannot show a box this shape.", icon="INFO")
+        if dummy_box_is_drawable(obj):
+            say(box, "Outlined in the viewport, where its faces can be "
+                     "dragged. The empty's own cube happens to stand where "
+                     "this box stands, so the two are drawn over each other.",
+                icon="INFO")
+        else:
+            say(box, "Outlined in the viewport, where its faces can be "
+                     "dragged - the empty's own cube cannot show a box this "
+                     "shape.", icon="INFO")
 
     def _draw_occluder(self, layout, obj):
         box = layout.box()
@@ -1438,6 +1447,10 @@ class The4DSModelPanel(bpy.types.Panel):
 
         counted = sum(len(influence.boxes_of(obj)) for obj in scene.objects
                       if obj.type == "ARMATURE")
+        # One box a kind, each holding only what it draws, and every button
+        # in one box of its own at the end. Settings and actions used to sit
+        # in the same box, and the joints' own count was written after three
+        # other boxes had been started, which read as scattered as it looked.
         box = layout.box()
         box.label(text="Joints", icon="BONE_DATA")
         box.prop(scene, C.JOINT_DISPLAY_SCALE_PROP, slider=True)
@@ -1448,24 +1461,26 @@ class The4DSModelPanel(bpy.types.Panel):
         in_front.active = getattr(scene, C.SHOW_INFLUENCE_BOXES_PROP, True)
         in_front.prop(scene, C.INFLUENCE_BOXES_IN_FRONT_PROP, toggle=True,
                       icon="XRAY")
+        in_front.prop(scene, C.SOLID_INFLUENCE_BOXES_PROP, toggle=True,
+                      icon="SHADING_SOLID")
         handles = box.row(align=True)
         handles.active = getattr(scene, C.SHOW_INFLUENCE_BOXES_PROP, True)
-        handles.prop(scene, C.INFLUENCE_HANDLES_PROP, expand=True)
-        box.operator("ls3d.default_mesh_origin", icon="ARMATURE_DATA")
-        box.operator("ls3d.weights_from_boxes", icon="MOD_VERTEX_WEIGHT")
-        box.operator("ls3d.clear_weights", icon="X")
-
-        is_projector = module("4ds.viewport").is_projector
-        projectors = sum(1 for obj in scene.objects if is_projector(obj))
-        if projectors:
-            painted = layout.box()
-            painted.label(text="Projectors", icon="OUTLINER_OB_LIGHT")
-            painted.prop(scene, C.PROJECT_TEXTURES_PROP, toggle=True,
-                         icon="TEXTURE")
-            say(painted,
-                f"{projectors} projector(s). Painted onto what they cover, "
-                f"with the falloff and blend each one's mode asks for. "
-                f"Drawing only.")
+        handles.label(text="Handles")
+        handles.prop(scene, C.INFLUENCE_RESIZE_HANDLES_PROP, toggle=True)
+        handles.prop(scene, C.INFLUENCE_MOVE_HANDLES_PROP, toggle=True)
+        handles.prop(scene, C.INFLUENCE_TURN_HANDLES_PROP, toggle=True)
+        whose = box.column()
+        whose.active = getattr(scene, C.SHOW_INFLUENCE_BOXES_PROP, True)
+        whose.scale_y = 0.8
+        say(whose, "They move the box, not the joint.", icon="BLANK1")
+        # Not tied to the boxes: the skeleton is drawn whether the boxes are
+        # shown or not, because it is what says which joint hangs off which -
+        # which is worth having with the boxes out of the way.
+        box.prop(scene, C.SHOW_JOINT_LINES_PROP, toggle=True, icon="BONE_DATA")
+        links_front = box.row(align=True)
+        links_front.active = getattr(scene, C.SHOW_JOINT_LINES_PROP, True)
+        links_front.prop(scene, C.JOINT_LINES_IN_FRONT_PROP, toggle=True,
+                         icon="XRAY")
         note = box.column()
         note.scale_y = 0.8
         if counted:
@@ -1474,11 +1489,96 @@ class The4DSModelPanel(bpy.types.Panel):
         else:
             note.label(text="No joint here carries an influence box.",
                        icon="BLANK1")
-        # Broken where the sidebar can show it at its own width: a line longer
-        # than that is cut short with no way to read the rest.
-        say(note, "A joint's box is what its weights are made from, when none "
-                  "are painted. Hiding the boxes changes nothing that is "
-                  "written.", icon="BLANK1")
+        say(note, "Weights are made from them where none are painted.",
+            icon="BLANK1")
+
+        # The boxes that mark a number the panel edits - a dummy's, and a
+        # mirror's own bound, which is drawn the same way.
+        viewport = module("4ds.viewport")
+        outlined = [obj for obj in scene.objects
+                    if viewport.needs_its_box_outlined(obj)]
+        if outlined:
+            marked = layout.box()
+            marked.label(text="Dummy Boxes", icon="CUBE")
+            marked_row = marked.row(align=True)
+            marked_row.prop(scene, C.DUMMY_BOXES_IN_FRONT_PROP, toggle=True,
+                            icon="XRAY")
+            marked_row.prop(scene, C.SOLID_DUMMY_BOXES_PROP, toggle=True,
+                            icon="SHADING_SOLID")
+            say(marked, f"{len(outlined)} outlined. Drawing only.")
+
+        rooms = [obj for obj in scene.objects
+                 if obj.type == "MESH"
+                 and _int_prop(obj, "ls3d_frame_type") == C.FRAME_SECTOR]
+        if rooms:
+            doors = sum(1 for obj in rooms if viewport.is_portal(obj))
+            walls = layout.box()
+            walls.label(text="Sectors", icon="MESH_CUBE")
+            sector_row = walls.row(align=True)
+            sector_row.label(text="Sector")
+            sector_row.prop(scene, C.SECTORS_IN_FRONT_PROP, toggle=True,
+                            icon="XRAY")
+            sector_row.prop(scene, C.SOLID_SECTORS_PROP, toggle=True,
+                            icon="SHADING_SOLID")
+            portal_row = walls.row(align=True)
+            portal_row.label(text="Portal")
+            portal_row.prop(scene, C.PORTALS_IN_FRONT_PROP, toggle=True,
+                            icon="XRAY")
+            portal_row.prop(scene, C.SOLID_PORTALS_PROP, toggle=True,
+                            icon="SHADING_SOLID")
+            say(walls, f"{len(rooms) - doors} sector(s), {doors} portal(s). "
+                       f"Drawing only.")
+
+        mirrors = sum(1 for obj in scene.objects if viewport.is_mirror(obj))
+        if mirrors:
+            seen = layout.box()
+            seen.label(text="Mirrors", icon="MOD_MIRROR")
+            shown = seen.row(align=True)
+            shown.prop(scene, C.MIRROR_BOX_IN_FRONT_PROP, toggle=True,
+                       icon="XRAY")
+            shown.prop(scene, C.SOLID_MIRROR_BOX_PROP, toggle=True,
+                       icon="SHADING_SOLID")
+            seen.prop(scene, C.SHOW_MIRROR_REFLECTS_PROP, toggle=True,
+                      icon="MOD_MIRROR")
+            caught = sum(len(viewport.reflected_by(obj, list(scene.objects)))
+                         for obj in scene.objects if viewport.is_mirror(obj))
+            say(seen, f"{mirrors} mirror(s), reaching {caught} object(s). "
+                      f"Drawing only.")
+
+        projectors = sum(1 for obj in scene.objects
+                         if viewport.is_projector(obj))
+        if projectors:
+            painted = layout.box()
+            painted.label(text="Projectors", icon="OUTLINER_OB_LIGHT")
+            painted.prop(scene, C.PROJECT_TEXTURES_PROP, toggle=True,
+                         icon="TEXTURE")
+            painted.prop(scene, C.SOLID_PROJECTOR_VOLUMES_PROP, toggle=True,
+                         icon="SHADING_SOLID")
+            say(painted, f"{projectors} projector(s). Painted onto what "
+                         f"they cover and can face. Drawing only.")
+
+        lights = sum(1 for obj in scene.objects if viewport.is_light(obj))
+        if lights:
+            shining = layout.box()
+            shining.label(text="Lights", icon="LIGHT")
+            shining.prop(scene, C.SOLID_LIGHTS_PROP, toggle=True,
+                         icon="SHADING_SOLID")
+            say(shining, f"{lights} light(s). Drawing only.")
+
+        # Every button in one box, in the order the work is done: stand the
+        # armature, tell it the pose is where its joints rest, make the
+        # weights, put them right, start over. They used to be spread through
+        # the settings above with one of them in a box of its own at the end.
+        tools = layout.box()
+        tools.label(text="Tools", icon="TOOL_SETTINGS")
+        tools.operator("ls3d.default_mesh_origin", icon="ARMATURE_DATA")
+        tools.operator("ls3d.rest_from_pose", icon="POSE_HLT")
+        tools.operator("ls3d.weights_from_boxes", icon="MOD_VERTEX_WEIGHT")
+        tools.operator("ls3d.fix_weights", icon="CHECKMARK")
+        tools.operator("ls3d.clear_weights", icon="X")
+        # Nothing written under them: every one of these says what it does
+        # in its own tooltip, and nine lines of panel saying it again pushed
+        # the buttons themselves off the bottom of the sidebar.
 
 
 class The4DSMorphPanel(bpy.types.Panel):

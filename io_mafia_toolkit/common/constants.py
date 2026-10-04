@@ -500,8 +500,44 @@ SHOW_INFLUENCE_BOXES_PROP = "ls3d_show_influence_boxes"
 PROJECT_TEXTURES_PROP = "ls3d_project_textures"
 #: Scene switch: whether they are drawn over everything, the mesh included.
 INFLUENCE_BOXES_IN_FRONT_PROP = "ls3d_influence_boxes_in_front"
+#: Scene toggle: draw a mirror's view box over everything that stands in front
+#: of it. A mirror's box reaches out into the room it reflects, so the room is
+#: usually between it and the eye.
+MIRROR_BOX_IN_FRONT_PROP = "ls3d_mirror_box_in_front"
+#: Scene toggle: draw the lines joining the joints over everything. A skeleton
+#: is nearly always inside the mesh it moves, which is the case that wants it.
+JOINT_LINES_IN_FRONT_PROP = "ls3d_joint_lines_in_front"
+#: Scene toggle: show the skeleton at all - the lines joining the joints and
+#: the dot on each one. Drawing only, like every other toggle here.
+SHOW_JOINT_LINES_PROP = "ls3d_show_joint_lines"
+#: Scene toggles: draw a kind of box as filled faces rather than as twelve
+#: edges. One a kind, so a solid mirror box can sit beside wireframe joints.
+SOLID_INFLUENCE_BOXES_PROP = "ls3d_solid_influence_boxes"
+SOLID_MIRROR_BOX_PROP = "ls3d_solid_mirror_box"
+SOLID_DUMMY_BOXES_PROP = "ls3d_solid_dummy_boxes"
+SOLID_PROJECTOR_VOLUMES_PROP = "ls3d_solid_projector_volumes"
+SOLID_LIGHTS_PROP = "ls3d_solid_lights"
+#: Scene toggles: show a sector's and a portal's own faces rather than their
+#: wires. These set the object's own display, not an overlay, because that is
+#: how a sector and a portal are shown in the first place.
+SOLID_SECTORS_PROP = "ls3d_solid_sectors"
+SOLID_PORTALS_PROP = "ls3d_solid_portals"
+#: And one each for drawing them over what stands in front of them.
+SECTORS_IN_FRONT_PROP = "ls3d_sectors_in_front"
+PORTALS_IN_FRONT_PROP = "ls3d_portals_in_front"
+#: Scene toggle: draw a dummy's box over everything in front of it.
+DUMMY_BOXES_IN_FRONT_PROP = "ls3d_dummy_boxes_in_front"
+#: Scene toggle: outline what each mirror would reflect, by the same two tests
+#: the game makes - a reach against the view box, then the object's own bound
+#: against the box along every axis.
+SHOW_MIRROR_REFLECTS_PROP = "ls3d_show_mirror_reflects"
 #: Scene setting: which of the box's handles are on the active joint.
-INFLUENCE_HANDLES_PROP = "ls3d_influence_handles"
+#: Scene toggles: which kinds of handle the joint being posed carries. One
+#: each, so any combination is reachable - arrows and rings without the face
+#: handles cannot be said with a single choice.
+INFLUENCE_RESIZE_HANDLES_PROP = "ls3d_influence_resize_handles"
+INFLUENCE_MOVE_HANDLES_PROP = "ls3d_influence_move_handles"
+INFLUENCE_TURN_HANDLES_PROP = "ls3d_influence_turn_handles"
 #: Scene setting: how big the joint markers are drawn, as a multiplier.
 JOINT_DISPLAY_SCALE_PROP = "ls3d_joint_display_scale"
 #: The influence box a joint is made with: the one the game's own tool gave a

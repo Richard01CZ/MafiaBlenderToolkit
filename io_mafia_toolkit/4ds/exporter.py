@@ -79,11 +79,8 @@ def plan_instances(objects=None):
 
 
 class Exporter(MaterialsMixin, FramesMixin, PayloadsMixin):
-    def __init__(self, objects, report,
-                 fix_multi_influences=False, fix_non_parent_child=False):
+    def __init__(self, objects, report):
         self.report = report
-        self.fix_multi_influences = fix_multi_influences
-        self.fix_non_parent_child = fix_non_parent_child
         self.source_objects = list(objects)
         self.materials = []                 # ordered Blender materials
         self.material_index = {}            # Blender material -> 1-based id
@@ -368,29 +365,23 @@ class neutralised_animation:
         return False
 
 
-def check_4ds(objects, report, fix_multi_influences=False,
-              fix_non_parent_child=False):
+def check_4ds(objects, report):
     """Run every export check without writing anything.
 
     The same build the exporter does, stopped just before the file is written,
     so a problem can be found while you are still working on the model rather
     than at the moment you try to ship it.
     """
-    exporter = Exporter(objects, report,
-                        fix_multi_influences=fix_multi_influences,
-                        fix_non_parent_child=fix_non_parent_child)
+    exporter = Exporter(objects, report)
     report.span(0, 100)
     with neutralised_animation(objects, report) as suspended:
         exporter.animated_now = suspended.animated
         return exporter.build()
 
 
-def export_4ds(filepath, objects, report,
-               fix_multi_influences=False, fix_non_parent_child=False):
+def export_4ds(filepath, objects, report):
     """Build and write a 4DS file. Nothing is written unless the build succeeds."""
-    exporter = Exporter(objects, report,
-                        fix_multi_influences=fix_multi_influences,
-                        fix_non_parent_child=fix_non_parent_child)
+    exporter = Exporter(objects, report)
     report.span(0, 85)
     with neutralised_animation(objects, report) as suspended:
         exporter.animated_now = suspended.animated

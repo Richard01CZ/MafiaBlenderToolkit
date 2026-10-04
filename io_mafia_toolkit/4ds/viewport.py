@@ -28,6 +28,10 @@ MIRROR_BOX_COLOR = (0.45, 1.0, 0.85, 0.85)
 #: without shouting: the boxes are there while a skeleton is weighted, and
 #: there are as many of them as there are joints. The active joint's own box
 #: is brighter, so it is clear which one the handles are on.
+#: The lines joining a joint to the one it hangs from, and the dot on each
+#: joint's own middle. Light blue, which nothing else here uses: the joints'
+#: own boxes are green and a dummy's box is a deeper blue.
+JOINT_LINE_COLOR = (0.55, 0.80, 1.0, 0.95)
 INFLUENCE_BOX_COLOR = (0.42, 0.72, 0.45, 0.85)
 INFLUENCE_BOX_COLOR_SELECTED = (0.60, 0.95, 0.62, 1.0)
 #: The marker where an armature has its skinned mesh's frame: amber, so it
@@ -38,6 +42,10 @@ MESH_FRAME_COLOR = (1.0, 0.72, 0.18, 0.95)
 MESH_FRAME_REACH = 0.08
 #: A mirror's view box - what the mirror is allowed to reflect - in a color of
 #: its own, and brighter while the mirror is selected.
+#: The bound of something a mirror would reflect. The view box's own color,
+#: carried down so it reads as belonging to it, and fainter because there can
+#: be a roomful of them.
+REFLECTED_COLOR = (1.0, 0.45, 0.85, 0.45)
 MIRROR_VIEW_BOX_COLOR = (1.0, 0.45, 0.85, 0.8)
 MIRROR_VIEW_BOX_COLOR_SELECTED = (1.0, 0.7, 0.95, 1.0)
 #: How thick the outline is drawn.
@@ -63,17 +71,200 @@ BOX_CENTER_DOT_PIXELS = 5.0
 #: nobody can see.
 LINE_SHADER = "UNIFORM_COLOR"
 DOT_SHADER = "POINT_UNIFORM_COLOR"
+#: A filled box is drawn with a color a corner at a time, so its six faces can
+#: be told apart.
+FACE_SHADER = "SMOOTH_COLOR"
+
+#: Where the light on a filled box comes from, and how much of its color is
+#: left in the dark. A box is not lit by the scene - it is not in the scene -
+#: so it carries its own, which is enough to read the shape by.
+FACE_LIGHT = Vector((0.4, 0.6, 0.7)).normalized()
+FACE_SHADE_FLOOR = 0.45
 #: The twelve edges of a box, as index pairs into its eight corners.
 _BOX_EDGES = ((0, 1), (1, 3), (3, 2), (2, 0),
               (4, 5), (5, 7), (7, 6), (6, 4),
               (0, 4), (1, 5), (2, 6), (3, 7))
+
+#: The same eight corners as six quads, for a box drawn filled rather than as
+#: edges. A corner's number is its three signs - 1 for x, 2 for y, 4 for z -
+#: so each quad here is the four corners that share one sign.
+#:
+#: Every one of them is wound so its face looks outward, and that matters: a
+#: box drawn over everything has no depth test to sort its own faces by, so
+#: the back of it painted over the front and the shading came out scrambled.
+#: Wound this way the back faces can be culled instead, which a box needs no
+#: sorting for because it is convex.
+_BOX_FACES = ((0, 4, 6, 2), (1, 3, 7, 5),
+              (0, 1, 5, 4), (2, 6, 7, 3),
+              (0, 2, 3, 1), (4, 5, 7, 6))
+
+#: Those quads split into triangles, which is what the shader draws.
+_BOX_TRIS = tuple((quad[0], quad[1], quad[2]) for quad in _BOX_FACES) + tuple(
+    (quad[0], quad[2], quad[3]) for quad in _BOX_FACES)
+
+
+def box_triangles(corners):
+    """*corners* as the triangle corners of a filled box."""
+    points = []
+    for triangle in _BOX_TRIS:
+        points.extend(corners[at] for at in triangle)
+    return points
+
+
+def shaded_triangles(points):
+    """``(points, shades)`` - any filled shape, with its faces told apart.
+
+    A shape the add-on draws is not in the scene and nothing lights it, so it
+    carries a light of its own: each face takes how square it stands to that
+    light, which is what lets the shape be read rather than seen as one flat
+    blob. Taken on the face rather than the corner, so edges stay crisp.
+    """
+    out = []
+    shades = []
+    for at in range(0, len(points) - 2, 3):
+        a, b, c = points[at], points[at + 1], points[at + 2]
+        across = (b - a).cross(c - a)
+        if across.length:
+            lit = abs(across.normalized().dot(FACE_LIGHT))
+        else:
+            lit = 1.0
+        shade = FACE_SHADE_FLOOR + (1.0 - FACE_SHADE_FLOOR) * lit
+        out.extend((a, b, c))
+        shades.extend((shade, shade, shade))
+    return out, shades
+
+
+def box_shaded_triangles(corners):
+    """``(points, shades)`` - a filled box, with its faces told apart."""
+    return shaded_triangles(box_triangles(corners))
+
+
+def projector_volume_corners(obj):
+    """The eight corners of a projector's volume, in the world.
+
+    The pyramid's four near corners all sit on the frame's own point, which
+    lets the same eight-corner box stand for either shape.
+    """
+    half = C.PROJECTOR_HALF_WIDTH
+    reach = C.PROJECTOR_REACH
+    matrix = obj.matrix_world
+    straight = getattr(obj, "ls3d_projector_orthogonal", False)
+    corners = []
+    for index in range(8):
+        # Numbered the way the box's own corners are numbered - 1 across, 2
+        # along, 4 up - because the triangles are built from that order and a
+        # pair put the other way round turns every face inward, which culling
+        # then takes for the back of the shape and draws none of it.
+        across = half if index & 1 else -half
+        up = half if index & 4 else -half
+        if index & 2:
+            corners.append(matrix @ Vector((across, reach, up)))
+        elif straight:
+            corners.append(matrix @ Vector((across, 0.0, up)))
+        else:
+            corners.append(matrix @ Vector((0.0, 0.0, 0.0)))
+    return corners
+
+
+def _sphere_triangles(matrix, radius, rings=10):
+    """A filled ball of *radius* about *matrix*'s origin."""
+    points = []
+    if radius <= 0.0:
+        return points
+    steps = LIGHT_CIRCLE_STEPS // 2
+
+    def at(ring, step):
+        down = math.pi * ring / rings
+        round_about = 2.0 * math.pi * step / steps
+        return matrix @ Vector((
+            math.sin(down) * math.cos(round_about) * radius,
+            math.cos(down) * radius,
+            math.sin(down) * math.sin(round_about) * radius))
+
+    for ring in range(rings):
+        for step in range(steps):
+            one, two = at(ring, step), at(ring, step + 1)
+            three, four = at(ring + 1, step + 1), at(ring + 1, step)
+            points.extend((one, two, three))
+            points.extend((one, three, four))
+    return points
+
+
+def _cone_triangles(matrix, full_angle, reach):
+    """A filled cone of *full_angle* reaching *reach* along local +Y."""
+    points = []
+    if reach <= 0.0:
+        return points
+    radius = math.tan(max(min(full_angle, math.pi * 0.999), 0.0) * 0.5) * reach
+    apex = matrix @ Vector((0.0, 0.0, 0.0))
+    rim = []
+    for step in range(LIGHT_CIRCLE_STEPS + 1):
+        angle = 2.0 * math.pi * step / LIGHT_CIRCLE_STEPS
+        rim.append(matrix @ Vector((math.cos(angle) * radius, reach,
+                                   math.sin(angle) * radius)))
+    middle = matrix @ Vector((0.0, reach, 0.0))
+    for step in range(LIGHT_CIRCLE_STEPS):
+        points.extend((apex, rim[step], rim[step + 1]))
+        points.extend((middle, rim[step + 1], rim[step]))
+    return points
+
+
+def light_faces(obj):
+    """A light's own shape, filled: the same shape its outline draws.
+
+    A point light is its two ranges as balls, a spot its two cones, and a
+    directional light the head of its arrow. The kinds that set a sector's
+    atmosphere draw no shape at all, filled or otherwise, because their
+    ranges are not distances from the light.
+    """
+    matrix = obj.matrix_world.normalized()
+    kind = (_int_prop(obj, "ls3d_light_type_value", C.DEFAULT_LIGHT_TYPE)
+            & 0xFFFFFFFF)
+    near = _float_prop(obj, "ls3d_light_range_near", C.DEFAULT_LIGHT_RANGE_NEAR)
+    far = _float_prop(obj, "ls3d_light_range_far", C.DEFAULT_LIGHT_RANGE_FAR)
+    stretch = abs(obj.scale.x) or 1.0
+    near *= stretch
+    far *= stretch
+
+    if kind == C.LIGHT_SPOT:
+        points = []
+        for angle in (_float_prop(obj, "ls3d_light_cone_inner",
+                                  C.DEFAULT_LIGHT_CONE_INNER),
+                      _float_prop(obj, "ls3d_light_cone_outer",
+                                  C.DEFAULT_LIGHT_CONE_OUTER)):
+            points += _cone_triangles(matrix, angle, far)
+        return points
+    if kind == C.LIGHT_DIRECTIONAL:
+        reach = LIGHT_DIRECTION_LENGTH
+        head = reach * 0.15
+        # The head alone: the shaft is a line and has no inside to fill.
+        return _cone_triangles(
+            matrix @ Matrix.Translation((0.0, reach, 0.0))
+            @ Matrix.Rotation(math.pi, 4, "X"), math.pi * 0.5, head)
+    if kind == C.LIGHT_POINT:
+        points = []
+        for radius in (near, far):
+            points += _sphere_triangles(matrix, radius)
+        return points
+    return []
+
+
+def _add_shaded_box(groups, color, corners):
+    """Put one filled box into *groups*, under *color*."""
+    points, shades = box_shaded_triangles(corners)
+    into = groups.setdefault(color, ([], []))
+    into[0].extend(points)
+    into[1].extend(shades)
 
 #: Color of the projector volume outline. Unlike the dummy and mirror boxes,
 #: which mark a number the panel edits, this outline *is* the object - there is
 #: no mesh behind it - so it follows the selection the way any other object's
 #: wire does: black at rest, the theme's orange once picked. The values here are
 #: Blender's own defaults, used when the theme cannot be read.
-PROJECTOR_COLOR = (0.0, 0.0, 0.0, 1.0)
+#: Yellow, which nothing else here draws in: a projector was black, which is
+#: what Blender draws an unselected object in, so its volume disappeared into
+#: every other outline in the scene.
+PROJECTOR_COLOR = (1.0, 0.88, 0.30, 1.0)
 PROJECTOR_COLOR_SELECTED = (0.929412, 0.341176, 0.0, 1.0)
 PROJECTOR_COLOR_ACTIVE = (1.0, 0.627451, 0.156863, 1.0)
 #: Size given to the arrows on a projector the addon creates. One unit puts
@@ -322,21 +513,168 @@ def projector_lines(obj):
     return lines
 
 
+#: How far a filled portal is brought toward the eye, as a share of its own
+#: size. A portal lies flat in a wall of its sector, so the two surfaces are
+#: in the same place and fight over every pixel. Moved this much toward
+#: whoever is looking, the portal wins that wall from either side of it - and
+#: because it is a share of the portal's own size rather than a fixed
+#: distance, it works the same on a doorway and on a hangar door.
+PORTAL_LIFT = 0.004
+
+#: The smallest difference in depth a viewport can hold between two surfaces,
+#: as a share of its whole range: what single precision leaves at the far end
+#: of it.
+PORTAL_DEPTH_STEP = 2.0 ** -24
+
+#: How many of those steps a filled portal keeps between itself and the wall
+#: it lies in, where that is the larger of the two moves. Four, which left
+#: every view measured clean with room to spare, and is still far too little
+#: to see - at 800 m it comes to a meter and a half, a fifth of a pixel, and
+#: straight toward the eye, so nothing shifts sideways.
+PORTAL_DEPTH_MARGIN = 4.0
+
+
+def portal_step(obj, toward, eye=None, clip_start=0.0, clip_end=0.0):
+    """How far a filled portal moves toward the eye, and which way.
+
+    The larger of two moves. One is a share of the portal's own size, which
+    keeps a doorway and a hangar door each moved by as much as they need. The
+    other is whatever the viewport can still tell apart where the portal
+    stands: the depth it holds per pixel gets coarser with the *square* of how
+    far away the surfaces are, and coarser again the closer the near clip is
+    set - so a fixed distance that is ample across a room is nothing at all
+    across a map. Measured, a 12 m portal 800 m off lost every one of its
+    pixels to the wall on a fixed 48 mm, and needs a meter and a half.
+
+    Only under perspective. An orthographic view spreads its depth evenly over
+    the whole range, so what it can tell apart does not change with distance
+    and the portal's own size is always the larger move.
+    """
+    corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+    middle = Vector((0.0, 0.0, 0.0))
+    for corner in corners:
+        middle += corner
+    middle /= len(corners)
+    reach = max((corner - middle).length for corner in corners) or 1.0
+    least = reach * PORTAL_LIFT
+    if eye is not None and 0.0 < clip_start < clip_end:
+        away = (middle - eye).length
+        coarse = (PORTAL_DEPTH_STEP * away * away
+                  * (clip_end - clip_start) / (clip_end * clip_start))
+        least = max(least, coarse * PORTAL_DEPTH_MARGIN)
+    return toward.normalized() * least
+
+
+def portal_faces(obj, toward, eye=None, clip_start=0.0, clip_end=0.0):
+    """A portal's own triangles in the world, both ways round and toward *toward*.
+
+    A portal has no faces of its own. In the file it is a ring of points and
+    the plane they lie in, and the game never draws it: the plane is there to
+    say which side of the portal the camera stands on, and a sector keeps its
+    portals in two lists so that the same portal is walked from either side
+    of it. In every portal the game ships, the ring winds toward the room that
+    owns it - which is why ours faced the sector and disappeared wherever the
+    sector stood between it and the eye.
+
+    So the triangles are given **both** windings, which is what having no
+    front means, and they are moved along *toward* - the direction the eye
+    lies in - rather than toward the middle of the room. That way the portal
+    wins the wall it lies in from whichever side it is seen from, which a
+    fixed direction could only ever manage from one.
+
+    Drawn here rather than by turning the object solid, because a portal
+    turned solid can only be told to draw in front of *everything*, which puts
+    it over the whole model rather than over the one wall it is fighting. In
+    the overlay it keeps its place in the depth of the scene and wins that
+    wall by a hair.
+    """
+    mesh = getattr(obj, "data", None)
+    if mesh is None or not mesh.vertices:
+        return []
+    matrix = obj.matrix_world
+    step = portal_step(obj, toward, eye, clip_start, clip_end)
+
+    try:
+        mesh.calc_loop_triangles()
+    except (AttributeError, RuntimeError):
+        return []
+    places = mesh.vertices
+    points = []
+    for triangle in mesh.loop_triangles:
+        a, b, c = (matrix @ places[corner].co + step
+                   for corner in triangle.vertices)
+        points.extend((a, b, c, a, c, b))
+    return points
+
+
+def _portal_shapes(context):
+    """``(portal, triangles)`` for every portal to be drawn filled.
+
+    The direction the eye lies in is the view's own way out of the screen,
+    turned into the world, so every corner of every portal moves the same
+    distance nearer the viewer and none of them moves across it.
+
+    Where the view is a perspective one, how far each portal moves depends on
+    how far off it is and on the view's own clips, so those are read here and
+    handed on - see ``portal_step``.
+    """
+    if not getattr(context.scene, C.SOLID_PORTALS_PROP, False):
+        return []
+    view = getattr(context, "region_data", None)
+    if view is None:
+        return []
+    toward = view.view_rotation @ Vector((0.0, 0.0, 1.0))
+    eye, clip_start, clip_end = None, 0.0, 0.0
+    space = getattr(context, "space_data", None)
+    if view.is_perspective and space is not None:
+        eye = view.view_matrix.inverted().translation
+        clip_start = getattr(space, "clip_start", 0.0)
+        clip_end = getattr(space, "clip_end", 0.0)
+    found = []
+    for obj in context.visible_objects:
+        if not is_portal(obj):
+            continue
+        points = portal_faces(obj, toward, eye, clip_start, clip_end)
+        if points:
+            found.append((obj, points))
+        if len(found) >= DUMMY_BOX_LIMIT:
+            break
+    return found
+
+
+def needs_its_box_outlined(obj):
+    """True for an object whose box the add-on draws itself.
+
+    Every dummy's box, and a mirror's authored bound wherever it has one -
+    a mesh shows its shape and not its bound. Asked of the whole scene by the
+    panel and of what can be seen by the drawing, so it takes an object
+    rather than a context.
+
+    A dummy whose box happens to be cubic and centered is drawn too, although
+    the empty's own cube already stands where it stands. It was left out
+    before, and that is a box nobody can get hold of: a dummy made from
+    scratch is exactly that shape, so nothing of ours appeared on it and the
+    panel offered nothing for it until its numbers had been changed by some
+    other means. Drawn always, the box is there to be seen and worked on from
+    the moment the dummy is made.
+    """
+    if obj.type == "EMPTY" and obj.empty_display_type == "CUBE":
+        return (_int_prop(obj, "ls3d_frame_type", C.FRAME_DUMMY)
+                == C.FRAME_DUMMY)
+    return has_mirror_box(obj)
+
+
 def _outlined_boxes(context):
     """``(object, color)`` for every box the viewport should outline."""
     found = []
     for obj in context.visible_objects:
-        if obj.type == "EMPTY" and obj.empty_display_type == "CUBE":
-            if _int_prop(obj, "ls3d_frame_type", C.FRAME_DUMMY) != C.FRAME_DUMMY:
-                continue
-            if dummy_box_is_drawable(obj):
-                continue
+        if not needs_its_box_outlined(obj):
+            continue
+        if obj.type == "EMPTY":
             found.append((obj, DUMMY_BOX_COLOR_SELECTED if obj.select_get()
                           else DUMMY_BOX_COLOR))
-        elif has_mirror_box(obj):
-            found.append((obj, MIRROR_BOX_COLOR))
         else:
-            continue
+            found.append((obj, MIRROR_BOX_COLOR))
         if len(found) >= DUMMY_BOX_LIMIT:
             break
     return found
@@ -528,11 +866,17 @@ def _draw_dummy_boxes():
         projectors = _visible_projectors(context)
         lights = _visible_lights(context)
         frames = _mesh_frame_markers(context)
+        joint_links, joint_middles = _skeleton_lines(context)
+        reflected = _reflected_outlines(context)
+        portals_filled = _portal_shapes(context)
     except (AttributeError, ReferenceError):
         return
     if (not boxes and not view_boxes and not influence and not projectors
-            and not lights and not frames):
+            and not lights and not frames and not joint_links
+            and not joint_middles and not reflected
+            and not portals_filled):
         return
+
 
     region = getattr(context, "region", None)
     view = getattr(context, "region_data", None)
@@ -542,49 +886,125 @@ def _draw_dummy_boxes():
     by_color = {}
     # A dot at each box's middle, drawn with its box and in its color.
     dots_by_color = {}
-    # Influence boxes drawn over everything are drawn apart, last, with
-    # nothing hiding them; the rest are hidden by what stands in front.
-    in_front = getattr(context.scene, C.INFLUENCE_BOXES_IN_FRONT_PROP, False)
-    front_by_color = {} if in_front else by_color
-    front_dots_by_color = {} if in_front else dots_by_color
+    # Boxes drawn over everything are drawn apart, last, with nothing
+    # hiding them; the rest are hidden by what stands in front. The joints'
+    # boxes and a mirror's have a toggle each, because they are in the way for
+    # different reasons - a joint's box sits inside the mesh, and a mirror's
+    # reaches out into the room it reflects.
+    front_by_color = {}
+    front_dots_by_color = {}
+    joints_in_front = getattr(context.scene,
+                              C.INFLUENCE_BOXES_IN_FRONT_PROP, False)
+    mirrors_in_front = getattr(context.scene,
+                               C.MIRROR_BOX_IN_FRONT_PROP, False)
+    joint_lines = front_by_color if joints_in_front else by_color
+    joint_dots = front_dots_by_color if joints_in_front else dots_by_color
+    mirror_lines = front_by_color if mirrors_in_front else by_color
+    mirror_dots = front_dots_by_color if mirrors_in_front else dots_by_color
+    dummies_in_front = getattr(context.scene,
+                               C.DUMMY_BOXES_IN_FRONT_PROP, False)
+    dummy_lines = front_by_color if dummies_in_front else by_color
+    dummy_dots = front_dots_by_color if dummies_in_front else dots_by_color
+    # Filled faces are drawn under the edges, each kind on its own say-so.
+    tris_by_color = {}
+    front_tris_by_color = {}
+    joint_tris = (front_tris_by_color if joints_in_front else tris_by_color
+                  ) if getattr(context.scene,
+                               C.SOLID_INFLUENCE_BOXES_PROP, False) else None
+    mirror_tris = (front_tris_by_color if mirrors_in_front else tris_by_color
+                   ) if getattr(context.scene,
+                                C.SOLID_MIRROR_BOX_PROP, False) else None
+    dummy_tris = None
+    if getattr(context.scene, C.SOLID_DUMMY_BOXES_PROP, False):
+        dummy_tris = front_tris_by_color if dummies_in_front else tris_by_color
+    projector_tris = (tris_by_color if getattr(
+        context.scene, C.SOLID_PROJECTOR_VOLUMES_PROP, False) else None)
+    light_tris = (tris_by_color if getattr(context.scene,
+                                           C.SOLID_LIGHTS_PROP, False)
+                  else None)
+    links_in_front = getattr(context.scene,
+                             C.JOINT_LINES_IN_FRONT_PROP, False)
+    skeleton_lines = front_by_color if links_in_front else by_color
+    skeleton_dots = front_dots_by_color if links_in_front else dots_by_color
+    if joint_links:
+        skeleton_lines.setdefault(JOINT_LINE_COLOR, []).extend(joint_links)
+    if joint_middles:
+        skeleton_dots.setdefault(JOINT_LINE_COLOR, []).extend(joint_middles)
+    # A portal's own faces, in its own purple, brought a hair toward the eye
+    # so they win the wall they lie in without being drawn over the model.
+    if portals_filled:
+        portal_tris = (front_tris_by_color
+                       if getattr(context.scene, C.PORTALS_IN_FRONT_PROP,
+                                  False) else tris_by_color)
+        portal_color = tuple(C.COLOR_FRAME_PORTAL)
+        for _obj, points in portals_filled:
+            shaded, shades = shaded_triangles(points)
+            into = portal_tris.setdefault(portal_color, ([], []))
+            into[0].extend(shaded)
+            into[1].extend(shades)
+
     for obj, color in boxes:
         corners = _dummy_box_corners(obj)
-        lines = by_color.setdefault(color, [])
+        if dummy_tris is not None:
+            _add_shaded_box(dummy_tris, color, corners)
+        lines = dummy_lines.setdefault(color, [])
         for start, end in _BOX_EDGES:
             lines.append(corners[start])
             lines.append(corners[end])
-        dots_by_color.setdefault(color, []).append(box_center(corners))
+        dummy_dots.setdefault(color, []).append(box_center(corners))
         if links and obj.type == "EMPTY":       # a mirror's bound is its mesh's
             lines.extend(dummy_link_lines(obj, region, view))
-    for obj, color in view_boxes:
-        corners = mirror_view_box_corners(obj)
-        lines = by_color.setdefault(color, [])
+    # What the mirrors would reflect, outlined in the view box's own color
+    # so it reads as belonging to it.
+    for corners in reflected:
+        lines = mirror_lines.setdefault(REFLECTED_COLOR, [])
         for start, end in _BOX_EDGES:
             lines.append(corners[start])
             lines.append(corners[end])
-        dots_by_color.setdefault(color, []).append(box_center(corners))
+    for obj, color in view_boxes:
+        corners = mirror_view_box_corners(obj)
+        if mirror_tris is not None:
+            _add_shaded_box(mirror_tris, color, corners)
+        lines = mirror_lines.setdefault(color, [])
+        for start, end in _BOX_EDGES:
+            lines.append(corners[start])
+            lines.append(corners[end])
+        mirror_dots.setdefault(color, []).append(box_center(corners))
     for matrix, color, joint in influence:
         corners = influence_box_corners(matrix)
-        lines = front_by_color.setdefault(color, [])
+        if joint_tris is not None:
+            _add_shaded_box(joint_tris, color, corners)
+        lines = joint_lines.setdefault(color, [])
         for start, end in _BOX_EDGES:
             lines.append(corners[start])
             lines.append(corners[end])
         middle = matrix.translation.copy()
-        front_dots_by_color.setdefault(color, []).append(middle)
+        joint_dots.setdefault(color, []).append(middle)
         # The joint a box hangs off can be anywhere, the same way a dummy's
         # empty can, so the two are joined for the box to be told apart from
         # a neighbor's.
         if links and joint is not None:
             lines.extend(link_lines(middle, joint, region, view))
     for obj, color in projectors:
+        if projector_tris is not None:
+            _add_shaded_box(projector_tris, color,
+                            projector_volume_corners(obj))
         by_color.setdefault(color, []).extend(projector_lines(obj))
     for obj, color in lights:
+        if light_tris is not None:
+            filled = light_faces(obj)
+            if filled:
+                points, shades = shaded_triangles(filled)
+                into = light_tris.setdefault(color, ([], []))
+                into[0].extend(points)
+                into[1].extend(shades)
         by_color.setdefault(color, []).extend(light_lines(obj))
     for lines in frames:
         by_color.setdefault(MESH_FRAME_COLOR, []).extend(lines)
 
     line_shader = gpu.shader.from_builtin(LINE_SHADER)
     dot_shader = gpu.shader.from_builtin(DOT_SHADER)
+    face_shader = gpu.shader.from_builtin(FACE_SHADER)
 
     def draw(shader, kind, groups):
         """Draw each color's points, as lines or as dots."""
@@ -595,18 +1015,53 @@ def _draw_dummy_boxes():
             shader.uniform_float("color", color)
             batch.draw(shader)
 
+    def draw_faces(groups):
+        """Draw each color's filled boxes, shaded face by face.
+
+        Filled means filled: the color an outline is drawn in is a little
+        transparent, which is right for a line laid over the model and wrong
+        for a face, where it left the box looking like a ghost of itself. The
+        faces take the color and leave the transparency behind.
+        """
+        for color, (points, shades) in groups.items():
+            if not points:
+                continue
+            tinted = [(color[0] * shade, color[1] * shade,
+                       color[2] * shade, 1.0) for shade in shades]
+            batch = batch_for_shader(face_shader, "TRIS",
+                                     {"pos": points, "color": tinted})
+            batch.draw(face_shader)
+
     gpu.state.line_width_set(DUMMY_BOX_WIDTH)
     gpu.state.point_size_set(BOX_CENTER_DOT_PIXELS)
     gpu.state.blend_set("ALPHA")
     gpu.state.depth_test_set("LESS_EQUAL")
     try:
+        # Filled faces write depth as well as color, so what stands behind
+        # them stays behind them: the box's own far edges, the line down to
+        # the joint and the skeleton's own lines all used to show through, and
+        # read as something inside the box.
+        if tris_by_color:
+            gpu.state.depth_mask_set(True)
+            gpu.state.face_culling_set("BACK")
+            draw_faces(tris_by_color)
+            gpu.state.face_culling_set("NONE")
+            gpu.state.depth_mask_set(False)
         draw(line_shader, "LINES", by_color)
         draw(dot_shader, "POINTS", dots_by_color)
-        if front_by_color is not by_color:
+        if front_by_color or front_dots_by_color or front_tris_by_color:
             gpu.state.depth_test_set("NONE")
+            # Nothing sorts these by depth, so only the faces looking this
+            # way are drawn: a shape that is convex needs no more than that,
+            # and without it the back of a box painted over its front.
+            gpu.state.face_culling_set("BACK")
+            draw_faces(front_tris_by_color)
+            gpu.state.face_culling_set("NONE")
             draw(line_shader, "LINES", front_by_color)
             draw(dot_shader, "POINTS", front_dots_by_color)
     finally:
+        gpu.state.face_culling_set("NONE")
+        gpu.state.depth_mask_set(False)
         gpu.state.depth_test_set("NONE")
         gpu.state.blend_set("NONE")
         gpu.state.line_width_set(1.0)
@@ -657,6 +1112,31 @@ def is_portal(obj):
         and _int_prop(obj.parent, "ls3d_frame_type") == C.FRAME_SECTOR
         and _PORTAL_RE.search(obj.name)
     )
+
+
+def sector_display(obj, scene=None):
+    """How a sector or a portal is to be shown, by the scene's own toggles.
+
+    A sector is filled by its own display. A portal is not: turning one solid
+    can only put it in front of everything, which is over the whole model
+    rather than over the one wall it fights, so a filled portal is drawn in
+    the overlay and lifted clear of its wall there.
+
+    Worked out here rather than where it is written, so the same answer can be
+    compared against what an object currently shows without setting anything.
+    """
+    if scene is None:
+        scene = getattr(bpy.context, "scene", None)
+    portal = is_portal(obj)
+    solid = bool(getattr(scene, C.SOLID_SECTORS_PROP, False) if scene else False)
+    front = (C.PORTALS_IN_FRONT_PROP if portal else C.SECTORS_IN_FRONT_PROP)
+    return {
+        "display_type": "SOLID" if (solid and not portal) else "WIRE",
+        "show_wire": True,
+        "show_all_edges": not portal,
+        "show_in_front": bool(getattr(scene, front, False) if scene else False),
+        "color": C.COLOR_FRAME_PORTAL if portal else C.COLOR_FRAME_SECTOR,
+    }
 
 
 def carries_frame(obj):
@@ -723,6 +1203,121 @@ def _mirror_view_boxes(context):
                       else MIRROR_VIEW_BOX_COLOR))
         if len(found) >= DUMMY_BOX_LIMIT:
             break
+    return found
+
+
+#: How many objects one mirror is tested against before the rest are left
+#: out, and how many caught objects are outlined in all. A mirror reaching
+#: across a whole mission would otherwise be retested every time the view
+#: moves.
+MIRROR_CANDIDATE_LIMIT = 400
+REFLECTED_OUTLINE_LIMIT = 120
+
+
+def mirror_clip(mirror):
+    """``(into the box, where it is, how far it reaches)``, or ``None``.
+
+    The view box is the shape a cube two units across is taken onto, so the
+    matrix that does that - times the mirror's own place in the world - takes
+    a point in the world into the box's own terms, where the box is that cube.
+    Its middle and the distance to a corner come out of the same matrix, which
+    is what the reach is measured against.
+    """
+    center, axes = mirror_view_box(mirror)
+    if not all(axis.length for axis in axes):
+        return None
+    box = Matrix((
+        (axes[0].x, axes[1].x, axes[2].x, center.x),
+        (axes[0].y, axes[1].y, axes[2].y, center.y),
+        (axes[0].z, axes[1].z, axes[2].z, center.z),
+        (0.0, 0.0, 0.0, 1.0),
+    ))
+    clip = mirror.matrix_world @ box
+    try:
+        into = clip.inverted()
+    except ValueError:
+        return None                     # a box flattened onto nothing
+    turned = clip.to_3x3()
+    corner = turned @ Vector((1.0, 1.0, 1.0))
+    return into, clip.translation.copy(), corner.length
+
+
+def _world_bound(obj):
+    """``(middle, reach, corners)`` of *obj*'s own bound, in the world."""
+    corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
+    middle = Vector((0.0, 0.0, 0.0))
+    for corner in corners:
+        middle += corner
+    middle /= len(corners)
+    reach = max((corner - middle).length for corner in corners)
+    return middle, reach, corners
+
+
+def reflected_by(mirror, objects):
+    """The objects *mirror* would reflect, by the test the game makes.
+
+    Two tests, in the order the game makes them. The first is cheap: an object
+    whose own bound sphere is further off than the two reaches together cannot
+    reach into the box at all. The second is exact: the object's eight bound
+    corners are taken into the box's own terms, and the object is kept only
+    where its bound overlaps the box along every one of the three axes - which
+    is to say it is not wholly outside any of the six sides.
+    """
+    found = mirror_clip(mirror)
+    if found is None:
+        return []
+    into, where, reaches = found
+    caught = []
+    looked = 0
+    for obj in objects:
+        if obj is mirror or obj.type != "MESH" or obj.data is None:
+            continue
+        if not obj.data.vertices:
+            continue
+        looked += 1
+        if looked > MIRROR_CANDIDATE_LIMIT:
+            break
+        middle, reach, corners = _world_bound(obj)
+        if (middle - where).length > reaches + reach:
+            continue
+        spans = [False] * 6
+        for corner in corners:
+            inside = into @ corner
+            for axis in range(3):
+                if inside[axis] < 1.0:
+                    spans[axis * 2] = True
+                if inside[axis] > -1.0:
+                    spans[axis * 2 + 1] = True
+        if all(spans):
+            caught.append(obj)
+    return caught
+
+
+def _reflected_outlines(context):
+    """``[corners]`` of the bound of everything the mirrors would reflect."""
+    if not getattr(context.scene, C.SHOW_MIRROR_REFLECTS_PROP, False):
+        return []
+    objects = list(context.visible_objects)
+    found = []
+    for mirror in objects:
+        if not is_mirror(mirror):
+            continue
+        for obj in reflected_by(mirror, objects):
+            corners = [obj.matrix_world @ Vector(corner)
+                       for corner in obj.bound_box]
+            # Into the order the box edges are listed in: a corner's number is
+            # its three signs, 1 for x, 2 for y and 4 for z.
+            least = Vector((min(c.x for c in corners), min(c.y for c in corners),
+                            min(c.z for c in corners)))
+            most = Vector((max(c.x for c in corners), max(c.y for c in corners),
+                           max(c.z for c in corners)))
+            found.append([
+                Vector((most.x if index & 1 else least.x,
+                        most.y if index & 2 else least.y,
+                        most.z if index & 4 else least.z))
+                for index in range(8)])
+            if len(found) >= REFLECTED_OUTLINE_LIMIT:
+                return found
     return found
 
 
@@ -846,6 +1441,48 @@ def influence_box_matrix(armature, bone_name, box, worlds=None):
     return None if world is None else world @ Matrix(box)
 
 
+def joint_place(armature, pose_bone):
+    """Where a joint sits in the world - where its marker is drawn."""
+    return (armature.matrix_world @ pose_bone.matrix).translation
+
+
+def _skeleton_lines(context):
+    """``(lines, dots)`` for every visible skeleton, in world space.
+
+    Every joint is drawn as the one shared sphere shape rather than as a bone,
+    and the import leaves each bone unconnected from the one above it, so
+    without this a character is a cloud of markers with nothing saying which
+    hangs off which. A line down each link says it, and a dot on each joint's
+    own middle says where the joint itself is rather than where its marker
+    happens to reach.
+    """
+    if not getattr(context.scene, C.SHOW_JOINT_LINES_PROP, True):
+        return [], []
+    lines = []
+    dots = []
+    for obj in context.visible_objects:
+        if obj.type != "ARMATURE" or obj.mode == "EDIT":
+            continue
+        pose = getattr(obj, "pose", None)
+        if pose is None:
+            continue
+        places = {}
+        for pose_bone in pose.bones:
+            if pose_bone.bone.hide:
+                continue
+            places[pose_bone.name] = joint_place(obj, pose_bone)
+        for name, place in places.items():
+            dots.append(place)
+            parent = obj.pose.bones[name].parent
+            above = places.get(parent.name) if parent is not None else None
+            if above is not None:
+                lines.append(above)
+                lines.append(place)
+        if len(dots) >= DUMMY_BOX_LIMIT * 8:
+            break
+    return lines, dots
+
+
 def _influence_boxes(context):
     """``(matrix, color, joint)`` for every joint's box to outline.
 
@@ -902,11 +1539,8 @@ def update_viewport_display(obj):
     frame_type = _int_prop(obj, "ls3d_frame_type")
 
     if frame_type == C.FRAME_SECTOR and obj.type == "MESH":
-        portal = is_portal(obj)
-        obj.display_type = "WIRE"
-        obj.show_wire = True
-        obj.show_all_edges = not portal
-        obj.color = C.COLOR_FRAME_PORTAL if portal else C.COLOR_FRAME_SECTOR
+        for field, value in sector_display(obj).items():
+            setattr(obj, field, value)
         return
 
     if frame_type == C.FRAME_OCCLUDER and obj.type == "MESH":
@@ -961,15 +1595,80 @@ def update_viewport_display(obj):
 _box_handle = None
 
 
-@bpy.app.handlers.persistent
-def _on_scene_changed(*_args):
-    """Forget what is kept about the scene whenever the scene changes.
+#: Set while the sweep below is writing, so the updates its own writes cause
+#: cannot send it round again.
+_following = False
 
-    It writes nothing - it only lets go of Python references - which is what
-    makes it safe where the handler described below was not.
+
+def follow_sector_settings(depsgraph=None):
+    """Put a sector or a portal back to what the toggles ask of it.
+
+    Whether a sector-typed mesh is a portal is not a setting somebody picks:
+    it follows from the name and from what the mesh hangs off. So parenting a
+    mesh to a sector, or naming it, changes what it is - with no callback of
+    its own to catch it - and until now it kept whatever it was last shown as.
+    Opening a file saved before a toggle existed left the same gap: the toggle
+    came back set and the objects came back the way they were saved.
+
+    Given a depsgraph, only what that update touched is looked at, which is
+    how this stays cheap enough to run on every update. Given none - a file
+    has just been opened - every object is swept once.
+
+    Only differences are written. That matters twice: a write here tags the
+    object and brings the handler straight back, and it settles at once
+    because the second pass finds nothing left to change.
+    """
+    global _following
+    if _following:
+        return
+    scene = getattr(bpy.context, "scene", None)
+    if scene is None:                           # a file is being torn down
+        return
+    if depsgraph is None:
+        touched = list(bpy.data.objects)
+    else:
+        touched = []
+        for update in depsgraph.updates:
+            found = getattr(update.id, "original", None)
+            if isinstance(found, bpy.types.Object):
+                touched.append(found)
+    _following = True
+    try:
+        for obj in touched:
+            if obj.type != "MESH":
+                continue
+            if _int_prop(obj, "ls3d_frame_type") != C.FRAME_SECTOR:
+                continue
+            try:
+                for field, value in sector_display(obj, scene).items():
+                    if field == "color":
+                        # Compared loosely on purpose: a color is kept as
+                        # four single-precision numbers, so reading back what
+                        # was just written never gives the same decimals, and
+                        # an exact test would write on every update and tag
+                        # the object again each time.
+                        if any(abs(was - now) > 1e-6
+                               for was, now in zip(obj.color, value)):
+                            obj.color = value
+                    elif getattr(obj, field) != value:
+                        setattr(obj, field, value)
+            except (AttributeError, ReferenceError):
+                continue                        # linked in, or already gone
+    finally:
+        _following = False
+
+
+@bpy.app.handlers.persistent
+def _on_scene_changed(*args):
+    """Forget what is kept about the scene, and keep the sectors current.
+
+    Letting go of Python references is safe anywhere. The sector sweep does
+    write, which is why it is held to what the update touched and to writing
+    only what differs - see the handler note below for what is not safe here.
     """
     forget_instance_plan()
     forget_joint_spaces()
+    follow_sector_settings(args[1] if len(args) > 1 else None)
 
 
 def register_handlers():

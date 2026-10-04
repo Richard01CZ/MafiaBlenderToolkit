@@ -381,7 +381,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
 
   <nav class="nav">
     <div class="nav-brand">LS3D 4DS</div>
-    <div class="nav-build">1.0.2 &middot; Blender 5.2+</div>
+    <div class="nav-build">1.1.0 &middot; Blender 5.2+</div>
 
     <h4>Getting started</h4>
     <a href="#install">Installation &amp; preferences</a>
@@ -1190,6 +1190,19 @@ mbt --open tommy.4ds --gui</code></pre>
           </tbody>
         </table>
       </div>
+
+      <h3>Which surfaces take the paint</h3>
+      <p>Falling inside the volume is not enough on its own: <b>a surface is painted only while it
+      can face the projector</b>, measured from the surface's own facing rather than from where it
+      is being looked at. A surface turned away takes nothing, so a projector standing inside a
+      solid object paints neither its far wall nor its outside.</p>
+      <p>A surface turned away is still painted while it is turned <b>more across the beam than
+      along it</b> &mdash; the line falls at a surface turned a quarter of a right angle off
+      straight-away, so a wall the beam grazes is lit and one it has gone past is not. How far that
+      allowance reaches is a setting of the projector, and <b>a file carries nothing that changes
+      it</b>, so every projector in a model gets the same one. Where the surface's own material is
+      drawn from both sides, the question is left out and the surface is painted either way
+      round.</p>
 
       <h3>Depth Falloff and Blend Mode</h3>
       <p>The mode byte carries both, and the six values it can hold are the six pairings of the
