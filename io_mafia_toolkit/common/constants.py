@@ -417,7 +417,8 @@ ENV_BLEND_ITEMS = (
      "game has no blend for this and draws the reflection however the surface "
      "before it was blended"),
     (str(ENV_BLEND_AMOUNT), "Blend by Amount",
-     "Mixes in by the Amount slider below"),
+     "Mixes in by the Env Intensity slider below - the only blend that reads "
+     "it"),
     (str(ENV_BLEND_SURFACE_ALPHA), "Blend by Alpha",
      "Mixes in by the surface's own transparency"),
     (str(ENV_BLEND_MULTIPLY), "Multiply",
@@ -460,13 +461,16 @@ ENV_UV_ITEMS = (
     (str(ENV_UV_PLANAR_XZ), "Planar XZ", "Flat projection from the front. U from the vertex X, V "
                        "from its Z. Game axes: planar XY. Unused in the "
                        "original game"),
-    (str(ENV_UV_FRAME), "Dummy Frame", "UVs are the vertex position inside a dummy's local "
-                         "space, clamped to one unit: U from its local Y, V "
-                         "from its local Z. Uses the first dummy sibling under "
-                         "the object's parent. Billboards only - every other "
-                         "visual type passes no dummy, so the mode does "
-                         "nothing. Game axes: local Z and Y. Unused in the "
-                         "original game"),
+    (str(ENV_UV_FRAME), "Dummy Frame",
+     "Billboards only. The picture is pinned across one unit of a dummy's own "
+     "space - starting at that dummy's origin, one unit along its local Y and "
+     "one unit up its local Z - and the billboard shows whichever part of the "
+     "picture it is standing over, holding at the edge once it moves outside. "
+     "A billboard turns to face the camera, so what it shows changes with the "
+     "viewing angle. The dummy is a Dummy-type sibling under the billboard's "
+     "own parent. Every other visual type hands the game no dummy at all, so "
+     "there the mode draws nothing of its own. Game axes: local Z and Y. "
+     "Unused in the original game"),
 )
 
 # ── Format limits ─────────────────────────────────────────────────────────────
@@ -653,7 +657,8 @@ RF_FLAT_LIGHT  = 1 << 7   # one averaged light value across the whole object
 # The first decides whether the object receives anything at all; the second
 # decides whether the parts of it using color key, alpha blending, alpha test
 # or a partly transparent material receive it too.
-LF_ZBIAS                 = 1 << 0   # decal bias against z-fighting
+LF_ZBIAS                 = 1 << 0   # depth pulled toward the camera, so a
+                                    # coplanar surface is beaten outright
 LF_SHADOW_DIFFUSE        = 1 << 1   # receives shadows on solid faces
 LF_SHADOW_ALPHA          = 1 << 2   # ... and on transparent faces
 LF_IS_MESH_OBJECT        = 1 << 3   # visual is one of the object family - everything but mirrors

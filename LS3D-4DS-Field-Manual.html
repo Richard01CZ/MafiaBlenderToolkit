@@ -819,7 +819,7 @@ mbt --open tommy.4ds --gui</code></pre>
         <span class="label">Environment mapping — axis letters are Blender's</span>
         <p>Each option's tooltip also names the game's own letters, which differ by a Y/Z swap.
         <b>Reflect XY</b> (Z as the pole) is the upright sphere map, and the usual choice for chrome and glass. The three planar modes project from world position and stay put as the object moves.</p>
-        <p><b>Dummy Frame</b> is real but narrow: it works on <i>billboards only</i>. On any other visual type the setting is simply ignored.</p>
+        <p><b>Dummy Frame</b> is real but narrow: it works on <i>billboards only</i>. The picture is pinned across one unit of a dummy&rsquo;s own space &mdash; starting at that dummy&rsquo;s origin, one unit along its local Y and one unit up its local Z &mdash; and the billboard shows whichever part of the picture it is standing over, holding at the edge once it moves outside. Because a billboard turns to face the camera, what it shows changes with the viewing angle. The dummy is a Dummy-type sibling under the billboard&rsquo;s own parent; where there are several, the game takes the last one written. On any other visual type the game is handed no dummy at all and the setting draws nothing of its own.</p>
       </div>
 
       <h3>Material flags</h3>
@@ -917,7 +917,7 @@ mbt --open tommy.4ds --gui</code></pre>
 <table>
 <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
 <tbody>
-<tr><td><span class="name">Z-Bias</span></td><td class="desc">Draws the object just in front of whatever is underneath it, so posters, road markings and stains do not flicker against the wall or floor they sit on. Turn this on for any decal.</td></tr>
+<tr><td><span class="name">Z-Bias</span></td><td class="desc">Draws the object with its depth pulled toward the camera, so wherever its faces lie in the same place as another surface it wins the depth test outright instead of the two fighting over the pixels. A fixed step, applied to every face group of the object: it settles which of two surfaces in the same place is seen, not how far apart they are. Anything lying flat against something else wants it &mdash; a poster, a road marking, a stain, a painted shadow.</td></tr>
 <tr><td><span class="name">Renderable Object</span></td><td class="desc">Marks the visual as one of the engine’s object family — every type except a mirror, lens flares included even though they carry no mesh. With it off the object is left out of every mirror’s reflection and skipped when detail levels are pre-built; ordinary drawing is not affected. The exporter sets it to match the object’s type, so it needs no attention.</td></tr>
 <tr><td><span class="name">Shadows on Diffuse</span></td><td class="desc">The object receives shadows on its solid surfaces. Off means it takes no shadow at all.</td></tr>
 <tr><td><span class="name">Shadows on Alpha</span></td><td class="desc">Also receives shadows on its see-through parts &mdash; anything using a color key, alpha blending or an alpha texture. Needs <i>Shadows on Diffuse</i> as well.</td></tr>

@@ -767,8 +767,12 @@ def _register_frame_properties():
         "render_flags2", "Raw Flags", "Visual flags as unsigned hex", width=8)
     obj.rf2_zbias = flag_bool(
         "render_flags2", C.LF_ZBIAS, "Z-Bias",
-        "Depth bias for decals. Stops posters, road markings and stains "
-        "z-fighting with the surface underneath")
+        "Draw this object with its depth pulled toward the camera, so "
+        "wherever its faces lie in the same place as another surface it wins "
+        "the depth test outright instead of the two fighting over the pixels. "
+        "A fixed step, applied to every face group of the object: it decides "
+        "which of two surfaces in the same place is seen, not how far apart "
+        "they are. Anything lying flat against something else wants it")
     obj.rf2_shadow_diffuse = flag_bool(
         "render_flags2", C.LF_SHADOW_DIFFUSE, "Shadows on Diffuse",
         "Receive dynamic shadows on solid faces. Off means the object takes "
@@ -1252,7 +1256,13 @@ def _register_material_properties():
         name="Environment Texture", type=bpy.types.Image,
         poll=texfix.slot_poll, update=texfix.slot_update("ls3d_env_tex"))
     mat.ls3d_env_amount = FloatProperty(
-        name="Env Intensity", default=0.0, min=0.0, max=1.0, update=resync)
+        name="Env Intensity", default=0.0, min=0.0, max=1.0, update=resync,
+        description="How much of the environment texture is mixed in, where "
+                    "the blend reads it. Only Blend by Amount does: Blend by "
+                    "Alpha uses the surface's own transparency instead, and "
+                    "Multiply, Multiply Twice and Add have nowhere to put it. "
+                    "It is kept and written whichever blend is chosen, so a "
+                    "file's own value comes back unchanged")
     mat.ls3d_opacity = FloatProperty(
         name="Opacity", default=1.0, min=0.0, max=1.0, update=resync)
 
