@@ -4662,8 +4662,10 @@ def run_regressions(models_dir, out_dir):
           and imported_mat.ls3d_diffuse_tex is None
           and "Texture 'PLANK.PNG' is a PNG file. The game reads only BMP and "
               "TGA textures, so it was not assigned." in heard.getvalue()
-          and "first entry in an 8-bit texture's indexed color table"
-          in colorkey_text,
+          # The substance, not the sentence: where the key color comes
+          # from. Pinning the exact wording made a tooltip reword fail a
+          # texture test, which tells nobody anything.
+          and "first entry" in colorkey_text and "palette" in colorkey_text,
           f"picker offers png {offered_png}, bmp {offered_bmp}; kept png "
           f"{kept_png}, no-extension {kept_bare}, bmp {kept_bmp}; import "
           f"{png_import} left {imported_mat and imported_mat.ls3d_diffuse_tex}")

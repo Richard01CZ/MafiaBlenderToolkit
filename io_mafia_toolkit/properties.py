@@ -767,45 +767,36 @@ def _register_frame_properties():
         "render_flags2", "Raw Flags", "Visual flags as unsigned hex", width=8)
     obj.rf2_zbias = flag_bool(
         "render_flags2", C.LF_ZBIAS, "Z-Bias",
-        "Draw this object with its depth pulled toward the camera, so "
-        "wherever its faces lie in the same place as another surface it wins "
-        "the depth test outright instead of the two fighting over the pixels. "
-        "A fixed step, applied to every face group of the object: it decides "
-        "which of two surfaces in the same place is seen, not how far apart "
-        "they are. Anything lying flat against something else wants it")
+        "Draws the object with its depth pulled toward the camera, so where "
+        "its faces are coplanar with another surface it wins the depth test "
+        "rather than fighting over the pixels. A fixed step, not a distance")
     obj.rf2_shadow_diffuse = flag_bool(
         "render_flags2", C.LF_SHADOW_DIFFUSE, "Shadows on Diffuse",
         "Receive dynamic shadows on solid faces. Off means the object takes "
         "no shadow at all")
     obj.rf2_shadow_alpha = flag_bool(
         "render_flags2", C.LF_SHADOW_ALPHA, "Shadows on Alpha",
-        "Let the shadow fall on see-through faces too. Without it the "
-        "clipper drops every face group whose material uses color key, "
-        "alpha blending, alpha test or an alpha below 1, so railings and "
-        "foliage stay unshadowed. Needs Shadows on Diffuse as well")
+        "Shadows fall on see-through faces as well: color-keyed, blended, "
+        "alpha-tested, or an alpha below 1. Needs Shadows on Diffuse")
     obj.rf2_is_mesh_object = flag_bool(
         "render_flags2", C.LF_IS_MESH_OBJECT, "Renderable Object",
-        "Marks the visual as one of the engine's object family - every type "
-        "except a mirror, lens flares included even though they carry no mesh. "
-        "With it off the object is left out of every mirror's reflection and "
-        "skipped when detail levels are pre-built; ordinary drawing is not "
-        "affected. The exporter sets it to match the object's type")
+        "Marks the visual as one of the engine's object family - everything "
+        "but a mirror. Off leaves it out of mirror reflections and out of "
+        "pre-built detail levels. Set by the export to match the type")
     obj.rf2_no_twosided_collision = flag_bool(
         "render_flags2", C.LF_NO_TWOSIDED_COLLISION, "Skip Two-Sided Collision",
-        "Excludes the object from collision queries tagged two-sided. The "
-        "game never tags one, so on its own this changes nothing. It is not "
-        "the setting that makes collision accept back faces - that is a "
-        "separate option on the query itself. Unused in the original game")
+        "Leaves the object out of collision queries tagged two-sided. The "
+        "game never tags one, so this changes nothing. Unused in the "
+        "original game")
     obj.rf2_projection_diffuse = flag_bool(
         "render_flags2", C.LF_PROJECTION_DIFFUSE, "Projection on Diffuse",
         "Receive projected textures - headlights, bullet holes, projected "
         "shadows - on solid faces")
     obj.rf2_projection_alpha = flag_bool(
         "render_flags2", C.LF_PROJECTION_ALPHA, "Projection on Alpha",
-        "Let headlights and bullet holes land on see-through faces too. "
-        "Without it the clipper drops every face group whose material uses "
-        "color key, alpha blending, alpha test or an alpha below 1. Needs "
-        "Projection on Diffuse as well")
+        "Projections land on see-through faces as well: color-keyed, "
+        "blended, alpha-tested, or an alpha below 1. Needs Projection on "
+        "Diffuse")
     obj.rf2_no_fog = flag_bool(
         "render_flags2", C.LF_NO_FOG, "No Fog",
         "Excludes the object from the sector's fog")
@@ -1228,8 +1219,8 @@ def _register_material_properties():
         default=(1.0, 1.0, 1.0), update=resync,
         description="The color the game lights the surface in, on a material "
                     "with no texture - a texture replaces it outright, unless "
-                    "Vertex Colors is on. The preview paints with it in the "
-                    "same two cases")
+                    "Tint By Material Color is on. The preview paints with "
+                    "it in the same two cases")
     mat.ls3d_emission_color = FloatVectorProperty(
         name="Emission", subtype="COLOR", min=0.0, max=1.0,
         default=(0.0, 0.0, 0.0), update=resync,
@@ -1349,11 +1340,9 @@ def _register_material_properties():
          "Load through the engine's texture manager. Unused in the original "
          "game"),
         (C.MTL_ALPHA_ENABLE, "ls3d_flag_alpha_enable", "Alpha Enable",
-         "Keep the texture's pixels in memory, which is what lets shots pass "
-         "through see-through texels instead of hitting them. It is set "
-         "alongside Use Alpha Texture on every transparent material in the "
-         "game, but it is not what makes the surface transparent and the "
-         "preview does not change with it"),
+         "Keeps the texture's pixels in memory after it is loaded. It does "
+         "not make a surface transparent, and the preview does not change "
+         "with it"),
         (C.MTL_DISABLE_U_TILING, "ls3d_flag_disable_u_tiling", "Disable U Tiling",
          "Clamp texture addressing horizontally instead of repeating"),
         (C.MTL_DISABLE_V_TILING, "ls3d_flag_disable_v_tiling", "Disable V Tiling",
@@ -1364,10 +1353,8 @@ def _register_material_properties():
         (C.MTL_ENV_ENABLE, "ls3d_flag_env_enable", "Use Environment Texture",
          "Use the environment texture for reflection and shine"),
         (C.MTL_DIFFUSE_MIPMAP, "ls3d_flag_diffuse_mipmap", "Diffuse MipMap",
-         "Build mipmaps for the diffuse texture, so it stays smooth rather than "
-         "shimmering in the distance. The environment texture gets them "
-         "whatever this says. On a color-keyed material it also switches the "
-         "material to alpha blending"),
+         "Builds mipmaps for the diffuse texture. On a color-keyed material "
+         "it also switches the material to alpha blending"),
         (C.MTL_FORCE_TRUECOLOR, "ls3d_flag_force_truecolor", "Force Truecolor",
          "Always load at full color depth and skip texture compression, "
          "ignoring the memory-saving setting"),
@@ -1381,31 +1368,22 @@ def _register_material_properties():
          "Load the texture at full color depth instead of through a "
          "palette"),
         (C.MTL_ALPHA_ANIMATED, "ls3d_flag_alpha_animated", "Anim Alpha",
-         "Step the alpha texture through its own frames alongside the diffuse "
-         "one, numbering it the same way. Off holds the alpha texture on the "
-         "one name it carries while the diffuse animates under it. This does "
-         "nothing on its own - Anim Diffuse is what makes a material animate "
-         "at all"),
+         "Steps the alpha texture through its own frames, numbered like the "
+         "diffuse one. Does nothing without Anim Diffuse"),
         (C.MTL_DIFFUSE_ANIMATED, "ls3d_flag_diffuse_animated", "Anim Diffuse",
-         "Step the diffuse texture through numbered frames. The game numbers "
-         "them by overwriting the two characters just before the extension "
-         "with a count from 00 upward, so the name here is already frame 00 - "
-         "'2FIRESM00.BMP' runs 2FIRESM00 to 2FIRESM15, and 'FLAME1_0000.BMP' "
-         "runs FLAME1_0000 to FLAME1_0004, since only the last two digits are "
-         "the counter. Two digits is the whole width, so 100 frames is the "
-         "ceiling, and a name shorter than six characters has nowhere to put "
-         "the number"),
-        (C.MTL_DIFFUSE_COLORED, "ls3d_flag_diffuse_colored", "Vertex Colors",
-         "Tint lighting with the material's ambient, diffuse and emission "
-         "colors"),
+         "Steps the diffuse texture through numbered frames. The two "
+         "characters before the extension are the counter, so the name set "
+         "here is frame 00 and 100 frames is the ceiling"),
+        (C.MTL_DIFFUSE_COLORED, "ls3d_flag_diffuse_colored",
+         "Tint By Material Color",
+         "Multiplies the surface by the material's own ambient, diffuse and "
+         "emission colors. Off, a textured material ignores those colors"),
         (C.MTL_DIFFUSE_DOUBLESIDED, "ls3d_flag_diffuse_doublesided", "Double Sided",
          "Disable backface culling"),
         (C.MTL_ALPHA_COLORKEY, "ls3d_flag_alpha_colorkey", "Color Key",
-         "Treat the texture's key color as fully transparent. The key color is "
-         "the first entry in an 8-bit texture's indexed color table (its "
-         "palette), not a color picked here - repaint that entry to change it. "
-         "A texture with no color table (16, 24 or 32-bit) has no key entry, "
-         "and the game makes every pixel with no blue in it transparent "
+         "Treats the texture's key color as fully transparent. The key is the "
+         "first entry of an 8-bit texture's palette - repaint that entry to "
+         "change it. A texture with no palette keys on pixels with no blue "
          "instead"),
         (C.MTL_ALPHATEX, "ls3d_flag_alphatex", "Use Alpha Texture",
          "Use a separate alpha texture. Requires Alpha Enable"),

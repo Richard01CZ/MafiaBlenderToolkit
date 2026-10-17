@@ -838,7 +838,8 @@ def sync_material_flags(mat):
 
     # ── Surface color ────────────────────────────────────────────────────────
     # The game paints with the material's diffuse color only where there is no
-    # texture to paint with instead, or where Vertex Colors asks for both.
+    # texture to paint with instead, or where Tint By Material Color asks
+    # for both.
     if tint:
         colored = flag(C.MTL_DIFFUSE_COLORED)
         if diffuse_on:
