@@ -403,6 +403,7 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
     <a href="#sectors">Sectors &amp; portals</a>
     <a href="#occluders">Occluders</a>
     <a href="#dummies">Dummies &amp; targets</a>
+    <a href="#lights">Lights</a>
     <a href="#billboards">Billboards</a>
     <a href="#mirrors">Mirrors</a>
     <a href="#lensflares">Lens flares</a>
@@ -412,8 +413,12 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
     <a href="#skinning">Armatures &amp; skinning</a>
     <a href="#morphs">Morphs</a>
 
+    <h4>Animation &amp; the other files</h4>
+    <a href="#otherfiles">Animations, tracks &amp; shadows</a>
+
     <h4>Help</h4>
     <a href="#checks">Checks &amp; messages</a>
+    <a href="#buttons">Every button</a>
     <a href="#elsewhere">The other references</a>
     <a href="#shots">The pictures</a>
   </nav>
@@ -746,7 +751,18 @@ mbt --open tommy.4ds --gui</code></pre>
       <p>Free-form text stored on the frame, used by mission scripts. The format allows 255
       bytes; longer text is clipped on export with a warning. Strings are encoded as
       Windows-1250.</p>
-    </section>
+    <h3>Switch distance</h3>
+
+      <p>Each LOD carries the distance at which the game takes it up.</p>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Switch Distance</td><td class="desc">The distance in meters. This is the one to set.</td></tr>
+          <tr><td class="name">LOD Distance (squared)</td><td class="desc">The raw stored value, which is that distance <i>squared</i> &mdash; the game compares it against a squared camera distance and never takes a square root. Shown so a file's own number can be read.</td></tr>
+        </tbody>
+      </table>
+      </section>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="instances">
@@ -843,7 +859,7 @@ mbt --open tommy.4ds --gui</code></pre>
             <tr><td class="name">Truecolor Texture</td><td class="desc">Load at full color depth rather than through a palette.</td></tr>
             <tr><td class="name">Anim Alpha</td><td class="desc">Animate the alpha texture. Frames numbered with a 001 suffix.</td></tr>
             <tr><td class="name">Anim Diffuse</td><td class="desc">Animate the diffuse texture. Frames numbered with a 01 suffix. Decided before the material object exists — the loader builds a different class for it.</td></tr>
-            <tr><td class="name">Tint By Material Color</td><td class="desc">Multiplies the surface by the material&rsquo;s own ambient, diffuse and emission colors. With it off, a textured material ignores those colors. Never used by the game.</td></tr>
+            <tr><td class="name">Tint by Colors</td><td class="desc">Multiplies the surface by the colors in the Material Colors box &mdash; diffuse, ambient and emission. With it off, a textured material ignores them and the texture is drawn untinted. Never used by the game.</td></tr>
             <tr><td class="name">Double Sided</td><td class="desc">Disable backface culling.</td></tr>
             <tr><td class="name">Color Key</td><td class="desc">Treat the texture's key color as fully transparent.</td></tr>
             <tr><td class="name">Use Alpha Texture</td><td class="desc">Uses a second texture for transparency. Color Key, Truecolor Texture and Additive each replace it, so those take priority.</td></tr>
@@ -851,7 +867,20 @@ mbt --open tommy.4ds --gui</code></pre>
           </tbody>
         </table>
       </div>
-    </section>
+    <h3>Animation, field by field</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Frames</td><td class="desc">How many frames the sequence runs.</td></tr>
+          <tr><td class="name">Frame Time</td><td class="desc">How long each frame is held, in milliseconds.</td></tr>
+          <tr><td class="name">Loop Back To</td><td class="desc">Which frame it returns to. &minus;1 picks a frame at random each interval.</td></tr>
+          <tr><td class="name">Info</td><td class="desc">Shows exactly how the frame files have to be named, worked out from the name already set.</td></tr>
+          <tr><td class="name">Env Frames<br>Env Frame Time<br>Env Loop Back To</td><td class="desc">The same three again for the environment texture, on a channel of its own.</td></tr>
+          <tr><td class="name">Env Intensity</td><td class="desc">How much of the environment texture is mixed in. Only <b>Blend by Amount</b> reads it; it is kept and written whichever blend is set, so a file's own value comes back unchanged.</td></tr>
+        </tbody>
+      </table>
+      </section>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="flags-how" class="panel">
@@ -1005,7 +1034,17 @@ mbt --open tommy.4ds --gui</code></pre>
       headlight or a projected shadow can spill into. Two sectors must share a bit for anything
       projected in one to reach the other. It is zero throughout the original game, which keeps
       projections inside their own sector.</p>
-    </section>
+    <h3>A portal's own numbers</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">View Distance</td><td class="desc">How far the game keeps looking through the opening, in meters. The file stores the <i>square</i> of it, shown as <b>Raw Value (squared)</b> when raw flag values are switched on.</td></tr>
+          <tr><td class="name">Second Range</td><td class="desc">The portal's other stored range.</td></tr>
+          <tr><td class="name">Imported Plane Normal<br>Imported Plane Distance</td><td class="desc">The plane the file carried, kept for reference. The export recomputes the plane from the outline, so reshaping the portal is enough &mdash; these are not what gets written, and the panel says so.</td></tr>
+        </tbody>
+      </table>
+      </section>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="occluders">
@@ -1048,11 +1087,109 @@ mbt --open tommy.4ds --gui</code></pre>
       <p><b>Targets</b> are plain-axes empties that hold a list of links to other frames by name,
       including links to individual bones. A link whose destination is not being exported is
       dropped with a warning naming it, rather than silently producing a dangling reference.</p>
+    <h3>What a target holds</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Target Objects</td><td class="desc">The list of frames this target steers, by name. <code>armature:bone</code> links to a bone.</td></tr>
+          <tr><td class="name">Aim At This Target</td><td class="desc">Whether the links do anything. Off still writes them but stops them steering, which is what lets an animation turn those objects itself.</td></tr>
+          <tr><td class="name">Flags</td><td class="desc">What the target does to the frames it links: look at it, follow its rotation, its position, its scale.</td></tr>
+        </tbody>
+      </table>
+      </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <section id="lights">
+      <h2><span class="num">14</span>Lights</h2>
+
+      <p>The game's own light. Blender's lights cannot hold a two-value falloff band or a
+      pair of cone angles, so a light is an <b>empty drawn as a cone</b>, with a panel of its
+      own. It shines along the frame's <b>local +Y</b>.</p>
+
+      <div class="callout">
+        <p><b>A light in a model lights nothing by itself.</b> The engine lights a sector
+        from the lights that sector <i>lists</i>, and that list lives in the mission's
+        <code>scene2.bin</code> &mdash; not in the <code>.4ds</code>. Exporting a light puts
+        the frame in the model and no more; until a sector names it, nothing changes in
+        game.</p>
+      </div>
+
+      <h3>Type</h3>
+
+      <p>Nine types, and only three of them light geometry. The rest set a sector's
+      atmosphere or do nothing at all, and for those the ranges mean something different and
+      the cones and power are not read.</p>
+
+      <table>
+        <thead><tr><th>Type</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Point</td><td class="desc">Shines from its position, fading across the range.</td></tr>
+          <tr><td class="name">Spot</td><td class="desc">Shines from its position along the frame's direction, inside the cone, fading across the range.</td></tr>
+          <tr><td class="name">Directional</td><td class="desc">Shines along the frame's direction from no particular place. Position and range are unused.</td></tr>
+          <tr><td class="name">Ambient</td><td class="desc">Adds its color, times its power, evenly to everything in the sectors it lights.</td></tr>
+          <tr><td class="name">Fog</td><td class="desc">Linear fog for the sectors it lights, in its color. Far is where the fog is thickest, as a percentage of the view distance; Near is where it starts, as a percentage of that.</td></tr>
+          <tr><td class="name">Point Ambient</td><td class="desc">Exponential fog, with Near as the density. Despite the name it lights nothing.</td></tr>
+          <tr><td class="name">Point Fog</td><td class="desc">Exponential-squared fog, with Near as the density.</td></tr>
+          <tr><td class="name">Layered Fog</td><td class="desc">Draws no fog and lights nothing. The game only counts it, as light from around it, toward how dark a shadow is.</td></tr>
+          <tr><td class="name">None</td><td class="desc">Does nothing. What a light carries before it is given a type.</td></tr>
+        </tbody>
+      </table>
+
+      <p>A file carrying a type the panel has no name for keeps it: <b>Stored Type</b> shows
+      the raw number and the panel says plainly that it does not know it.</p>
+
+      <h3>What it holds</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Color</td><td class="desc">The light's color. Labelled <b>Fog Color</b> on the fog types.</td></tr>
+          <tr><td class="name">Power</td><td class="desc">Multiplies the color. Not read by the atmosphere types.</td></tr>
+          <tr><td class="name">Near Range</td><td class="desc">Full strength up to here. On Fog it is <b>Start %</b>; on the exponential fogs it is <b>Density</b>, used as typed.</td></tr>
+          <tr><td class="name">Far Range</td><td class="desc">Faded to nothing by here. On Fog it is <b>Thickest %</b>; the exponential fogs do not read it. The panel warns when Far is nearer than Near, which runs the fade backwards.</td></tr>
+          <tr><td class="name">Near Distance<br>Far Distance</td><td class="desc">The same band in meters, for setting a distance rather than a stored value.</td></tr>
+          <tr><td class="name">Inner Cone<br>Outer Cone</td><td class="desc">A Spot's two angles: full inside the inner, fading to nothing at the outer. Both are <b>full angles, not half-angles</b>. The panel warns when Inner is wider than Outer, which leaves the beam no soft edge.</td></tr>
+          <tr><td class="name">Inner Cone Radius<br>Outer Cone Radius</td><td class="desc">The same two angles as a radius at the light's reach, for setting a beam by how wide it lands.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Mode</h3>
+
+      <p>A word of switches saying what the light is counted for. Bits of it nothing reads
+      are carried back out exactly as they came in.</p>
+
+      <table>
+        <thead><tr><th>Switch</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Lights Objects</td><td class="desc">Ordinary objects, billboards and morphs, while the game runs.</td></tr>
+          <tr><td class="name">Lights Lit Objects</td><td class="desc">Lit Object meshes too, on top of the lighting baked into them. Off in the engine's default; the game turns it on for car headlights and fire lights.</td></tr>
+          <tr><td class="name">Vertex Bake</td><td class="desc">Counted when a lit object's per-vertex lighting is baked.</td></tr>
+          <tr><td class="name">Casts Baked Shadow</td><td class="desc">Casts an occlusion ray during a bake, so baked lighting shows what this light cannot reach.</td></tr>
+          <tr><td class="name">Affects Shadows</td><td class="desc">Counted when the game picks which way a projected shadow falls and how dark it is.</td></tr>
+          <tr><td class="name">Affects Lightness</td><td class="desc">Counts toward the lightness the game measures at a point.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <p>With neither <b>Lights Objects</b> nor <b>Lights Lit Objects</b> set, the light
+        lights nothing in game whatever else is on. The panel says so under the switches.</p>
+      </div>
+
+      <h3>What the viewport shows</h3>
+
+      <p>A point light's two ranges are drawn as balls and a spot's two cones as cones, so the
+      band and the beam can be seen rather than worked out from numbers. The types that set a
+      sector's atmosphere draw nothing &mdash; their ranges are not distances from the light at
+      all. An <b>aim ball</b> can be dragged to point the light, and <b>Aim At Target</b> turns
+      it to face the other selected object, or the 3D cursor when the light is all that is
+      selected.</p>
     </section>
 
     <!-- ─────────────────────────────────────────────────── -->
+
     <section id="billboards">
-      <h2><span class="num">14</span>Billboards</h2>
+      <h2><span class="num">15</span>Billboards</h2>
 
       <p>Geometry that turns to face the camera. Two settings:</p>
       <ul>
@@ -1067,7 +1204,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="mirrors">
-      <h2><span class="num">15</span>Mirrors</h2>
+      <h2><span class="num">16</span>Mirrors</h2>
 
       <p>A mirror is a reflection plane plus a <b>view box</b> — a cube empty named
       <code>&lt;mirror&gt;_viewbox</code>, parented directly to the mirror, with no children of
@@ -1094,11 +1231,21 @@ mbt --open tommy.4ds --gui</code></pre>
 
       <p><b>Reflection Range</b> is a real draw distance: past it the mirror stops reflecting and
       draws as flat color. The default is 100.</p>
-    </section>
+    <h3>What a mirror holds</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Color</td><td class="desc">The tint the reflection is drawn through.</td></tr>
+          <tr><td class="name">Active Range</td><td class="desc">How far away the mirror still reflects.</td></tr>
+          <tr><td class="name">Center<br>X Axis<br>Z Axis</td><td class="desc">The view box, as a middle point and two axes. Typed here, dragged by the six handles in the viewport, or fitted with <b>Fit View Box</b>.</td></tr>
+        </tbody>
+      </table>
+      </section>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="lensflares">
-      <h2><span class="num">16</span>Lens flares</h2>
+      <h2><span class="num">17</span>Lens flares</h2>
 
       <p>A lens flare imports as a small sphere empty so it can be selected and moved without
       geometry. It holds an ordered list of <b>elements</b>, each one a material drawn as a
@@ -1159,11 +1306,20 @@ mbt --open tommy.4ds --gui</code></pre>
       written, because the file stores a material number and an empty one reads off the front
       of the model's material list. Flare materials do not need to be on any mesh &mdash; they
       are collected from the list itself.</p>
-    </section>
+    <h3>The element list</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Axis Offset</td><td class="desc">Where the element sits along the flare's line.</td></tr>
+          <tr><td class="name">Element Material</td><td class="desc">Shows the selected element's material settings inline, so a flare can be built without leaving the panel.</td></tr>
+        </tbody>
+      </table>
+      </section>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="projectors">
-      <h2><span class="num">17</span>Projectors</h2>
+      <h2><span class="num">18</span>Projectors</h2>
 
       <p class="lead-in">A projector paints a texture onto whatever geometry falls inside its
       volume &mdash; a headlight on the road, a lamp pool on a wall, a tyre track on the ground.
@@ -1267,11 +1423,20 @@ mbt --open tommy.4ds --gui</code></pre>
         the falloff and where it stops are exact; only the brightening is not, which shows on a
         light surface more than a dark one. <b>Alpha Blend</b> is exact.</p>
       </div>
-    </section>
+    <h3>The rest of the panel</h3>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Projection Mode</td><td class="desc">The raw stored mode, packing the volume shape, the depth falloff and the blend into one number. The three dropdowns are views onto it; this is shown for reading a file's own value, and the panel says plainly when a file carries a number it has no name for.</td></tr>
+          <tr><td class="name">Projected Material</td><td class="desc">Shows the projector's material settings inline, since a projector has no material slot of its own and never appears in Blender's Material tab.</td></tr>
+        </tbody>
+      </table>
+      </section>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="skinning">
-      <h2><span class="num">18</span>Armatures &amp; skinning</h2>
+      <h2><span class="num">19</span>Armatures &amp; skinning</h2>
       <figure class="shot" id="fig-10">
         <img src="guide-images/10-joint-boxes.png" alt="Influence boxes in green, with the handles on the joint being posed."
              onerror="this.closest('figure').classList.add('empty');this.remove();">
@@ -1475,7 +1640,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
     <!-- ─────────────────────────────────────────────────── -->
     <section id="morphs">
-      <h2><span class="num">19</span>Morphs</h2>
+      <h2><span class="num">20</span>Morphs</h2>
       <figure class="shot" id="fig-14">
         <img src="guide-images/14-morph-groups.png" alt="A morph group and its targets."
              onerror="this.closest('figure').classList.add('empty');this.remove();">
@@ -1520,8 +1685,98 @@ mbt --open tommy.4ds --gui</code></pre>
     </section>
 
     <!-- ─────────────────────────────────────────────────── -->
+    <section id="otherfiles">
+      <h2><span class="num">21</span>Animations, tracks &amp; shadows</h2>
+
+      <p>Three files live <b>beside</b> a model rather than inside it, and all three are
+      matched to it by <b>frame name</b>: the animation, the movement track and the shadow.
+      Export the model first, then these, into the same folder.</p>
+
+      <h3>Animations &mdash; <code>.5ds</code></h3>
+
+      <p>One animation per file, keyed by frame name. In Blender it is an action, so the
+      <b>5DS Animation</b> tab is mostly about which action is the one being written.</p>
+
+      <div class="callout">
+        <p><b>Twenty-five frames a second, and nothing else.</b> An animation numbers its keys
+        in frames and carries no rate of its own: the game spaces them 40&nbsp;ms apart and
+        there is nowhere in the file to say otherwise. A scene keyed at 24 or 30 is
+        <b>refused</b> rather than written at the wrong speed &mdash; by the animation export,
+        the movement export, the animation check, and a model exported with its animation.
+        <b>Set Scene To 25 fps</b> is the one-press fix and leaves the keys on the frames they
+        are on.</p>
+      </div>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Key Flags</td><td class="desc">Which kinds of key a track holds &mdash; movement, rotation, scale.</td></tr>
+          <tr><td class="name">Automatic Key Flags</td><td class="desc">Works those out from the keys the track actually has. Off lets them be set by hand, which can claim a kind of key the track has not got, or leave keyed movement out of the file.</td></tr>
+          <tr><td class="name">Animated Objects</td><td class="desc">The count the model claims. <b>Follow The Scene</b> keeps it matched to what is keyed; <b>Count Set By Hand</b> holds what you typed.</td></tr>
+          <tr><td class="name">Ignore Target Frames</td><td class="desc">Calls every target off at once. A target's aiming beats whatever an animation says, so it has to be possible to switch the lot off while animating. Changes nothing that is written.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <p>A model claiming animated objects with <b>no <code>.5ds</code> beside it</b> fails
+        to load outright, and every <code>scene2.bin</code> entry for it fails with it. The
+        model still appears; nothing the mission says about its frames does anything.</p>
+      </div>
+
+      <h3>Event cues</h3>
+
+      <p>Cues are what the game listens for while an animation plays &mdash; a footstep, a
+      sound, a script hook. They live on a <b>Dummy called <code>notify</code></b>, which the
+      character skeleton preset already builds. <b>Named events</b> carry free text, handed
+      straight to whatever is listening. An <b>even number of cues on one frame</b> makes the
+      game read them one value out of step, and the check says so.</p>
+
+      <h3>Movement tracks &mdash; <code>.tck</code></h3>
+
+      <p>Where the actor <b>travels</b> while the animation plays. In Blender it is an empty
+      marked with <b>Use As Movement Track</b>, with the model parented <b>under</b> it: key
+      the empty, and the travel is what you keyed. One per scene, because a
+      <code>.tck</code> holds a single track. The export refuses plainly if the model is not
+      under it &mdash; the travel would never reach it.</p>
+
+      <table>
+        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Show Track's Movement</td><td class="desc">Whether the travel moves the model in the viewport. Off holds it in place, which is easier to animate against; nothing is moved and it comes straight back.</td></tr>
+          <tr><td class="name">Sample Every</td><td class="desc">Milliseconds between one movement sample and the next. The game's own tracks use 20, some 10 or 40.</td></tr>
+          <tr><td class="name">Hands Over From</td><td class="desc">Where this animation leaves the actor for the next one to take over.</td></tr>
+          <tr><td class="name">Picked Up At</td><td class="desc">Where this animation wants the actor to be when it takes over.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Shadows &mdash; <code>.6ds</code></h3>
+
+      <p>The coarse mesh the engine casts shadows from: one piece per frame of the model,
+      carrying <b>geometry and nothing else</b>. Materials, UVs and flags on a piece are
+      ignored, because a <code>.6ds</code> has nowhere to keep them. It is never drawn, so
+      detail buys nothing &mdash; a few flat planes or a box is the usual shape.</p>
+
+      <p>A shadow piece is an ordinary mesh set aside as one. On any mesh that is not one yet,
+      the object panel offers <b>Use As Shadow Piece</b> at the top. Press it and every other
+      4DS setting disappears, leaving a <b>Shadow Piece</b> box with the switch in it: that is
+      deliberate, because a shadow piece is not a frame of the model and a frame type would
+      mean nothing on it. Press the switch again to get the rest of the panel back.</p>
+
+      <div class="callout">
+        <p>Give the piece the <b>same name as the frame it casts for</b> &mdash; that is how the
+        engine matches the two. With the model already in the scene the name is taken, so
+        Blender adds <code>.001</code>, which is fine: the suffix is stripped when the piece is
+        matched up.</p>
+      </div>
+
+      <p>The <b>Shadow</b> frame type inside a <code>.4ds</code> is a different thing &mdash; a
+      frame with no payload of its own. The shadow mesh is the <code>.6ds</code>.</p>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────── -->
+
     <section id="checks">
-      <h2><span class="num">20</span>Checks &amp; messages</h2>
+      <h2><span class="num">22</span>Checks &amp; messages</h2>
       <p class="lead-in">Errors stop the export before anything is written. Warnings let it
       through and tell you what changed.</p>
       <figure class="shot" id="fig-15">
@@ -1577,8 +1832,137 @@ mbt --open tommy.4ds --gui</code></pre>
     <!-- ─────────────────────────────────────────────────── -->
 
 
+    <section id="buttons">
+      <h2><span class="num">23</span>Every button</h2>
+
+      <p>Every button the add-on adds, by the panel it sits in. None of them is required to
+      get a model out: they do by one press what the settings beside them do by hand.</p>
+
+      <h3>Making a frame</h3>
+
+      <p>Everything the <b>Add &#9656; 4DS</b> menu builds. Each one arrives with the frame type, the payload and the viewport colors already set.</p>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Sector</td><td class="desc">Add a sector: a closed convex box with its normals facing inward.</td></tr>
+          <tr><td class="name">Portal</td><td class="desc">Add a portal on the active sector's largest wall.</td></tr>
+          <tr><td class="name">Occluder</td><td class="desc">Add an occluder: a closed convex box that hides what is behind it.</td></tr>
+          <tr><td class="name">Dummy</td><td class="desc">Add a dummy: a named marker with a box the game uses for collision.</td></tr>
+          <tr><td class="name">Target</td><td class="desc">Add a target: an anchor other frames can be made to face.</td></tr>
+          <tr><td class="name">Light</td><td class="desc">Add a light, as a spot pointing down at the floor.</td></tr>
+          <tr><td class="name">Projector</td><td class="desc">Add a projector that paints a material onto what it covers.</td></tr>
+          <tr><td class="name">Mirror</td><td class="desc">Add a mirror plane facing local +Y, with the view box in front of it.</td></tr>
+          <tr><td class="name">Billboard</td><td class="desc">Add a billboard: an upright quad that turns to face the camera.</td></tr>
+          <tr><td class="name">Lens Flare</td><td class="desc">Add a lens flare with one element ready for a material.</td></tr>
+          <tr><td class="name">Sun Flare (preset)</td><td class="desc">Add the sun flare the game's daytime skies use, elements and all.</td></tr>
+          <tr><td class="name">Joint</td><td class="desc">Add a joint, on the active armature or on a new one.</td></tr>
+          <tr><td class="name">Character Skeleton (preset)</td><td class="desc">Add Tommy's skeleton: the eighteen joints every human character moves by, and the frames for weapons, animation events and turning the head.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Checking</h3>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Check 4DS Scene</td><td class="desc">Run every export check on the scene without writing a file.</td></tr>
+          <tr><td class="name">Check 5DS Animation</td><td class="desc">Check the scene's animation against what a 5DS can hold, without writing.</td></tr>
+          <tr><td class="name">4DS Result</td><td class="desc">Summary of the last 4DS import or export.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Characters</h3>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Set Default Mesh Origin</td><td class="desc">Stand the character's armature at the default mesh origin: hip height, the point the game's animations move and turn the body about, found from the character's own skeleton. One already standing there, within 10 cm as the game's own characters do, is left where it is. The bones, the mesh and everything hung on them stay where they are.</td></tr>
+          <tr><td class="name">Set Rest From Pose</td><td class="desc">Make the pose the skeleton: every joint moved in Pose Mode becomes where that joint rests. A skeleton fitted to a character by posing it has to be told so before the mesh is weighted - until it is, the weights pull the mesh by the distance from each joint's resting place to where it was posed, and the influence boxes sit at the resting places rather than at the joints. Changes nothing a file keeps: a posed skeleton is already written as it is posed.</td></tr>
+          <tr><td class="name">Add Influence Box</td><td class="desc">Give the active joint an influence box: the box its skin weights are made from when it has none painted.</td></tr>
+          <tr><td class="name">Fit Influence Box</td><td class="desc">Fit the active joint's box to where it bends: on the joint, aimed at the joint below it, as wide as the mesh around it.</td></tr>
+          <tr><td class="name">Add Missing Influence Boxes</td><td class="desc">Give every joint of the active armature that has no influence box the default one.</td></tr>
+          <tr><td class="name">Remove Influence Box</td><td class="desc">Take the active joint's influence box away, leaving its weights to what is painted.</td></tr>
+          <tr><td class="name">Make Weights From Boxes</td><td class="desc">Paint the weights the influence boxes would make, so they can be seen and changed.</td></tr>
+          <tr><td class="name">Fix Weights</td><td class="desc">Put the selected meshes' weights under the three rules the game plays them by: at most two influences on a vertex, those two a joint and its own parent, and the two totalling one. Done in that order, because each step changes what the next has to work with. The joints keep what is painted on them and the mesh frame's share becomes whatever they leave; only where the joints alone come to more than one are they brought down.</td></tr>
+          <tr><td class="name">Clear All Weights</td><td class="desc">Take every weight off the selected meshes, so their joints are weighted from the influence boxes. The vertex groups stay, emptied, and so does the order that numbers the joints; a morph region's vertex group is not a weight and is left as it is.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Morphs</h3>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Morph Group</td><td class="desc">Add or remove a morph group.</td></tr>
+          <tr><td class="name">Morph Target</td><td class="desc">Add, remove, or reorder shape keys within the active morph group.</td></tr>
+          <tr><td class="name">New Shape Key</td><td class="desc">Make a new shape key and add it to the active morph group.</td></tr>
+          <tr><td class="name">Add Existing Shape Key</td><td class="desc">Add an existing shape key to the active morph group.</td></tr>
+          <tr><td class="name">Pick Shape Key</td><td class="desc">Add this shape key to the morph group.</td></tr>
+          <tr><td class="name">Apply as Basis</td><td class="desc">Make the active target this group's basis, rebasing the group onto it. Only shape keys belonging to the active group move. The original version shifted every key on the object, which silently displaced every other group's targets by this group's delta.</td></tr>
+          <tr><td class="name">Transfer Morph</td><td class="desc">Copy the active morph target from every other selected object onto this one. Select the source morph on the other object, shift-select this object to make it active, then press Transfer.</td></tr>
+          <tr><td class="name">Toggle Morph Selection</td><td class="desc">Toggle selection of this morph target.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Animation</h3>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">New Animation</td><td class="desc">Start a new animation on the selected objects.</td></tr>
+          <tr><td class="name">Make Active</td><td class="desc">Make this animation the one the scene plays.</td></tr>
+          <tr><td class="name">Unload Animation</td><td class="desc">Take every animation off the scene, so the timeline is blank and the model stands at rest. The animations stay in the list, and Make Active puts one back.</td></tr>
+          <tr><td class="name">Delete Animation</td><td class="desc">Remove this animation from the file, every part of it.</td></tr>
+          <tr><td class="name">Fit Scene Range To Keys</td><td class="desc">Set the scene's frame range to cover every key in the scene.</td></tr>
+          <tr><td class="name">Set Scene To 25 fps</td><td class="desc">Put the scene on the frame rate the game plays animations at.</td></tr>
+          <tr><td class="name">Follow The Scene</td><td class="desc">Let the animated object count follow what the scene has keyed again.</td></tr>
+          <tr><td class="name">Add Event Cue</td><td class="desc">Put an event cue on this frame of the animation.</td></tr>
+          <tr><td class="name">Remove Event Cue</td><td class="desc">Take an event cue off this frame, the last one first.</td></tr>
+          <tr><td class="name">Move Event Cue</td><td class="desc">Move this cue to a frame you type.</td></tr>
+          <tr><td class="name">Jump To Cue</td><td class="desc">Move the playhead to this cue.</td></tr>
+          <tr><td class="name">Add Named Event</td><td class="desc">Put a named cue on this frame of the animation.</td></tr>
+          <tr><td class="name">Remove Named Event</td><td class="desc">Take this named cue off the animation.</td></tr>
+          <tr><td class="name">Use As Movement Track</td><td class="desc">Use this empty as the animation's movement track, or stop using it.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Materials and textures</h3>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">New 4DS Material</td><td class="desc">Create a new 4DS material, set up the way the game reads one.</td></tr>
+          <tr><td class="name">Clear Material Slots</td><td class="desc">Remove every material slot from this sector, portal or occluder.</td></tr>
+          <tr><td class="name">Fix Texture File</td><td class="desc">Rewrite this texture file so the game reads it correctly. The original is copied into a texture_backups folder beside it first.</td></tr>
+          <tr><td class="name">Fix Frame Files</td><td class="desc">Rewrite every animation frame file in the range the Frames fields set, so the game reads them correctly. Each original is copied into a texture_backups folder beside it first.</td></tr>
+          <tr><td class="name">Play</td><td class="desc">Play this material's texture animation in the viewport.</td></tr>
+          <tr><td class="name">Pause</td><td class="desc">Hold the animation on the frame it is showing.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Frames with a shape of their own</h3>
+
+      <table>
+        <thead><tr><th>Button</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Fit View Box</td><td class="desc">Set the active mirror's view box to a cube in front of its surface.</td></tr>
+          <tr><td class="name">Fit Size To Texture</td><td class="desc">Set how wide the projector's volume is from the proportions of one of its material's pictures, so the picture is painted without being stretched. The volume keeps the height it has and the width follows from it; the reach along the projection axis is left alone. Only the frame's own scale is set, the way dragging it would be.</td></tr>
+          <tr><td class="name">Aim At Target</td><td class="desc">Turn the light to face the other selected object, or the 3D cursor when the light is all that is selected.</td></tr>
+          <tr><td class="name">Add Flare Element</td><td class="desc">Add an element to this lens flare.</td></tr>
+          <tr><td class="name">Remove Flare Element</td><td class="desc">Remove the selected element from this lens flare.</td></tr>
+          <tr><td class="name">Move Flare Element</td><td class="desc">Move the selected element up or down the flare axis order.</td></tr>
+          <tr><td class="name">Add Target Link</td><td class="desc">Link an object or joint to this target frame.</td></tr>
+          <tr><td class="name">Remove Target Link</td><td class="desc">Remove the selected link from this target frame.</td></tr>
+          <tr><td class="name">Use As Shadow Piece</td><td class="desc">Use this mesh as part of the model's shadow, or stop using it.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ───────────────────────────────────────────────── -->
+
     <section id="elsewhere" class="panel">
-      <h2><span class="num">21</span>The other references</h2>
+      <h2><span class="num">24</span>The other references</h2>
       <p class="lead-in">Several pages sit beside this one, each on a subject of
       its own. They are written from the game's own behavior and checked against
       every model it ships. The <b>User Guide</b> is the way in: this manual is
@@ -1608,7 +1992,7 @@ mbt --open tommy.4ds --gui</code></pre>
 
 
     <section id="shots" class="panel">
-      <h2><span class="num">22</span>The pictures, and how to take them</h2>
+      <h2><span class="num">25</span>The pictures, and how to take them</h2>
       <p class="lead-in">Fifteen slots are set through the manual. Each shows
       its caption until the file appears beside it, so the page reads either
       way. Drop the files into a <code>guide-images</code> folder next to this

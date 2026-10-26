@@ -1219,7 +1219,7 @@ def _register_material_properties():
         default=(1.0, 1.0, 1.0), update=resync,
         description="The color the game lights the surface in, on a material "
                     "with no texture - a texture replaces it outright, unless "
-                    "Tint By Material Color is on. The preview paints with "
+                    "Tint by Colors is on. The preview paints with "
                     "it in the same two cases")
     mat.ls3d_emission_color = FloatVectorProperty(
         name="Emission", subtype="COLOR", min=0.0, max=1.0,
@@ -1375,9 +1375,10 @@ def _register_material_properties():
          "characters before the extension are the counter, so the name set "
          "here is frame 00 and 100 frames is the ceiling"),
         (C.MTL_DIFFUSE_COLORED, "ls3d_flag_diffuse_colored",
-         "Tint By Material Color",
-         "Multiplies the surface by the material's own ambient, diffuse and "
-         "emission colors. Off, a textured material ignores those colors"),
+         "Tint by Colors",
+         "Multiplies the surface by the colors in the Material Colors box - "
+         "diffuse, ambient and emission. Off, a textured material ignores "
+         "them and the texture is drawn untinted"),
         (C.MTL_DIFFUSE_DOUBLESIDED, "ls3d_flag_diffuse_doublesided", "Double Sided",
          "Disable backface culling"),
         (C.MTL_ALPHA_COLORKEY, "ls3d_flag_alpha_colorkey", "Color Key",

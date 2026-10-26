@@ -1203,6 +1203,44 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
         sector as a wireframe, the portal in violet.</figcaption>
       </figure>
 
+      <h3>A lamp</h3>
+
+      <p>A light is worth walking through, because it is the one frame type that does nothing
+      at all until a mission asks for it.</p>
+
+      <p><b>Add &rsaquo; 4DS &rsaquo; Light</b> puts one in. It arrives as a cone empty, and it
+      shines along its <b>local +Y</b> &mdash; point that where you want the light to go.</p>
+
+      <p>Then, in the object panel:</p>
+
+      <ol>
+        <li>Pick a <b>Type</b>. <b>Point</b> shines from where it stands; <b>Spot</b> adds a
+        cone; <b>Directional</b> shines one way from nowhere in particular. The rest set a
+        sector's fog or atmosphere rather than lighting anything.</li>
+        <li>Set the <b>Color</b>, and <b>Power</b> to multiply it.</li>
+        <li>Set the falloff band: full strength up to <b>Near Range</b>, faded to nothing by
+        <b>Far Range</b>. You can type distances in meters instead, in the two
+        <b>Distance</b> fields. The viewport draws both as balls, so drag or type until they
+        look right.</li>
+        <li>For a Spot, set <b>Inner Cone</b> and <b>Outer Cone</b> &mdash; full inside the
+        inner, fading to nothing at the outer. They are <b>full angles, not half-angles</b>,
+        which catches everybody once.</li>
+        <li>Leave <b>Mode</b> alone unless you know you want something else. With neither
+        <b>Lights Objects</b> nor <b>Lights Lit Objects</b> on, the light lights nothing.</li>
+      </ol>
+
+      <p>Drag the <b>aim ball</b> to point it, or press <b>Aim At Target</b> to turn it toward
+      another selected object.</p>
+
+      <div class="callout">
+        <p><b>And then it still does nothing in game.</b> The engine lights a sector from the
+        lights that sector lists, and that list lives in the mission's
+        <code>scene2.bin</code> &mdash; not in the model. Exporting the light puts the frame in
+        the file and no further. Until a sector names it, nothing lights up. The light panel
+        spells out both halves of what has to agree, and the Field Manual's
+        <i>Lights</i> chapter has the whole of it.</p>
+      </div>
+
       <h3>The others, in a line each</h3>
       <table>
         <thead><tr><th>Frame</th><th>What it is</th></tr></thead>
@@ -1307,9 +1345,9 @@ figure.shot.empty figcaption::after { content: " — picture not in place yet";
         <thead><tr><th>File</th><th>What it answers</th></tr></thead>
         <tbody>
           <tr><td><b>LS3D-4DS-Field-Manual.html</b></td>
-          <td>Every frame type and visual type, every panel of switches, the checks and their
-          messages, and what the format holds. The reference this guide is the path
-          through.</td></tr>
+          <td>Every frame type and visual type, every panel of switches, every button, the
+          animation, track and shadow files, the checks and their messages, and what the
+          format holds. The reference this guide is the path through.</td></tr>
 
           <tr><td><b>LS3D-4DS-Dummy-Names.html</b></td>
           <td>Every frame name the game looks for &mdash; vehicles, characters, weapons, the city
